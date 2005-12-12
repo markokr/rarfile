@@ -1,0 +1,94 @@
+
+rarfile - Rar archive reader for Python
+=======================================
+
+1.  Description
+----------------
+
+This is Python module for Rar archive reading.  The interface
+is made as `zipfile` like as possible.
+
+Features:
+
+- Supports RAR 3.x archives.
+- Supports multi volume archives.
+- Supports Unicode filenames.
+- Handles non-compressed files without outside help.
+- For compressed files runs `unrar` utility.
+
+Missing features:
+
+- Password-protected archives.
+- Comment handling. (archive, file)
+- Decompression through unrarlib and/or unrar.dll.
+- extract_with_hack on multi-volume archives
+
+Personally, I have no need for those, so ...
+
+
+2.  Module contents
+--------------------
+
+2.1.  is_rarfile(file)
+~~~~~~~~~~~~~~~~~~~~~~
+
+Returns true is `file` is Rar archive.
+
+
+2.2.  class RarFile
+~~~~~~~~~~~~~~~~~~~~
+
+`RarFile(archive)`::
+  Creates new RarFile instance and reads Rar directory from archive.
+
+namelist()::
+  Return list of filenames.
+
+infolist()::
+  Return list of RarInfo items.
+
+getinfo(filename)::
+  Returns a RarInfo instance for specific file.
+
+read(filename)::
+  Read file contents.
+
+close(filename)::
+  Free open resources.  Currently it does nothing.
+
+
+2.3.  class RarInfo
+~~~~~~~~~~~~~~~~~~~~
+
+filename::
+	File name with relative path.
+	Note that Rar uses "\" as directory separator.
+
+unicode_filename::
+	If Rar has s
+
+host_os::
+	Host OS type.
+
+file_size::
+	Uncompressed size.
+
+date_time::
+	Tuple of year, month, day, hour, minute, second.
+
+compress_size::
+	Compressed size.
+
+compress_type::
+	Compression method: 0x30 - 0x35.
+
+extract_version::
+	Minimal Rar version needed for decompressing.
+
+mode::
+	File attributes. May be either dos-style or unix-style,
+	depending on host_os.
+
+CRC::
+	CRC-32 of uncompressed file
+
