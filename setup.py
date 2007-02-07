@@ -25,19 +25,14 @@ Missing features:
 
 """
 
-if sys.version < '2.2.3':
-    from distutils.dist import DistributionMetadata
-    DistributionMetadata.classifiers = None
-    DistributionMetadata.download_url = None
-
 setup(
     name = "rarfile",
-    version = "1.0",
+    version = "1.0.1",
     description = "Reader for RAR archives",
     author = "Marko Kreen",
     license = "BSD",
     author_email = "marko@l-t.ee",
-    url = "http://grue.l-t.ee/~marko/src/rarfile/",
+    url = "http://rarfile.berlios.de/",
     long_description = longdesc,
     py_modules = ['rarfile'],
     keywords = ['rar', 'archive'],

@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005  Marko Kreen <marko@l-t.ee>
+# Copyright (c) 2005-2007  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -94,6 +94,7 @@ RAR_OS_UNIX  = 3
 #
 # Public interface
 #
+
 def is_rarfile(fn):
     '''Check quickly whether file is rar archive.'''
     buf = open(fn, "rb").read(len(RAR_ID))
