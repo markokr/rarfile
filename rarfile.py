@@ -18,6 +18,7 @@ import os, re
 from struct import pack, unpack
 from binascii import crc32
 from cStringIO import StringIO
+from tempfile import mkstemp
 
 # whether to speed up decompression by using tmp archive
 _use_extract_hack = 1
@@ -394,8 +395,9 @@ class RarFile:
         size = inf.compress_size + inf.header_size
         rf = open(self.rarfile, "rb")
         rf.seek(inf.header_offset)
-        tmpname = os.tempnam() + ".rar"
-        tmpf = open(tmpname, "wb")
+
+        tmpfd, tmpname = mkstemp(suffix='.rar')
+        tmpf = os.fdopen(tmpfd, "wb")
 
         # create main header: crc, type, flags, size, res1, res2
         mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
@@ -477,12 +479,4 @@ class _UnicodeFilename:
                     for i in range(n + 2):
                         self.put(self.std_byte(), 0)
         return self.buf.getvalue().decode("utf-16le", "replace")
-
-# ignore os.tempnam() warning
-try:
-    import warnings
-    warnings.filterwarnings(action = 'ignore', category = RuntimeWarning,
-                            module = 'rarfile')
-except Exception, det:
-    pass
 
