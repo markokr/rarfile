@@ -1,5 +1,5 @@
 
-prefix = /opt
+prefix = /usr/local
 
 all:
 	python setup.py build
@@ -14,5 +14,8 @@ clean:
 	rm -rf *.pyc build dist MANIFEST *.orig *.rej *.html
 
 docs:
-	asciidoc -b xhtml11 README
+	asciidoc README
+
+lint:
+	pylint -e rarfile.py
 
