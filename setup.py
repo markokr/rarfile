@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import sys
 from distutils.core import setup
 
 longdesc = """\
@@ -9,7 +8,8 @@ is made as `zipfile` like as possible.
 
 The archive structure parsing and uncompressed files
 are handled in pure python, for compressed files
-is calls 'unrar' command line utility.
+the 'unrar' command line utility is called for data
+extraction.
 
 Features:
 
@@ -43,6 +43,7 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Archiving",
     ]
 )
 
