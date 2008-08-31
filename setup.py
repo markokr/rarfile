@@ -27,11 +27,11 @@ Missing features:
 
 setup(
     name = "rarfile",
-    version = "1.0.1",
+    version = "1.1",
     description = "Reader for RAR archives",
     author = "Marko Kreen",
     license = "BSD",
-    author_email = "marko@l-t.ee",
+    author_email = "markokr@gmail.com",
     url = "http://rarfile.berlios.de/",
     long_description = longdesc,
     py_modules = ['rarfile'],

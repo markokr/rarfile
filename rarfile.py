@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005-2007  Marko Kreen <markokr@gmail.com>
+# Copyright (c) 2005-2008  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
