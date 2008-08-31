@@ -92,3 +92,29 @@ mode::
 CRC::
 	CRC-32 of uncompressed file
 
+
+3. History
+----------
+
+Version 1.1 (2008-08-31)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fixes::
+ * Replace os.tempnam() with tempfile.mkstemp().  (Jason Moiron)
+ * Fix infinite loop in _extract_hack on unexpected EOF
+ * RarInfo.CRC is now signed value to match crc32()
+ * RarFile.read() now checks file crc
+
+Cleanups::
+ * more docstrings
+ * throw proper exceptions (subclasses of rarfile.Error)
+ * RarInfo has fields pre-initialized, so they appear in help()
+ * rename RarInfo.data to RarInfo.header_data
+ * dont use "print" when header parsing fails
+ * use try/finally to delete temp rar
+
+Version 1.0 (2005-08-08)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * First release.
+
