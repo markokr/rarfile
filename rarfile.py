@@ -34,14 +34,14 @@ _extract_cmd = 'unrar p -inul "%s" "%s"'
 
 class Error(Exception):
     """Base class for rarfile errors."""
-class CorruptArchiveError(Error):
+class BadRarFile(Error):
     """Incorrect data in archive."""
-class NotRARError(Error):
+class NotRarFile(Error):
     """The file is not RAR archive."""
-class WrongUsageError(Error):
-    """Module is used wrongly."""
-class BadMultipartNameError(Error):
+class BadRarName(Error):
     """Cannot guess multipart name components."""
+class NoRarEntry(Error):
+    """File not found in RAR"""
 
 #
 # rar constants
@@ -165,7 +165,7 @@ class RarFile:
         self._gen_volname = self._gen_oldvol
 
         if mode != "r":
-            raise WrongUsageError("Only mode=r supported")
+            raise NotImplementedError("RarFile supports only mode=r")
 
         self._parse()
 
@@ -191,10 +191,10 @@ class RarFile:
         '''Return decompressed data.'''
         inf = self.getinfo(fname)
         if not inf:
-            raise WrongUsageError("No such file")
+            raise NoRarEntry("No such file")
 
         if inf.isdir():
-            raise WrongUsageError("No data in directory")
+            raise TypeError("Directory does not have any data")
 
         if inf.compress_type == 0x30:
             res = self._extract_clear(inf)
@@ -204,7 +204,7 @@ class RarFile:
             res = self._extract_unrar(self.rarfile, inf)
 
         if crc32(res) != inf.CRC:
-            raise CorruptArchiveError('CRC check failed')
+            raise BadRarFile('CRC check failed')
 
         return res
 
@@ -233,7 +233,7 @@ class RarFile:
         fd = open(self.rarfile, "rb")
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
-            raise NotRARError("Not a Rar archive")
+            raise NotRarFile("Not a Rar archive")
         
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
@@ -389,7 +389,7 @@ class RarFile:
 
         m = re.search(r"([0-9][0-9]*)[^0-9]*$", fn)
         if not m:
-            raise BadMultipartNameError("Cannot construct volume name")
+            raise BadRarName("Cannot construct volume name")
         n1 = m.start(1)
         n2 = m.end(1)
         fmt = "%%0%dd" % (n2 - n1)
@@ -427,7 +427,7 @@ class RarFile:
                     buf += f.read(cur.add_size)
                     break
 
-                raise CorruptArchiveError("Did not found file entry")
+                raise BadRarFile("Did not found file entry")
 
             # no more parts?
             if (cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
@@ -459,7 +459,7 @@ class RarFile:
                 else:
                     buf = rf.read(size)
                 if not buf:
-                    raise CorruptArchiveError('read failed - broken archive')
+                    raise BadRarFile('read failed - broken archive')
                 tmpf.write(buf)
                 size -= len(buf)
             tmpf.close()
@@ -484,7 +484,7 @@ class RarFile:
         buf = fd.read()
         err = fd.close()
         if err > 0:
-            raise CorruptArchiveError("Error while unpacking file")
+            raise BadRarFile("Error while unpacking file")
         return buf
 
 class _UnicodeFilename:
