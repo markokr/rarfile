@@ -14,17 +14,34 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+"""RAR archive reader.
+"""
+
 import os, re
 from struct import pack, unpack
 from binascii import crc32
 from cStringIO import StringIO
 from tempfile import mkstemp
 
+# export only interesting items
+__all__ = ['is_rarfile', 'RarInfo', 'RarFile']
+
 # whether to speed up decompression by using tmp archive
 _use_extract_hack = 1
 
 # command line to use for extracting
 _extract_cmd = 'unrar p -inul "%s" "%s"'
+
+class Error(Exception):
+    """Base class for rarfile errors."""
+class CorruptArchiveError(Error):
+    """Incorrect data in archive."""
+class NotRARError(Error):
+    """The file is not RAR archive."""
+class WrongUsageError(Error):
+    """Module is used wrongly."""
+class BadMultipartNameError(Error):
+    """Cannot guess multipart name components."""
 
 #
 # rar constants
@@ -103,6 +120,30 @@ def is_rarfile(fn):
 class RarInfo:
     '''An entry in rar archive.'''
 
+    compress_size = None
+    file_size = None
+    host_os = None
+    CRC = None
+    date_time = None        # tuple of (year, mon, day, hr, min, sec)
+    extract_version = None
+    compress_type = None
+    name_size = None
+    mode = None
+    flags = None
+    type = None
+    filename = None
+    unicode_filename = None
+
+    # RAR internals
+    header_size = None
+    header_crc = None
+    file_offset = None
+    add_size = None
+    header_data = None
+    header_unknown = None
+    header_offset = None
+    volume = None
+
     def isdir(self):
         '''Returns True if the entry is a directory.'''
         if self.type == RAR_BLOCK_FILE:
@@ -124,7 +165,7 @@ class RarFile:
         self._gen_volname = self._gen_oldvol
 
         if mode != "r":
-            raise Exception("Only mode=r supported")
+            raise WrongUsageError("Only mode=r supported")
 
         self._parse()
 
@@ -141,19 +182,19 @@ class RarFile:
 
     def getinfo(self, fname):
         '''Return RarInfo for fname.'''
-        fx = fname.replace("/", "\\")
+        fname2 = fname.replace("/", "\\")
         for f in self.info_list:
-            if fname == f.filename or fx == f.filename:
+            if fname == f.filename or fname2 == f.filename:
                 return f
 
     def read(self, fname):
         '''Return decompressed data.'''
         inf = self.getinfo(fname)
         if not inf:
-            raise Exception("No such file")
+            raise WrongUsageError("No such file")
 
         if inf.isdir():
-            raise Exception("No data in directory")
+            raise WrongUsageError("No data in directory")
 
         if inf.compress_type == 0x30:
             res = self._extract_clear(inf)
@@ -161,12 +202,18 @@ class RarFile:
             res = self._extract_hack(inf)
         else:
             res = self._extract_unrar(self.rarfile, inf)
+
+        if crc32(res) != inf.CRC:
+            raise CorruptArchiveError('CRC check failed')
+
         return res
 
     def close(self):
+        """Release open resources."""
         pass
 
     def printdir(self):
+        """Print archive file list to stdout."""
         for f in self.info_list:
             print f.filename
 
@@ -186,7 +233,7 @@ class RarFile:
         fd = open(self.rarfile, "rb")
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
-            raise Exception("Not a Rar")
+            raise NotRARError("Not a Rar archive")
         
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
@@ -219,6 +266,7 @@ class RarFile:
             if h.add_size > 0:
                 fd.seek(h.add_size, 1)
 
+    # read single header
     def _parse_header(self, fd):
         h = self._parse_block_header(fd)
         if h and (h.type == RAR_BLOCK_FILE or h.type == RAR_BLOCK_SUB):
@@ -239,13 +287,13 @@ class RarFile:
         h.header_unknown = h.header_size - HDRLEN
 
         if h.header_size > HDRLEN:
-            h.data = fd.read(h.header_size - HDRLEN)
+            h.header_data = fd.read(h.header_size - HDRLEN)
         else:
-            h.data = ""
+            h.header_data = ""
         h.file_offset = fd.tell()
 
         if h.flags & RAR_LONG_BLOCK:
-            h.add_size = unpack("<L", h.data[:4])[0]
+            h.add_size = unpack("<L", h.header_data[:4])[0]
         else:
             h.add_size = 0
 
@@ -255,11 +303,11 @@ class RarFile:
 
         # check crc
         if h.type == RAR_BLOCK_MAIN:
-            crcdat = buf[2:] + h.data[:6]
+            crcdat = buf[2:] + h.header_data[:6]
         elif h.type == RAR_BLOCK_OLD_AUTH:
-            crcdat = buf[2:] + h.data[:8]
+            crcdat = buf[2:] + h.header_data[:8]
         else:
-            crcdat = buf[2:] + h.data
+            crcdat = buf[2:] + h.header_data
         calc_crc = crc32(crcdat) & 0xFFFF
 
         # return good header
@@ -267,14 +315,15 @@ class RarFile:
             return h
 
         # crc failed
-        print "CRC mismatch! ofs =", h.header_offset
+        #print "CRC mismatch! ofs =", h.header_offset
+
         # instead panicing, send eof
         return None
 
     # read file-specific header
     def _parse_file_header(self, h):
         HDRLEN = 4+4+1+4+4+1+1+2+4
-        fld = unpack("<LLBLLBBHL", h.data[ : HDRLEN])
+        fld = unpack("<LLBlLBBHL", h.header_data[ : HDRLEN])
         h.compress_size = long(fld[0]) & 0xFFFFFFFFL
         h.file_size = long(fld[1]) & 0xFFFFFFFFL
         h.host_os = fld[2]
@@ -287,12 +336,12 @@ class RarFile:
         pos = HDRLEN
 
         if h.flags & RAR_FILE_LARGE:
-            h1, h2 = unpack("<LL", h.data[pos:pos+8])
+            h1, h2 = unpack("<LL", h.header_data[pos:pos+8])
             h.compress_size |= long(h1) << 32
             h.file_size |= long(h2) << 32
             pos += 8
 
-        name = h.data[pos : pos + h.name_size ]
+        name = h.header_data[pos : pos + h.name_size ]
         pos += h.name_size
         if h.flags & RAR_FILE_UNICODE:
             nul = name.find("\0")
@@ -309,14 +358,14 @@ class RarFile:
                 h.unicode_filename = name.decode("iso-8859-1", "replace")
 
         if h.flags & RAR_FILE_SALT:
-            h.salt = h.data[pos : pos + 8]
+            h.salt = h.header_data[pos : pos + 8]
             pos += 8
         else:
             h.salt = None
 
         # unknown contents
         if h.flags & RAR_FILE_EXTTIME:
-            h.ext_time = h.data[pos : ]
+            h.ext_time = h.header_data[pos : ]
         else:
             h.ext_time = None
 
@@ -340,7 +389,7 @@ class RarFile:
 
         m = re.search(r"([0-9][0-9]*)[^0-9]*$", fn)
         if not m:
-            raise Exception("Cannot construct volume name")
+            raise BadMultipartNameError("Cannot construct volume name")
         n1 = m.start(1)
         n2 = m.end(1)
         fmt = "%%0%dd" % (n2 - n1)
@@ -378,7 +427,7 @@ class RarFile:
                     buf += f.read(cur.add_size)
                     break
 
-                raise RuntimeException("file not found?")
+                raise CorruptArchiveError("Did not found file entry")
 
             # no more parts?
             if (cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
@@ -386,7 +435,7 @@ class RarFile:
 
             volume += 1
 
-        return buf            
+        return buf
 
     # put file compressed data into temporary .rar archive, and run
     # unrar on that, thus avoiding unrar going over whole archive
@@ -399,23 +448,26 @@ class RarFile:
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
         tmpf = os.fdopen(tmpfd, "wb")
+        
+        try:
+            # create main header: crc, type, flags, size, res1, res2
+            mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
+            tmpf.write(RAR_ID + mh)
+            while size > 0:
+                if size > BSIZE:
+                    buf = rf.read(BSIZE)
+                else:
+                    buf = rf.read(size)
+                if not buf:
+                    raise CorruptArchiveError('read failed - broken archive')
+                tmpf.write(buf)
+                size -= len(buf)
+            tmpf.close()
 
-        # create main header: crc, type, flags, size, res1, res2
-        mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
-        tmpf.write(RAR_ID + mh)
-
-        while size > 0:
-            if size > BSIZE:
-                buf = rf.read(BSIZE)
-            else:
-                buf = rf.read(size)
-            tmpf.write(buf)
-            size -= len(buf)
-        tmpf.close()
-
-        buf = self._extract_unrar(tmpname, inf)
-        os.unlink(tmpname)
-        return buf
+            buf = self._extract_unrar(tmpname, inf)
+            return buf
+        finally:
+            os.unlink(tmpname)
 
     # extract using unrar
     def _extract_unrar(self, rarfile, inf):
@@ -432,7 +484,7 @@ class RarFile:
         buf = fd.read()
         err = fd.close()
         if err > 0:
-            raise Exception("Error reading file")
+            raise CorruptArchiveError("Error while unpacking file")
         return buf
 
 class _UnicodeFilename:
