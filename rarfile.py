@@ -262,9 +262,9 @@ class RarFile:
             # store it
             self._process_entry(h)
 
-            # skip data
+            # go to next header
             if h.add_size > 0:
-                fd.seek(h.add_size, 1)
+                fd.seek(h.file_offset + h.add_size, 0)
 
     # read single header
     def _parse_header(self, fd):
@@ -306,8 +306,11 @@ class RarFile:
             crcdat = buf[2:] + h.header_data[:6]
         elif h.type == RAR_BLOCK_OLD_AUTH:
             crcdat = buf[2:] + h.header_data[:8]
+        elif h.type == RAR_BLOCK_OLD_SUB:
+            crcdat = buf[2:] + h.header_data + fd.read(h.add_size)
         else:
             crcdat = buf[2:] + h.header_data
+
         calc_crc = crc32(crcdat) & 0xFFFF
 
         # return good header
