@@ -149,20 +149,31 @@ class RarInfo:
         'file_size',
         'host_os',
         'CRC',
-        'date_time',        # tuple of (year, mon, day, hr, min, sec)
         'extract_version',
         'compress_type',
-        'name_size',
         'mode',
         'flags',
         'type',
-        'filename',         # unicode string
+
+        # unicode string
+        'filename',
+
+        # tuple of (year, mon, day, hr, min, sec)
+        'date_time',
+
+        # optional extended time fields
+        # same format as date_time, but sec is float
+        'mtime',
+        'ctime',
+        'atime',
+        'arctime',
 
         # obsolete
         'unicode_filename',
 
         # RAR internals
         'orig_filename',
+        'name_size',
         'header_size',
         'header_crc',
         'file_offset',
@@ -400,12 +411,13 @@ class RarFile:
         else:
             h.salt = None
 
-        # unknown contents
+        # optional extended time stamps
         if h.flags & RAR_FILE_EXTTIME:
-            h.ext_time = h.header_data[pos : ]
+            pos = self._parse_ext_time(h, pos)
         else:
-            h.ext_time = None
+            h.mtime = h.atime = h.ctime = h.arctime = None
 
+        # unknown contents
         h.header_unknown -= pos
 
         return h
@@ -419,6 +431,36 @@ class RarFile:
         yr = (stamp & 0x7F) + 1980
         return (yr, mon, day, hr, min, sec)
 
+    def _parse_ext_time(self, h, pos):
+        data = h.header_data
+        flags = unpack("<H", data[pos : pos + 2])[0]
+        pos += 2
+        h.mtime, pos = self._parse_xtime(flags >> 3*4, data, pos, h.date_time)
+        h.ctime, pos = self._parse_xtime(flags >> 2*4, data, pos)
+        h.atime, pos = self._parse_xtime(flags >> 1*4, data, pos)
+        h.arctime, pos = self._parse_xtime(flags >> 0*4, data, pos)
+        return pos
+
+    def _parse_xtime(self, flag, data, pos, dostime = None):
+        unit = 10000000.0 # 100 ns units
+        if flag & 8:
+            if not dostime:
+                t = unpack("<I", data[pos : pos + 4])[0]
+                dostime = self._parse_dos_time(t)
+                pos += 4
+            rem = 0
+            cnt = flag & 3
+            for i in range(3):
+                rem <<= 8
+                if i < cnt:
+                    rem += unpack("B", data[pos : pos + 1])[0]
+                    pos += 1
+            sec = dostime[5] + rem / unit
+            if flag & 4:
+                sec += 1
+            dostime = dostime[:5] + (sec,)
+        return dostime, pos
+        
     # new-style volume name
     def _gen_newvol(self, volume):
         # allow % in filenames

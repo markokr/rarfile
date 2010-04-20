@@ -112,6 +112,14 @@ def show_item(h):
         print("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
         print("  name=%s" % h.filename)
         print("  name=%s" % h.unicode_filename)
+        if h.mtime:
+            print("  mtime=%s" % repr(h.mtime))
+        if h.ctime:
+            print("  ctime=%s" % repr(h.ctime))
+        if h.atime:
+            print("  atime=%s" % repr(h.atime))
+        if h.arctime:
+            print("  arctime=%s" % repr(h.arctime))
     elif h.type == rf.RAR_BLOCK_MAIN:
         print("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_ENDARC:
