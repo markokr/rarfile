@@ -63,9 +63,7 @@ close(filename)::
 filename::
 	File name with relative path.
 	Note that Rar uses "\" as directory separator.
-
-unicode_filename::
-	If Rar has s
+	Always unicode string.
 
 host_os::
 	Host OS type.
@@ -95,6 +93,18 @@ CRC::
 
 3. History
 ----------
+
+Version 2.0 (2010-xx-xx)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Features::
+ * Python 3 support.  Still works with 2.x.
+ * Parses extended time fields. (.mtime, .ctime, .atime)
+
+Cleanups::
+ * Uses subprocess module to launch unrar.
+ * .filename is always Unicode string, .unicode_filename is now deprecated.
+ * .CRC is unsigned again, as python3 crc32() is unsigned.
 
 Version 1.1 (2008-08-31)
 ~~~~~~~~~~~~~~~~~~~~~~~~

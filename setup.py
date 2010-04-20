@@ -27,10 +27,10 @@ Missing features:
 
 setup(
     name = "rarfile",
-    version = "1.1",
+    version = "2.0",
     description = "Reader for RAR archives",
     author = "Marko Kreen",
-    license = "BSD",
+    license = "ISC",
     author_email = "markokr@gmail.com",
     url = "http://rarfile.berlios.de/",
     long_description = longdesc,
@@ -39,7 +39,7 @@ setup(
     classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: ISC License (ISCL)",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Topic :: Software Development :: Libraries :: Python Modules",
