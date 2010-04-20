@@ -17,11 +17,30 @@
 """RAR archive reader.
 """
 
-import os, re
+import sys, os, re
 from struct import pack, unpack
 from binascii import crc32
-from cStringIO import StringIO
 from tempfile import mkstemp
+from subprocess import Popen, PIPE
+
+# see if compat bytearray() is needed
+try:
+    bytearray()
+except NameError:
+    import array
+    class bytearray:
+        def __init__(self, val = ''):
+            self.arr = array.array('B', val)
+            self.append = self.arr.append
+            self.__getitem__ = self.arr.__getitem__
+            self.__len__ = self.arr.__len__
+        def decode(self, *args):
+            return self.arr.tostring().decode(*args)
+
+# py2.6 has broken bytes()
+if sys.hexversion < 0x3000000:
+    def bytes(foo, enc):
+        return str(foo)
 
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
@@ -29,8 +48,8 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 # whether to speed up decompression by using tmp archive
 _use_extract_hack = 1
 
-# command line to use for extracting
-_extract_cmd = 'unrar p -inul "%s" "%s"'
+# command line to use for extracting (arch, file) will be added
+_extract_cmd = ('unrar', 'p', '-inul')
 
 class Error(Exception):
     """Base class for rarfile errors."""
@@ -47,7 +66,9 @@ class NoRarEntry(Error):
 # rar constants
 #
 
-RAR_ID = "Rar!\x1a\x07\x00"
+RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
+ZERO = bytes("\0", 'ascii')
+EMPTY = bytes("", 'ascii')
 
 # block types
 RAR_BLOCK_MARK          = 0x72 # r
@@ -123,29 +144,36 @@ def is_rarfile(fn):
 class RarInfo:
     '''An entry in rar archive.'''
 
-    compress_size = None
-    file_size = None
-    host_os = None
-    CRC = None
-    date_time = None        # tuple of (year, mon, day, hr, min, sec)
-    extract_version = None
-    compress_type = None
-    name_size = None
-    mode = None
-    flags = None
-    type = None
-    filename = None
-    unicode_filename = None
+    __slots__ = (
+        'compress_size',
+        'file_size',
+        'host_os',
+        'CRC',
+        'date_time',        # tuple of (year, mon, day, hr, min, sec)
+        'extract_version',
+        'compress_type',
+        'name_size',
+        'mode',
+        'flags',
+        'type',
+        'filename',         # unicode string
 
-    # RAR internals
-    header_size = None
-    header_crc = None
-    file_offset = None
-    add_size = None
-    header_data = None
-    header_unknown = None
-    header_offset = None
-    volume = None
+        # obsolete
+        'unicode_filename',
+
+        # RAR internals
+        'orig_filename',
+        'header_size',
+        'header_crc',
+        'file_offset',
+        'add_size',
+        'header_data',
+        'header_unknown',
+        'header_offset',
+        'volume',
+        'salt',
+        'ext_time',
+    )
 
     def isdir(self):
         '''Returns True if the entry is a directory.'''
@@ -206,8 +234,13 @@ class RarFile:
         else:
             res = self._extract_unrar(self.rarfile, inf)
 
-        if crc32(res) != inf.CRC:
-            raise BadRarFile('CRC check failed')
+        # python 2.x crc32() returns signed values
+        crc = crc32(res)
+        if crc < 0:
+            crc += long(1) << 32
+
+        if crc != inf.CRC:
+            raise BadRarFile('CRC check failed: (%08x != %08x)' % (crc, inf.CRC))
 
         return res
 
@@ -218,7 +251,7 @@ class RarFile:
     def printdir(self):
         """Print archive file list to stdout."""
         for f in self.info_list:
-            print f.filename
+            print(f.filename)
 
     # store entry
     def _process_entry(self, item):
@@ -292,7 +325,7 @@ class RarFile:
         if h.header_size > HDRLEN:
             h.header_data = fd.read(h.header_size - HDRLEN)
         else:
-            h.header_data = ""
+            h.header_data = EMPTY
         h.file_offset = fd.tell()
 
         if h.flags & RAR_LONG_BLOCK:
@@ -320,18 +353,15 @@ class RarFile:
         if h.header_crc == calc_crc:
             return h
 
-        # crc failed
-        #print "CRC mismatch! ofs =", h.header_offset
-
         # instead panicing, send eof
         return None
 
     # read file-specific header
     def _parse_file_header(self, h):
         HDRLEN = 4+4+1+4+4+1+1+2+4
-        fld = unpack("<LLBlLBBHL", h.header_data[ : HDRLEN])
-        h.compress_size = long(fld[0]) & 0xFFFFFFFFL
-        h.file_size = long(fld[1]) & 0xFFFFFFFFL
+        fld = unpack("<LLBLLBBHL", h.header_data[ : HDRLEN])
+        h.compress_size = fld[0]
+        h.file_size = fld[1]
         h.host_os = fld[2]
         h.CRC = fld[3]
         h.date_time = self._parse_dos_time(fld[4])
@@ -343,25 +373,26 @@ class RarFile:
 
         if h.flags & RAR_FILE_LARGE:
             h1, h2 = unpack("<LL", h.header_data[pos:pos+8])
-            h.compress_size |= long(h1) << 32
-            h.file_size |= long(h2) << 32
+            h.compress_size |= h1 << 32
+            h.file_size |= h2 << 32
             pos += 8
 
         name = h.header_data[pos : pos + h.name_size ]
         pos += h.name_size
         if h.flags & RAR_FILE_UNICODE:
-            nul = name.find("\0")
-            h.filename = name[:nul]
-            u = _UnicodeFilename(h.filename, name[nul + 1 : ])
+            nul = name.find(ZERO)
+            h.orig_filename = name[:nul]
+            u = _UnicodeFilename(h.orig_filename, name[nul + 1 : ])
             h.unicode_filename = u.decode()
         else:
-            h.filename = name
-            h.unicode_filename = None
+            h.orig_filename = name
             if self.charset:
                 h.unicode_filename = name.decode(self.charset)
             else:
                 # just guessing...
                 h.unicode_filename = name.decode("iso-8859-1", "replace")
+
+        h.filename = h.unicode_filename
 
         if h.flags & RAR_FILE_SALT:
             h.salt = h.header_data[pos : pos + 8]
@@ -416,7 +447,7 @@ class RarFile:
     # read uncompressed file
     def _extract_clear(self, inf):
         volume = inf.volume
-        buf = ""
+        buf = EMPTY
         cur = None
         while 1:
             f = open(self._gen_volname(volume), "rb")
@@ -478,38 +509,49 @@ class RarFile:
     # extract using unrar
     def _extract_unrar(self, rarfile, inf):
         fn = inf.filename
-        # linux unrar wants '/', not '\'
-        fn = fn.replace("\\", "/")
-        # shell escapes
-        fn = fn.replace("`", "\\`")
-        fn = fn.replace('"', '\\"')
-        fn = fn.replace("$", "\\$")
 
-        cmd = _extract_cmd % (rarfile, fn)
-        fd = os.popen(cmd, "r")
-        buf = fd.read()
-        err = fd.close()
-        if err > 0:
+        # unrar wants native separator
+        fn = fn.replace("\\", os.sep)
+
+        cmd = list(_extract_cmd)
+        cmd.append(rarfile)
+        cmd.append(fn)
+
+        # 3xPIPE seems unreliable, at least on osx
+        try:
+            null = open("/dev/null", "wb")
+            _in = null
+            _err = null
+        except IOError:
+            _in = PIPE
+            _err = PIPE
+
+        # run unrar
+        p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err)
+        data, errmsg = p.communicate()
+        ret = p.returncode
+        if ret != 0:
             raise BadRarFile("Error while unpacking file")
-        return buf
+        return data
 
 class _UnicodeFilename:
     def __init__(self, name, encdata):
-        self.std_name = name
-        self.encdata = encdata
+        self.std_name = bytearray(name)
+        self.encdata = bytearray(encdata)
         self.pos = self.encpos = 0
-        self.buf = StringIO()
+        self.buf = bytearray()
 
     def enc_byte(self):
         c = self.encdata[self.encpos]
         self.encpos += 1
-        return ord(c)
+        return c
 
     def std_byte(self):
-        return ord(self.std_name[self.pos])
+        return self.std_name[self.pos]
 
     def put(self, lo, hi):
-        self.buf.write(chr(lo) + chr(hi))
+        self.buf.append(lo)
+        self.buf.append(hi)
         self.pos += 1
 
     def decode(self):
@@ -537,5 +579,5 @@ class _UnicodeFilename:
                 else:
                     for i in range(n + 2):
                         self.put(self.std_byte(), 0)
-        return self.buf.getvalue().decode("utf-16le", "replace")
+        return self.buf.decode("utf-16le", "replace")
 

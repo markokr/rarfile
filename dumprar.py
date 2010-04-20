@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import sys, os
-from StringIO import StringIO
 from array import array
 import rarfile as rf
 
@@ -90,39 +89,48 @@ def fmt_time(t):
 
 def show_item(h):
     st = rarType(h.type)
-    print "%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
-                h.add_size, h.header_unknown)
+    print("%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
+                h.add_size, h.header_unknown))
     if h.header_unknown > 0:
         dat = h.header_data[-h.header_unknown:]
-        print "  unknown:", repr(dat)
+        print("  unknown:", repr(dat))
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
         if h.host_os == rf.RAR_OS_UNIX:
             s_mode = "0%o" % h.mode
         else:
             s_mode = "0x%x" % h.mode
-        print "  flags=0x%04x:%s" % (h.flags, get_file_flags(h.flags))
+        print("  flags=0x%04x:%s" % (h.flags, get_file_flags(h.flags)))
         if h.host_os >= 0 and h.host_os < len(os_list):
             s_os = os_list[h.host_os]
         else:
             s_os = "?"
-        print "  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d" % (
+        print("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d" % (
                 h.host_os, s_os,
                 h.extract_version, s_mode, h.compress_type,
-                h.compress_size, h.file_size)
-        ucrc = (h.CRC + (1 << 32)) & (0xFFFFFFFF)
-        print "  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time))
-        print "  name=%s" % h.unicode_filename
+                h.compress_size, h.file_size))
+        ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
+        print("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
+        print("  name=%s" % h.filename)
+        print("  name=%s" % h.unicode_filename)
     elif h.type == rf.RAR_BLOCK_MAIN:
-        print "  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags))
+        print("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_ENDARC:
-        print "  flags=0x%04x:%s" % (h.flags, get_endarc_flags(h.flags))
+        print("  flags=0x%04x:%s" % (h.flags, get_endarc_flags(h.flags)))
     else:
-        print "  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags))
+        print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
 
 try:
     for fn in sys.argv[1:]:
-        print "Rar:", fn
-        rf.RarFile(fn, info_callback = show_item, charset="iso-8859-1")
+        print("Rar: %s" % fn)
+        f = rf.RarFile(fn, info_callback = show_item, charset="iso-8859-1")
+        f.printdir()
+        print(f.namelist())
+        for n in f.namelist():
+            inf = f.getinfo(n)
+            if inf.isdir():
+                continue
+            dat = f.read(n)
+            print(n, len(dat))
 except IOError:
     pass
 
