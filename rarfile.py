@@ -61,6 +61,8 @@ class BadRarName(Error):
     """Cannot guess multipart name components."""
 class NoRarEntry(Error):
     """File not found in RAR"""
+class PasswordRequired(Error):
+    """File requires password"""
 
 #
 # rar constants
@@ -192,6 +194,9 @@ class RarInfo:
             return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
+    def needs_password(self):
+        return self.flags & RAR_FILE_PASSWORD
+
 class RarFile:
     '''Rar archive handling.'''
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None):
@@ -205,11 +210,20 @@ class RarFile:
         self.info_callback = info_callback
         self.got_mainhdr = 0
         self._gen_volname = self._gen_oldvol
+        self._needs_password = False
+        self._password = None
 
         if mode != "r":
             raise NotImplementedError("RarFile supports only mode=r")
 
         self._parse()
+
+    def setpassword(self, password):
+        '''Sets the password to use when extracting.'''
+        self._password = password
+
+    def needs_password(self):
+        return self._needs_password
 
     def namelist(self):
         '''Return list of filenames in rar'''
@@ -237,6 +251,8 @@ class RarFile:
 
         if inf.isdir():
             raise TypeError("Directory does not have any data")
+        if inf.needs_password() and self._password is None:
+            raise PasswordRequired("File %s requires password" % fname)
 
         if inf.compress_type == 0x30:
             res = self._extract_clear(inf)
@@ -271,6 +287,9 @@ class RarFile:
             # use only first part
             if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
                 self.info_list.append(item)
+                # remember if any items require password
+                if item.needs_password():
+                    self._needs_password = True
 
         if self.info_callback:
             self.info_callback(item)
@@ -556,6 +575,8 @@ class RarFile:
         fn = fn.replace("\\", os.sep)
 
         cmd = list(_extract_cmd)
+        if self._password:
+            cmd.append("-p" + self._password)
         cmd.append(rarfile)
         cmd.append(fn)
 
