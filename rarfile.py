@@ -51,6 +51,9 @@ _use_extract_hack = 1
 # command line to use for extracting (arch, file) will be added
 _extract_cmd = ('unrar', 'p', '-inul')
 
+# how to extract comment from archive, set to None to disable
+_extract_comment = ('rar', 'cw', '-y', '-inul', '-p-')
+
 class Error(Exception):
     """Base class for rarfile errors."""
 class BadRarFile(Error):
@@ -63,6 +66,8 @@ class NoRarEntry(Error):
     """File not found in RAR"""
 class PasswordRequired(Error):
     """File requires password"""
+
+DEFAULT_CHARSET = "windows-1252"
 
 #
 # rar constants
@@ -185,7 +190,6 @@ class RarInfo:
         'header_offset',
         'volume',
         'salt',
-        'ext_time',
     )
 
     def isdir(self):
@@ -200,23 +204,32 @@ class RarInfo:
 class RarFile:
     '''Rar archive handling.'''
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None):
+        """Open and parse a RAR archive.
+        
+        rarfile: archive file name
+        mode: only 'r' is supported.
+        charset: fallback charset to use, if filenames are not already Unicode-enabled.
+        info_callback: debug callback, gets to see all entries.
+        """
         self.rarfile = rarfile
-        self.charset = charset
+        self._charset = charset or DEFAULT_CHARSET
+        self.comment = None
 
         self.info_list = []
-        self.is_solid = 0
-        self.uses_newnumbering = 0
-        self.uses_volumes = 0
         self.info_callback = info_callback
-        self.got_mainhdr = 0
         self._gen_volname = self._gen_oldvol
         self._needs_password = False
         self._password = None
+
+        self._main = None
 
         if mode != "r":
             raise NotImplementedError("RarFile supports only mode=r")
 
         self._parse()
+
+        if self._main.flags & RAR_MAIN_COMMENT:
+            self._read_comment()
 
     def setpassword(self, password):
         '''Sets the password to use when extracting.'''
@@ -243,7 +256,7 @@ class RarFile:
             if fname == f.filename or fname2 == f.filename:
                 return f
 
-    def read(self, fname):
+    def read(self, fname, psw = None):
         '''Return decompressed data.'''
         inf = self.getinfo(fname)
         if not inf:
@@ -251,15 +264,21 @@ class RarFile:
 
         if inf.isdir():
             raise TypeError("Directory does not have any data")
-        if inf.needs_password() and self._password is None:
-            raise PasswordRequired("File %s requires password" % fname)
-
-        if inf.compress_type == 0x30:
-            res = self._extract_clear(inf)
-        elif _use_extract_hack and not self.is_solid and not self.uses_volumes:
-            res = self._extract_hack(inf)
+        if inf.needs_password():
+            psw = psw or self._password
+            if psw is None:
+                raise PasswordRequired("File %s requires password" % fname)
         else:
-            res = self._extract_unrar(self.rarfile, inf)
+            psw = None
+
+        is_solid = self._main.flags & RAR_MAIN_SOLID
+        uses_vols = self._main.flags & RAR_MAIN_VOLUME
+        if inf.compress_type == 0x30 and psw is None:
+            res = self._extract_clear(inf)
+        elif _use_extract_hack and not is_solid and not uses_vols:
+            res = self._extract_hack(inf, psw)
+        else:
+            res = self._extract_unrar(self.rarfile, inf, psw)
 
         # python 2.x crc32() returns signed values
         crc = crc32(res)
@@ -315,13 +334,10 @@ class RarFile:
                 break
             h.volume = volume
 
-            if h.type == RAR_BLOCK_MAIN and not self.got_mainhdr:
+            if h.type == RAR_BLOCK_MAIN and not self._main:
+                self._main = h
                 if h.flags & RAR_MAIN_NEWNUMBERING:
-                    self.uses_newnumbering = 1
                     self._gen_volname = self._gen_newvol
-                self.uses_volumes = h.flags & RAR_MAIN_VOLUME
-                self.is_solid = h.flags & RAR_MAIN_SOLID
-                self.got_mainhdr = 1
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
 
@@ -331,6 +347,7 @@ class RarFile:
             # go to next header
             if h.add_size > 0:
                 fd.seek(h.file_offset + h.add_size, 0)
+        fd.close()
 
     # read single header
     def _parse_header(self, fd):
@@ -416,11 +433,7 @@ class RarFile:
             h.unicode_filename = u.decode()
         else:
             h.orig_filename = name
-            if self.charset:
-                h.unicode_filename = name.decode(self.charset)
-            else:
-                # just guessing...
-                h.unicode_filename = name.decode("iso-8859-1", "replace")
+            h.unicode_filename = name.decode(self._charset, "replace")
 
         h.filename = h.unicode_filename
 
@@ -537,7 +550,7 @@ class RarFile:
 
     # put file compressed data into temporary .rar archive, and run
     # unrar on that, thus avoiding unrar going over whole archive
-    def _extract_hack(self, inf):
+    def _extract_hack(self, inf, psw = None):
         BSIZE = 32*1024
 
         size = inf.compress_size + inf.header_size
@@ -546,7 +559,6 @@ class RarFile:
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
         tmpf = os.fdopen(tmpfd, "wb")
-        
         try:
             # create main header: crc, type, flags, size, res1, res2
             mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
@@ -562,21 +574,21 @@ class RarFile:
                 size -= len(buf)
             tmpf.close()
 
-            buf = self._extract_unrar(tmpname, inf)
+            buf = self._extract_unrar(tmpname, inf, psw)
             return buf
         finally:
             os.unlink(tmpname)
 
     # extract using unrar
-    def _extract_unrar(self, rarfile, inf):
+    def _extract_unrar(self, rarfile, inf, psw = None):
         fn = inf.filename
 
         # unrar wants native separator
         fn = fn.replace("\\", os.sep)
 
         cmd = list(_extract_cmd)
-        if self._password:
-            cmd.append("-p" + self._password)
+        if psw is not None:
+            cmd.append("-p" + psw)
         cmd.append(rarfile)
         cmd.append(fn)
 
@@ -596,6 +608,29 @@ class RarFile:
         if ret != 0:
             raise BadRarFile("Error while unpacking file")
         return data
+
+    def _read_comment(self):
+        if not _extract_comment:
+            return
+        tmpfd, tmpname = mkstemp(suffix='.txt')
+        try:
+            cmd = list(_extract_comment)
+            cmd.append(self.rarfile)
+            cmd.append(tmpname)
+            try:
+                p = Popen(cmd)
+                cmt = None
+                if p.wait() == 0:
+                    cmt = os.fdopen(tmpfd, 'rb').read()
+                    try:
+                        self.comment = cmt.decode('utf8')
+                    except UnicodeError:
+                        self.comment = cmt.decode(self._charset, 'replace')
+            except (OSError, IOError):
+                pass
+        finally:
+            os.unlink(tmpname)
+
 
 class _UnicodeFilename:
     def __init__(self, name, encdata):

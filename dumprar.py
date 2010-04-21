@@ -1,8 +1,11 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
-import sys, os
-from array import array
+"""Dump archive contents, test extraction."""
+
+import sys
 import rarfile as rf
+
+usage = "dumprar [-v][-pPSW] [ARC1 ARC2 ...] [@ARCLIST]"
 
 os_list = ['DOS', 'OS2', 'WIN', 'UNIX', 'MACOS', 'BEOS']
 
@@ -63,7 +66,6 @@ file_parms = ("D64", "D128", "D256", "D512",
 def render_flags(flags, bit_list):
     res = []
     for bit in bit_list:
-        #val = 1 << bit[0]
         if flags & bit[0]:
             res.append(bit[1])
     return ",".join(res)
@@ -127,18 +129,72 @@ def show_item(h):
     else:
         print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
 
-try:
-    for fn in sys.argv[1:]:
-        print("Rar: %s" % fn)
-        f = rf.RarFile(fn, info_callback = show_item, charset="iso-8859-1")
-        f.printdir()
-        print(f.namelist())
-        for n in f.namelist():
-            inf = f.getinfo(n)
-            if inf.isdir():
-                continue
-            dat = f.read(n)
-            print(n, len(dat))
-except IOError:
-    pass
+cf_show_comment = 0
+cf_verbose = 0
+cf_charset = None
+
+def test(fn, psw):
+    print("Archive: %s" % fn)
+    cb = None
+    if cf_verbose > 1:
+        cb = show_item
+    r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
+    if r.needs_password():
+        if psw:
+            r.setpassword(psw)
+        else:
+            print("\n *** %s requires password ***\n" % fn)
+            return
+    if r.comment and cf_show_comment:
+        for ln in r.comment.split('\n'):
+            print("    %s" % ln)
+    for n in r.namelist():
+        inf = r.getinfo(n)
+        if inf.isdir():
+            continue
+        if cf_verbose == 1:
+            show_item(inf)
+        if inf.file_size < 128*1024*1024:
+            try:
+                dat = r.read(n)
+            except (rf.BadRarFile, IOError):
+                print("\n *** %s has corrupt file: %s ***\n" % (fn, inf.filename))
+
+def main():
+    global cf_verbose, cf_show_comment, cf_charset
+    args = []
+    psw = None
+    noswitch = False
+    for a in sys.argv[1:]:
+        if a[0] == "@":
+            for ln in open(a[1:], 'r'):
+                fn = ln[:-1]
+                args.append(fn)
+        elif noswitch:
+            args.append(a)
+        elif a[0] != '-':
+            args.append(a)
+        elif a[1] == 'p':
+            psw = a[2:]
+        elif a == '--':
+            noswitch = True
+        elif a == '-h':
+            print(usage)
+            return
+        elif a == '-v':
+            cf_verbose += 1
+        elif a == '-c':
+            cf_show_comment = 1
+        elif a[1] == 'C':
+            cf_charset = a[2:]
+        else:
+            raise Exception("unknown switch: "+a)
+    if not args:
+        print(usage)
+    for fn in args:
+        test(fn, psw)
+
+    
+if __name__ == '__main__':
+    main()
 
