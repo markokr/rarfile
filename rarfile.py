@@ -45,6 +45,9 @@ if sys.hexversion < 0x3000000:
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 
+# default fallback charset
+DEFAULT_CHARSET = "windows-1252"
+
 # whether to speed up decompression by using tmp archive
 _use_extract_hack = 1
 
@@ -54,28 +57,9 @@ _extract_cmd = ('unrar', 'p', '-inul')
 # how to extract comment from archive, set to None to disable
 _extract_comment = ('rar', 'cw', '-y', '-inul', '-p-')
 
-class Error(Exception):
-    """Base class for rarfile errors."""
-class BadRarFile(Error):
-    """Incorrect data in archive."""
-class NotRarFile(Error):
-    """The file is not RAR archive."""
-class BadRarName(Error):
-    """Cannot guess multipart name components."""
-class NoRarEntry(Error):
-    """File not found in RAR"""
-class PasswordRequired(Error):
-    """File requires password"""
-
-DEFAULT_CHARSET = "windows-1252"
-
 #
 # rar constants
 #
-
-RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
-ZERO = bytes("\0", 'ascii')
-EMPTY = bytes("", 'ascii')
 
 # block types
 RAR_BLOCK_MARK          = 0x72 # r
@@ -139,9 +123,29 @@ RAR_OS_UNIX  = 3
 RAR_OS_MACOS = 4
 RAR_OS_BEOS  = 5
 
+# internal byte constants
+RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
+ZERO = bytes("\0", 'ascii')
+EMPTY = bytes("", 'ascii')
+
 #
 # Public interface
 #
+
+class Error(Exception):
+    """Base class for rarfile errors."""
+class BadRarFile(Error):
+    """Incorrect data in archive."""
+class NotRarFile(Error):
+    """The file is not RAR archive."""
+class BadRarName(Error):
+    """Cannot guess multipart name components."""
+class NoRarEntry(Error):
+    """File not found in RAR"""
+class PasswordRequired(Error):
+    """File requires password"""
+class NeedFirstVolume(Error):
+    """Need to start from first volume."""
 
 def is_rarfile(fn):
     '''Check quickly whether file is rar archive.'''
@@ -152,21 +156,19 @@ class RarInfo:
     '''An entry in rar archive.'''
 
     __slots__ = (
-        'compress_size',
-        'file_size',
-        'host_os',
-        'CRC',
-        'extract_version',
-        'compress_type',
-        'mode',
-        'flags',
-        'type',
-
-        # unicode string
-        'filename',
-
-        # tuple of (year, mon, day, hr, min, sec)
-        'date_time',
+        'compress_size',    # packed size
+        'file_size',        # unpacked size
+        'host_os',          # RAR_OS_*
+        'CRC',              # unsigned
+        'extract_version',  # eg: 20,29
+        'compress_type',    # '0'..'5'
+        'mode',             # host_os mode bits (dos/unix)
+        'type',             # only RAR_BLOCK_FILE is kept in infolist
+        'flags',            # RAR_FILE_* if type==RAR_BLOCK_FILE
+        'volume',           # volume nr, starting from 0
+        'filename',         # unicode string
+        'orig_filename',    # bytes
+        'date_time',        # tuple of (year, mon, day, hr, min, sec)
 
         # optional extended time fields
         # same format as date_time, but sec is float
@@ -179,7 +181,6 @@ class RarInfo:
         'unicode_filename',
 
         # RAR internals
-        'orig_filename',
         'name_size',
         'header_size',
         'header_crc',
@@ -188,7 +189,6 @@ class RarInfo:
         'header_data',
         'header_unknown',
         'header_offset',
-        'volume',
         'salt',
     )
 
@@ -212,11 +212,11 @@ class RarFile:
         info_callback: debug callback, gets to see all entries.
         """
         self.rarfile = rarfile
-        self._charset = charset or DEFAULT_CHARSET
         self.comment = None
+        self._charset = charset or DEFAULT_CHARSET
+        self._info_callback = info_callback
 
-        self.info_list = []
-        self.info_callback = info_callback
+        self._info_list = []
         self._gen_volname = self._gen_oldvol
         self._needs_password = False
         self._password = None
@@ -241,18 +241,18 @@ class RarFile:
     def namelist(self):
         '''Return list of filenames in rar'''
         res = []
-        for f in self.info_list:
+        for f in self._info_list:
             res.append(f.filename)
         return res
 
     def infolist(self):
         '''Return rar entries.'''
-        return self.info_list
+        return self._info_list
 
     def getinfo(self, fname):
         '''Return RarInfo for fname.'''
         fname2 = fname.replace("/", "\\")
-        for f in self.info_list:
+        for f in self._info_list:
             if fname == f.filename or fname2 == f.filename:
                 return f
 
@@ -280,13 +280,16 @@ class RarFile:
         else:
             res = self._extract_unrar(self.rarfile, inf, psw)
 
+        if len(res) != inf.file_size:
+            raise BadRarFile('Failed to extract enough data: got=%d, need=%d' % (len(res), inf.file_size))
+
         # python 2.x crc32() returns signed values
         crc = crc32(res)
         if crc < 0:
             crc += long(1) << 32
 
         if crc != inf.CRC:
-            raise BadRarFile('CRC check failed: (%08x != %08x)' % (crc, inf.CRC))
+            raise BadRarFile('CRC check failed: got=%08x, need=%08x' % (crc, inf.CRC))
 
         return res
 
@@ -296,7 +299,7 @@ class RarFile:
 
     def printdir(self):
         """Print archive file list to stdout."""
-        for f in self.info_list:
+        for f in self._info_list:
             print(f.filename)
 
     # store entry
@@ -305,13 +308,17 @@ class RarFile:
         if item.type == RAR_BLOCK_FILE:
             # use only first part
             if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
-                self.info_list.append(item)
+                self._info_list.append(item)
                 # remember if any items require password
                 if item.needs_password():
                     self._needs_password = True
+            elif len(self._info_list) > 0:
+                # final crc is in last block
+                old = self._info_list[-1]
+                old.CRC = item.CRC
 
-        if self.info_callback:
-            self.info_callback(item)
+        if self._info_callback:
+            self._info_callback(item)
 
     # read rar
     def _parse(self):
@@ -336,6 +343,9 @@ class RarFile:
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
+                if h.flags & RAR_MAIN_VOLUME:
+                    if not h.flags & RAR_MAIN_FIRSTVOLUME:
+                        raise NeedFirstVolume("Need to start from first volume")
                 if h.flags & RAR_MAIN_NEWNUMBERING:
                     self._gen_volname = self._gen_newvol
             elif h.type == RAR_BLOCK_ENDARC:
@@ -526,15 +536,17 @@ class RarFile:
         while 1:
             f = open(self._gen_volname(volume), "rb")
             if not cur:
-                f.seek(inf.header_offset)
+                f.seek(inf.header_offset, 0)
 
             while 1:
                 cur = self._parse_header(f)
+                if not cur:
+                    raise BadRarFile("Unexpected EOF")
                 if cur.type in (RAR_BLOCK_MARK, RAR_BLOCK_MAIN):
                     if cur.add_size:
                         f.seek(cur.add_size, 1)
                     continue
-                if cur.filename == inf.filename:
+                if cur.orig_filename == inf.orig_filename:
                     buf += f.read(cur.add_size)
                     break
 
@@ -574,23 +586,22 @@ class RarFile:
                 size -= len(buf)
             tmpf.close()
 
-            buf = self._extract_unrar(tmpname, inf, psw)
-            return buf
+            # not giving filename avoids encoding related problems
+            return self._extract_unrar(tmpname, None, psw)
         finally:
             os.unlink(tmpname)
 
     # extract using unrar
     def _extract_unrar(self, rarfile, inf, psw = None):
-        fn = inf.filename
-
-        # unrar wants native separator
-        fn = fn.replace("\\", os.sep)
-
         cmd = list(_extract_cmd)
         if psw is not None:
             cmd.append("-p" + psw)
         cmd.append(rarfile)
-        cmd.append(fn)
+
+        if inf:
+            fn = inf.filename
+            fn = fn.replace('\\', os.sep)
+            cmd.append(fn)
 
         # 3xPIPE seems unreliable, at least on osx
         try:
@@ -606,7 +617,7 @@ class RarFile:
         data, errmsg = p.communicate()
         ret = p.returncode
         if ret != 0:
-            raise BadRarFile("Error while unpacking file")
+            raise BadRarFile("Error while unpacking file: errcode=%d" % ret)
         return data
 
     def _read_comment(self):

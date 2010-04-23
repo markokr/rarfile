@@ -5,7 +5,19 @@
 import sys
 import rarfile as rf
 
-usage = "dumprar [-v][-pPSW] [ARC1 ARC2 ...] [@ARCLIST]"
+usage = """
+dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
+switches:
+  @file      read archive names from file
+  -pPSW      set password
+  -Ccharset  set fallback charset
+  -v         increase verbosity
+  -t         attemt to read all files
+  -x         write read files out
+  -c         show archive comment
+  -h         show usage
+  --         stop switch parsing
+""".strip()
 
 os_list = ['DOS', 'OS2', 'WIN', 'UNIX', 'MACOS', 'BEOS']
 
@@ -106,10 +118,10 @@ def show_item(h):
             s_os = os_list[h.host_os]
         else:
             s_os = "?"
-        print("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d" % (
+        print("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d vol=%d" % (
                 h.host_os, s_os,
                 h.extract_version, s_mode, h.compress_type,
-                h.compress_size, h.file_size))
+                h.compress_size, h.file_size, h.volume))
         ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
         print("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
         print("  name=%s" % h.filename)
@@ -132,46 +144,83 @@ def show_item(h):
 cf_show_comment = 0
 cf_verbose = 0
 cf_charset = None
+cf_extract = 0
+cf_test_read = 0
+
+def test_read(r, inf):
+    if inf.file_size >= 128*1024*1024:
+        return
+    try:
+        dat = r.read(inf.filename)
+        if cf_extract:
+            open(inf.filename, "wb").write(dat)
+    except rf.BadRarFile:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
+        print(" *** %s ***\n" % (msg,))
+        del tb
+    except IOError:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
+        print(" *** %s ***\n" % (msg,))
+        del tb
 
 def test(fn, psw):
     print("Archive: %s" % fn)
+
+    # check if rar
+    if not rf.is_rarfile(fn):
+        print(" --- %s is not a RAR file ---" % fn)
+        return
+
+    # open
     cb = None
     if cf_verbose > 1:
         cb = show_item
-    r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
+    try:
+        r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
+    except rf.NeedFirstVolume:
+        print(" --- %s is middle part of multi-vol archive ---" % fn)
+        return
+
+    # set password
     if r.needs_password():
         if psw:
             r.setpassword(psw)
         else:
-            print("\n *** %s requires password ***\n" % fn)
+            print(" --- %s requires password ---" % fn)
             return
+
+    # show comment
     if r.comment and cf_show_comment:
         for ln in r.comment.split('\n'):
             print("    %s" % ln)
+
+    # process
     for n in r.namelist():
         inf = r.getinfo(n)
         if inf.isdir():
             continue
         if cf_verbose == 1:
             show_item(inf)
-        if inf.file_size < 128*1024*1024:
-            try:
-                dat = r.read(n)
-            except (rf.BadRarFile, IOError):
-                print("\n *** %s has corrupt file: %s ***\n" % (fn, inf.filename))
+        if cf_test_read:
+            test_read(r, inf)
 
 def main():
     global cf_verbose, cf_show_comment, cf_charset
+    global cf_extract, cf_test_read
+
+    # parse args
     args = []
     psw = None
     noswitch = False
     for a in sys.argv[1:]:
-        if a[0] == "@":
+        if noswitch:
+            args.append(a)
+        elif a[0] == "@":
             for ln in open(a[1:], 'r'):
                 fn = ln[:-1]
                 args.append(fn)
-        elif noswitch:
-            args.append(a)
         elif a[0] != '-':
             args.append(a)
         elif a[1] == 'p':
@@ -185,12 +234,17 @@ def main():
             cf_verbose += 1
         elif a == '-c':
             cf_show_comment = 1
+        elif a == '-x':
+            cf_extract = 1
+        elif a == '-t':
+            cf_test_read = 1
         elif a[1] == 'C':
             cf_charset = a[2:]
         else:
             raise Exception("unknown switch: "+a)
     if not args:
         print(usage)
+
     for fn in args:
         test(fn, psw)
 
