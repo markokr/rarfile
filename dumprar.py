@@ -168,19 +168,25 @@ def test_read(r, inf):
 def test(fn, psw):
     print("Archive: %s" % fn)
 
-    # check if rar
-    if not rf.is_rarfile(fn):
-        print(" --- %s is not a RAR file ---" % fn)
-        return
-
-    # open
     cb = None
     if cf_verbose > 1:
         cb = show_item
+
     try:
+        # check if rar
+        if not rf.is_rarfile(fn):
+            print(" --- %s is not a RAR file ---" % fn)
+            return
+        # open
         r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
     except rf.NeedFirstVolume:
         print(" --- %s is middle part of multi-vol archive ---" % fn)
+        return
+    except IOError:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s problem reading file: ***" % (fn,))
+        print(" *** %s ***\n" % (msg,))
+        del tb
         return
 
     # set password
@@ -250,5 +256,8 @@ def main():
 
     
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
 
