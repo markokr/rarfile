@@ -23,20 +23,6 @@ from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE
 
-# see if compat bytearray() is needed
-try:
-    bytearray()
-except NameError:
-    import array
-    class bytearray:
-        def __init__(self, val = ''):
-            self.arr = array.array('B', val)
-            self.append = self.arr.append
-            self.__getitem__ = self.arr.__getitem__
-            self.__len__ = self.arr.__len__
-        def decode(self, *args):
-            return self.arr.tostring().decode(*args)
-
 # py2.6 has broken bytes()
 if sys.hexversion < 0x3000000:
     def bytes(foo, enc):
@@ -236,6 +222,7 @@ class RarFile:
         self._password = password
 
     def needs_password(self):
+        '''Returns True if any archive entries require password for extraction.'''
         return self._needs_password
 
     def namelist(self):
@@ -256,8 +243,12 @@ class RarFile:
             if fname == f.filename or fname2 == f.filename:
                 return f
 
-    def read(self, fname, psw = None):
-        '''Return decompressed data.'''
+    def open(self, fname, psw = None):
+        '''Return open file object, where the data can be read.
+        
+        The object has only .read() and .close() methods.
+        It does not perform any data size or crc checks.
+        '''
         inf = self.getinfo(fname)
         if not inf:
             raise NoRarEntry("No such file")
@@ -274,24 +265,37 @@ class RarFile:
         is_solid = self._main.flags & RAR_MAIN_SOLID
         uses_vols = self._main.flags & RAR_MAIN_VOLUME
         if inf.compress_type == 0x30 and psw is None:
-            res = self._extract_clear(inf)
+            return self._open_clear(inf)
         elif _use_extract_hack and not is_solid and not uses_vols:
-            res = self._extract_hack(inf, psw)
+            return self._open_hack(inf, psw)
         else:
-            res = self._extract_unrar(self.rarfile, inf, psw)
+            return self._open_unrar(self.rarfile, inf, psw)
 
-        if len(res) != inf.file_size:
-            raise BadRarFile('Failed to extract enough data: got=%d, need=%d' % (len(res), inf.file_size))
+    def read(self, fname, psw = None):
+        """Return uncompressed data for archive entry.
+
+        Data length and crc is checked, BadRarFile exception is throws
+        on inconsistency.
+        """
+        f = self.open(fname, psw)
+        data = f.read()
+        f.close()
+
+        # check data
+        inf = self.getinfo(fname)
+
+        if len(data) != inf.file_size:
+            raise BadRarFile('Failed to extract enough data: got=%d, need=%d' % (len(data), inf.file_size))
 
         # python 2.x crc32() returns signed values
-        crc = crc32(res)
+        crc = crc32(data)
         if crc < 0:
             crc += long(1) << 32
 
         if crc != inf.CRC:
             raise BadRarFile('CRC check failed: got=%08x, need=%08x' % (crc, inf.CRC))
 
-        return res
+        return data
 
     def close(self):
         """Release open resources."""
@@ -528,41 +532,12 @@ class RarFile:
             ext = ".s%02d" % (volume - 101)
         return base + ext
 
-    # read uncompressed file
-    def _extract_clear(self, inf):
-        volume = inf.volume
-        buf = EMPTY
-        cur = None
-        while 1:
-            f = open(self._gen_volname(volume), "rb")
-            if not cur:
-                f.seek(inf.header_offset, 0)
-
-            while 1:
-                cur = self._parse_header(f)
-                if not cur:
-                    raise BadRarFile("Unexpected EOF")
-                if cur.type in (RAR_BLOCK_MARK, RAR_BLOCK_MAIN):
-                    if cur.add_size:
-                        f.seek(cur.add_size, 1)
-                    continue
-                if cur.orig_filename == inf.orig_filename:
-                    buf += f.read(cur.add_size)
-                    break
-
-                raise BadRarFile("Did not found file entry")
-
-            # no more parts?
-            if (cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
-                break
-
-            volume += 1
-
-        return buf
+    def _open_clear(self, inf):
+        return ClearWrapper(self, inf)
 
     # put file compressed data into temporary .rar archive, and run
     # unrar on that, thus avoiding unrar going over whole archive
-    def _extract_hack(self, inf, psw = None):
+    def _open_hack(self, inf, psw = None):
         BSIZE = 32*1024
 
         size = inf.compress_size + inf.header_size
@@ -571,6 +546,7 @@ class RarFile:
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
         tmpf = os.fdopen(tmpfd, "wb")
+
         try:
             # create main header: crc, type, flags, size, res1, res2
             mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
@@ -585,14 +561,15 @@ class RarFile:
                 tmpf.write(buf)
                 size -= len(buf)
             tmpf.close()
-
-            # not giving filename avoids encoding related problems
-            return self._extract_unrar(tmpname, None, psw)
-        finally:
+        except:
             os.unlink(tmpname)
+            raise
+
+        # not giving filename avoids encoding related problems
+        return self._open_unrar(tmpname, None, psw, tmpname)
 
     # extract using unrar
-    def _extract_unrar(self, rarfile, inf, psw = None):
+    def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
         cmd = list(_extract_cmd)
         if psw is not None:
             cmd.append("-p" + psw)
@@ -614,11 +591,7 @@ class RarFile:
 
         # run unrar
         p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err)
-        data, errmsg = p.communicate()
-        ret = p.returncode
-        if ret != 0:
-            raise BadRarFile("Error while unpacking file: errcode=%d" % ret)
-        return data
+        return PipeWrapper(p, tmpfile)
 
     def _read_comment(self):
         if not _extract_comment:
@@ -642,7 +615,7 @@ class RarFile:
         finally:
             os.unlink(tmpname)
 
-
+# handle unicode filename compression
 class _UnicodeFilename:
     def __init__(self, name, encdata):
         self.std_name = bytearray(name)
@@ -689,4 +662,120 @@ class _UnicodeFilename:
                     for i in range(n + 2):
                         self.put(self.std_byte(), 0)
         return self.buf.decode("utf-16le", "replace")
+
+
+# read data from pipe, handle tempfile cleanup
+class PipeWrapper:
+    def __init__(self, proc, tempfile=None):
+        self.proc = proc
+        self.tempfile = tempfile
+        self.fd = proc.stdout
+
+    def read(self, cnt = None):
+        if not self.fd:
+            return EMPTY
+        data = self.fd.read(cnt)
+        if not data and cnt != 0:
+            self.close()
+        return data
+
+    def close(self):
+        if self.fd:
+            self.fd.close()
+            self.fd = None
+        if self.tempfile:
+            os.unlink(self.tempfile)
+            self.tempfile = None
+
+    def __del__(self):
+        self.close()
+
+
+# Read uncompressed data directly from archive
+class ClearWrapper:
+    def __init__(self, rf, inf):
+        self.rf = rf
+        self.inf = inf
+        self.vol = inf.volume
+        self.got = 0
+        self.size = inf.file_size
+
+        self.fd = open(self.rf._gen_volname(self.vol), "rb")
+        self.fd.seek(self.inf.header_offset, 0)
+        self.cur = self.rf._parse_header(self.fd)
+        self.cur_avail = self.cur.add_size
+
+    def read(self, cnt=None):
+        # generic cnt
+        avail = self.size - self.got
+        if cnt is None:
+            cnt = avail
+        elif cnt > avail or cnt < 0:
+            cnt = avail
+        if cnt == 0:
+            return EMPTY
+
+        buf = EMPTY
+        while self.got < self.size:
+            # next vol needed?
+            if self.cur_avail == 0:
+                if not self._open_next():
+                    break
+
+            # fd is in read pos, do the read
+            if cnt > self.cur_avail:
+                data = self.fd.read(self.cur_avail)
+            else:
+                data = self.fd.read(cnt)
+            if not data:
+                break
+
+            # got some data
+            self.got += len(data)
+            self.cur_avail -= len(data)
+            buf += data
+
+        return buf
+
+    def _open_next(self):
+        if (self.cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
+            return False
+        self.vol += 1
+        fd = open(self.rf._gen_volname(self.vol), "rb")
+        self.fd = fd
+        while 1:
+            cur = self.rf._parse_header(fd)
+            if not cur:
+                raise BadRarFile("Unexpected EOF")
+            if cur.type in (RAR_BLOCK_MARK, RAR_BLOCK_MAIN):
+                if cur.add_size:
+                    fd.seek(cur.add_size, 1)
+                continue
+            if cur.orig_filename != self.inf.orig_filename:
+                raise BadRarFile("Did not found file entry")
+            self.cur = cur
+            self.cur_avail = cur.add_size
+            return True
+
+    def close(self):
+        if self.fd:
+            self.fd.close()
+            self.fd = None
+
+    def __del__(self):
+        self.close()
+
+# see if compat bytearray() is needed
+try:
+    bytearray()
+except NameError:
+    import array
+    class bytearray:
+        def __init__(self, val = ''):
+            self.arr = array.array('B', val)
+            self.append = self.arr.append
+            self.__getitem__ = self.arr.__getitem__
+            self.__len__ = self.arr.__len__
+        def decode(self, *args):
+            return self.arr.tostring().decode(*args)
 
