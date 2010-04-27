@@ -4,6 +4,7 @@
 
 import sys
 import rarfile as rf
+from binascii import crc32
 
 usage = """
 dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
@@ -147,13 +148,34 @@ cf_charset = None
 cf_extract = 0
 cf_test_read = 0
 
+def test_read_long(r, inf):
+    f = r.open(inf.filename)
+    total = 0
+    crc = 0
+    while 1:
+        data = f.read(8192)
+        if not data:
+            break
+        total += len(data)
+        crc = crc32(data, crc)
+    f.close()
+    if crc < 0:
+        crc += long(1) << 32
+    if total != inf.file_size:
+        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
+        print(" *** short read: got=%d, need=%d ***\n" % (total, inf.file_size))
+    elif crc != inf.CRC:
+        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
+        print(" *** bad crc: got=%d, need=%d ***\n" % (crc, inf.CRC))
+
 def test_read(r, inf):
-    if inf.file_size >= 128*1024*1024:
-        return
     try:
-        dat = r.read(inf.filename)
-        if cf_extract:
-            open(inf.filename, "wb").write(dat)
+        if inf.file_size > 2*1024*1024:
+            test_read_long(r, inf)
+        else:
+            dat = r.read(inf.filename)
+            if cf_extract:
+                open(inf.filename, "wb").write(dat)
     except rf.BadRarFile:
         exc, msg, tb = sys.exc_info()
         print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
