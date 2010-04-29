@@ -94,12 +94,15 @@ CRC::
 3. History
 ----------
 
-Version 2.0 (2010-xx-xx)
+Version 2.0 (2010-04-29)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Features::
  * Python 3 support.  Still works with 2.x.
  * Parses extended time fields. (.mtime, .ctime, .atime)
+ * .open() method.  This makes possible to process large
+   entries that do not fit into memory.
+ * Supports password-protected archives.
 
 Cleanups::
  * Uses subprocess module to launch unrar.
