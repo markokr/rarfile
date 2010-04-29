@@ -674,9 +674,12 @@ class PipeWrapper:
     def read(self, cnt = None):
         if not self.fd:
             return EMPTY
-        data = self.fd.read(cnt)
-        if not data and cnt != 0:
-            self.close()
+        if cnt is None:
+            data = self.fd.read()
+        else:
+            data = self.fd.read(cnt)
+            if not data and cnt != 0:
+                self.close()
         return data
 
     def close(self):
