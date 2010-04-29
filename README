@@ -13,17 +13,14 @@ Features:
 - Supports RAR 3.x archives.
 - Supports multi volume archives.
 - Supports Unicode filenames.
+- Supports password-protected archives.
+- Supports archive comments.
 - Handles non-compressed files without outside help.
 - For compressed files runs `unrar` utility.
 
 Missing features:
 
-- Password-protected archives.
-- Comment handling. (archive, file)
 - Decompression through unrarlib and/or unrar.dll.
-- extract_with_hack on multi-volume archives
-
-Personally, I have no need for those, so ...
 
 
 2.  Module contents
@@ -50,12 +47,20 @@ infolist()::
 getinfo(filename)::
   Returns a RarInfo instance for specific file.
 
+open(filename)::
+  Returns file-like handle from which the data can be read.
+
 read(filename)::
   Read file contents.
 
 close(filename)::
   Free open resources.  Currently it does nothing.
 
+setpassword(psw)::
+  Sets password to use on extracting.
+
+needs_password()::
+  Returns True if any archive entry requires password.
 
 2.3.  class RarInfo
 ~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +108,7 @@ Features::
  * .open() method.  This makes possible to process large
    entries that do not fit into memory.
  * Supports password-protected archives.
+ * Supports archive comments.
 
 Cleanups::
  * Uses subprocess module to launch unrar.
