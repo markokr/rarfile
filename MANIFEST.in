@@ -1,1 +1,1 @@
-include README Makefile MANIFEST.in LICENSE
+include README Makefile MANIFEST.in LICENSE dumprar.py
