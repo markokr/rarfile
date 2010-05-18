@@ -189,7 +189,7 @@ class RarInfo:
 
 class RarFile:
     '''Rar archive handling.'''
-    def __init__(self, rarfile, mode="r", charset=None, info_callback=None):
+    def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
         """Open and parse a RAR archive.
         
         rarfile: archive file name
@@ -206,6 +206,7 @@ class RarFile:
         self._gen_volname = self._gen_oldvol
         self._needs_password = False
         self._password = None
+        self._crc_check = crc_check
 
         self._main = None
 
@@ -274,27 +275,12 @@ class RarFile:
     def read(self, fname, psw = None):
         """Return uncompressed data for archive entry.
 
-        Data length and crc is checked, BadRarFile exception is throws
-        on inconsistency.
-        """
+        Data length and crc is checked, BadRarFile exception is thrown
+        on inconsistency."""
+
         f = self.open(fname, psw)
         data = f.read()
         f.close()
-
-        # check data
-        inf = self.getinfo(fname)
-
-        if len(data) != inf.file_size:
-            raise BadRarFile('Failed to extract enough data: got=%d, need=%d' % (len(data), inf.file_size))
-
-        # python 2.x crc32() returns signed values
-        crc = crc32(data)
-        if crc < 0:
-            crc += long(1) << 32
-
-        if crc != inf.CRC:
-            raise BadRarFile('CRC check failed: got=%08x, need=%08x' % (crc, inf.CRC))
-
         return data
 
     def close(self):
@@ -330,7 +316,7 @@ class RarFile:
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
             raise NotRarFile("Not a Rar archive")
-        
+
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
         while 1:
@@ -506,7 +492,7 @@ class RarFile:
                 sec += 1
             dostime = dostime[:5] + (sec,)
         return dostime, pos
-        
+
     # new-style volume name
     def _gen_newvol(self, volume):
         # allow % in filenames
@@ -533,7 +519,7 @@ class RarFile:
         return base + ext
 
     def _open_clear(self, inf):
-        return ClearWrapper(self, inf)
+        return DirectReader(self, inf)
 
     # put file compressed data into temporary .rar archive, and run
     # unrar on that, thus avoiding unrar going over whole archive
@@ -565,8 +551,7 @@ class RarFile:
             os.unlink(tmpname)
             raise
 
-        # not giving filename avoids encoding related problems
-        return self._open_unrar(tmpname, None, psw, tmpname)
+        return self._open_unrar(tmpname, inf, psw, tmpname)
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
@@ -575,7 +560,8 @@ class RarFile:
             cmd.append("-p" + psw)
         cmd.append(rarfile)
 
-        if inf:
+        # not giving filename avoids encoding related problems
+        if not tmpfile:
             fn = inf.filename
             fn = fn.replace('\\', os.sep)
             cmd.append(fn)
@@ -591,7 +577,7 @@ class RarFile:
 
         # run unrar
         p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err)
-        return PipeWrapper(p, tmpfile)
+        return PipeReader(self, inf, p, tmpfile)
 
     def _read_comment(self):
         if not _extract_comment:
@@ -664,25 +650,62 @@ class _UnicodeFilename:
         return self.buf.decode("utf-16le", "replace")
 
 
-# read data from pipe, handle tempfile cleanup
-class PipeWrapper:
-    def __init__(self, proc, tempfile=None):
-        self.proc = proc
+class BaseReader:
+    """Base class for 'file-like' object that RarFile.open() returns.
+
+    Provides public methods and common crc checking.
+    """
+
+    def __init__(self, rf, inf, tempfile = None):
+        self.rf = rf
+        self.inf = inf
+        self.crc_check = rf._crc_check
+        self.CRC = 0
+        self.remain = inf.file_size
         self.tempfile = tempfile
-        self.fd = proc.stdout
+        self.fd = None
 
     def read(self, cnt = None):
-        if not self.fd:
-            return EMPTY
+        """Read all or specified amount of data from archive entry."""
+
+        # sanitize cnt
         if cnt is None:
-            data = self.fd.read()
-        else:
-            data = self.fd.read(cnt)
-            if not data and cnt != 0:
-                self.close()
+            cnt = self.remain
+        elif cnt > self.remain:
+            cnt = self.remain
+        if cnt <= 0:
+            return EMPTY
+
+        # actual read
+        data = self._read(cnt)
+        if data:
+            self.CRC = crc32(data, self.CRC)
+            self.remain -= len(data)
+
+        # done?
+        if not data or self.remain == 0:
+            self.close()
+            self._check()
         return data
 
+    def _check(self):
+        """Check final CRC."""
+        if not self.crc_check:
+            return
+        if self.remain != 0:
+            raise BadRarFile("Failed the read enough data")
+        crc = self.CRC
+        if crc < 0:
+            crc += (long(1) << 32)
+        if crc != self.inf.CRC:
+            raise BadRarFile("Corrupt file - CRC check failed")
+
+    def _read(self, cnt):
+        """Actual read that gets sanitized cnt."""
+
     def close(self):
+        """Close open resources."""
+
         if self.fd:
             self.fd.close()
             self.fd = None
@@ -691,16 +714,28 @@ class PipeWrapper:
             self.tempfile = None
 
     def __del__(self):
+        """Hook delete to make sure tempfile is removed."""
         self.close()
 
 
-# Read uncompressed data directly from archive
-class ClearWrapper:
+class PipeReader(BaseReader):
+    """Read data from pipe, handle tempfile cleanup."""
+
+    def __init__(self, rf, inf, proc, tempfile=None):
+        BaseReader.__init__(self, rf, inf, tempfile)
+        self.fd = proc.stdout
+
+    def _read(self, cnt):
+        """Read from pipe."""
+        return self.fd.read(cnt)
+
+
+class DirectReader(BaseReader):
+    """Read uncompressed data directly from archive."""
+
     def __init__(self, rf, inf):
-        self.rf = rf
-        self.inf = inf
+        BaseReader.__init__(self, rf, inf)
         self.vol = inf.volume
-        self.got = 0
         self.size = inf.file_size
 
         self.fd = open(self.rf._gen_volname(self.vol), "rb")
@@ -708,18 +743,11 @@ class ClearWrapper:
         self.cur = self.rf._parse_header(self.fd)
         self.cur_avail = self.cur.add_size
 
-    def read(self, cnt=None):
-        # generic cnt
-        avail = self.size - self.got
-        if cnt is None:
-            cnt = avail
-        elif cnt > avail or cnt < 0:
-            cnt = avail
-        if cnt == 0:
-            return EMPTY
+    def _read(self, cnt):
+        """Read from potentially multi-volume archive."""
 
         buf = EMPTY
-        while self.got < self.size:
+        while cnt > 0:
             # next vol needed?
             if self.cur_avail == 0:
                 if not self._open_next():
@@ -734,18 +762,25 @@ class ClearWrapper:
                 break
 
             # got some data
-            self.got += len(data)
+            cnt -= len(data)
             self.cur_avail -= len(data)
             buf += data
 
         return buf
 
     def _open_next(self):
+        """Proceed to next volume."""
+
+        # is the file split over archives?
         if (self.cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
             return False
+
+        # open next part
         self.vol += 1
         fd = open(self.rf._gen_volname(self.vol), "rb")
         self.fd = fd
+
+        # loop until first file header
         while 1:
             cur = self.rf._parse_header(fd)
             if not cur:
@@ -759,14 +794,6 @@ class ClearWrapper:
             self.cur = cur
             self.cur_avail = cur.add_size
             return True
-
-    def close(self):
-        if self.fd:
-            self.fd.close()
-            self.fd = None
-
-    def __del__(self):
-        self.close()
 
 # see if compat bytearray() is needed
 try:
