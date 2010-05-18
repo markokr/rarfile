@@ -15,6 +15,8 @@ clean:
 
 docs:
 	asciidoc README
+	rm -f html/*
+	epydoc --no-private --no-sourcecode -n rarfile --no-frames -v rarfile
 
 lint:
 	pylint -e rarfile.py

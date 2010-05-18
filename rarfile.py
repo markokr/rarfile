@@ -15,7 +15,25 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 """RAR archive reader.
+
+This is Python module for Rar archive reading.  The interface
+is made as `zipfile` like as possible.
+
+The archive structure parsing and uncompressed files
+are handled in pure Python.  Decompression is done
+via 'unrar' command line utility.
+
+Features:
+
+ - Works with both Python 2.x and 3.x
+ - Supports RAR 3.x archives.
+ - Supports multi volume archives.
+ - Supports Unicode filenames.
+ - Supports password-protected archives.
+ - Supports archive comments.
 """
+
+__version__ = '2.1'
 
 import sys, os, re
 from struct import pack, unpack
@@ -34,14 +52,21 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 # default fallback charset
 DEFAULT_CHARSET = "windows-1252"
 
+# 'unrar', 'rar' or full path to either one
+EXTRACT_TOOL = "unrar"
+
+# Must be 'rar', because 'unrar' does not have 'cw' command.
+# Can be full path, or None to disable comment extraction
+COMMENT_TOOL = "rar"
+
+# command line args to use for extracting.  (rar, file) will be added.
+EXTRACT_ARGS = ('p', '-inul')
+
+# how to extract comment from archive.  (rar, tmpfile) will be added.
+COMMENT_ARGS = ('cw', '-y', '-inul', '-p-')
+
 # whether to speed up decompression by using tmp archive
-_use_extract_hack = 1
-
-# command line to use for extracting (arch, file) will be added
-_extract_cmd = ('unrar', 'p', '-inul')
-
-# how to extract comment from archive, set to None to disable
-_extract_comment = ('rar', 'cw', '-y', '-inul', '-p-')
+USE_EXTRACT_HACK = 1
 
 #
 # rar constants
@@ -139,22 +164,61 @@ def is_rarfile(fn):
     return buf == RAR_ID
 
 class RarInfo:
-    '''An entry in rar archive.'''
+    '''An entry in rar archive.
+    
+    @ivar filename:
+        File name with relative path.
+        Note that Rar uses "\" as directory separator.
+        Always unicode string.
+    @ivar date_time:
+        Modification time, tuple of (year, month, day, hour, minute, second).
+    @ivar file_size:
+        Uncompressed size.
+    @ivar compress_size:
+        Compressed size.
+    @ivar compress_type:
+        Compression method: 0x30 - 0x35.
+    @ivar extract_version:
+        Minimal Rar version needed for decompressing.
+    @ivar host_os:
+        Host OS type, one of RAR_OS_* constants.
+    @ivar mode:
+        File attributes. May be either dos-style or unix-style, depending on host_os.
+    @ivar CRC:
+        CRC-32 of uncompressed file, unsigned int.
+    @ivar volume:
+        Volume nr, starting from 0.
+    @ivar type:
+        One of RAR_BLOCK_* types.  Only entries with type==RAR_BLOCK_FILE are shown in .infolist().
+    @ivar flags:
+        For files, RAR_FILE_* bits.
+    @ivar orig_filename:
+        Byte string of non-unicode representation.
+
+    @ivar mtime:
+        Optional time field: Modification time, tuple of (year, month, day, hour, minute, second).
+    @ivar ctime:
+        Optional time field: ctime time.
+    @ivar atime:
+        Optional time field: access time.
+    @ivar arctime:
+        Optional time field: archival time.
+    '''
 
     __slots__ = (
-        'compress_size',    # packed size
-        'file_size',        # unpacked size
-        'host_os',          # RAR_OS_*
-        'CRC',              # unsigned
-        'extract_version',  # eg: 20,29
-        'compress_type',    # '0'..'5'
-        'mode',             # host_os mode bits (dos/unix)
-        'type',             # only RAR_BLOCK_FILE is kept in infolist
-        'flags',            # RAR_FILE_* if type==RAR_BLOCK_FILE
-        'volume',           # volume nr, starting from 0
-        'filename',         # unicode string
-        'orig_filename',    # bytes
-        'date_time',        # tuple of (year, mon, day, hr, min, sec)
+        'compress_size',
+        'file_size',
+        'host_os',
+        'CRC',
+        'extract_version',
+        'compress_type',
+        'mode',
+        'type',
+        'flags',
+        'volume',
+        'filename',
+        'orig_filename',
+        'date_time',
 
         # optional extended time fields
         # same format as date_time, but sec is float
@@ -192,10 +256,11 @@ class RarFile:
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
         """Open and parse a RAR archive.
         
-        rarfile: archive file name
-        mode: only 'r' is supported.
-        charset: fallback charset to use, if filenames are not already Unicode-enabled.
-        info_callback: debug callback, gets to see all entries.
+        @param rarfile: archive file name
+        @param mode: only 'r' is supported.
+        @param charset: fallback charset to use, if filenames are not already Unicode-enabled.
+        @param info_callback: debug callback, gets to see all archive entries.
+        @param crc_check: set to False to disable CRC checks
         """
         self.rarfile = rarfile
         self.comment = None
@@ -227,18 +292,18 @@ class RarFile:
         return self._needs_password
 
     def namelist(self):
-        '''Return list of filenames in rar'''
+        '''Return list of filenames in archive.'''
         res = []
         for f in self._info_list:
             res.append(f.filename)
         return res
 
     def infolist(self):
-        '''Return rar entries.'''
+        '''Return RarInfo objects for all files/directories in archive.'''
         return self._info_list
 
     def getinfo(self, fname):
-        '''Return RarInfo for fname.'''
+        '''Return RarInfo for file.'''
         fname2 = fname.replace("/", "\\")
         for f in self._info_list:
             if fname == f.filename or fname2 == f.filename:
@@ -248,7 +313,6 @@ class RarFile:
         '''Return open file object, where the data can be read.
         
         The object has only .read() and .close() methods.
-        It does not perform any data size or crc checks.
         '''
         inf = self.getinfo(fname)
         if not inf:
@@ -267,16 +331,16 @@ class RarFile:
         uses_vols = self._main.flags & RAR_MAIN_VOLUME
         if inf.compress_type == 0x30 and psw is None:
             return self._open_clear(inf)
-        elif _use_extract_hack and not is_solid and not uses_vols:
+        elif USE_EXTRACT_HACK and not is_solid and not uses_vols:
             return self._open_hack(inf, psw)
         else:
             return self._open_unrar(self.rarfile, inf, psw)
 
     def read(self, fname, psw = None):
         """Return uncompressed data for archive entry.
-
-        Data length and crc is checked, BadRarFile exception is thrown
-        on inconsistency."""
+        
+        For longer files using .open() may be better idea.
+        """
 
         f = self.open(fname, psw)
         data = f.read()
@@ -555,7 +619,7 @@ class RarFile:
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
-        cmd = list(_extract_cmd)
+        cmd = [EXTRACT_TOOL] + list(EXTRACT_ARGS)
         if psw is not None:
             cmd.append("-p" + psw)
         cmd.append(rarfile)
@@ -580,11 +644,11 @@ class RarFile:
         return PipeReader(self, inf, p, tmpfile)
 
     def _read_comment(self):
-        if not _extract_comment:
+        if not COMMENT_TOOL:
             return
         tmpfd, tmpname = mkstemp(suffix='.txt')
         try:
-            cmd = list(_extract_comment)
+            cmd = [COMMENT_TOOL] + list(COMMENT_ARGS)
             cmd.append(self.rarfile)
             cmd.append(tmpname)
             try:

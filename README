@@ -18,83 +18,11 @@ Features:
 - Handles non-compressed files without outside help.
 - For compressed files runs `unrar` utility.
 
-Missing features:
 
-- Decompression through unrarlib and/or unrar.dll.
+2. Documentation
+----------------
 
-
-2.  Module contents
---------------------
-
-2.1.  is_rarfile(file)
-~~~~~~~~~~~~~~~~~~~~~~
-
-Returns true is `file` is Rar archive.
-
-
-2.2.  class RarFile
-~~~~~~~~~~~~~~~~~~~~
-
-`RarFile(archive)`::
-  Creates new RarFile instance and reads Rar directory from archive.
-
-namelist()::
-  Return list of filenames.
-
-infolist()::
-  Return list of RarInfo items.
-
-getinfo(filename)::
-  Returns a RarInfo instance for specific file.
-
-open(filename)::
-  Returns file-like handle from which the data can be read.
-
-read(filename)::
-  Read file contents.
-
-close(filename)::
-  Free open resources.  Currently it does nothing.
-
-setpassword(psw)::
-  Sets password to use on extracting.
-
-needs_password()::
-  Returns True if any archive entry requires password.
-
-2.3.  class RarInfo
-~~~~~~~~~~~~~~~~~~~~
-
-filename::
-	File name with relative path.
-	Note that Rar uses "\" as directory separator.
-	Always unicode string.
-
-host_os::
-	Host OS type.
-
-file_size::
-	Uncompressed size.
-
-date_time::
-	Tuple of year, month, day, hour, minute, second.
-
-compress_size::
-	Compressed size.
-
-compress_type::
-	Compression method: 0x30 - 0x35.
-
-extract_version::
-	Minimal Rar version needed for decompressing.
-
-mode::
-	File attributes. May be either dos-style or unix-style,
-	depending on host_os.
-
-CRC::
-	CRC-32 of uncompressed file
-
+http://rarfile.berlios.de/doc/[]
 
 3. History
 ----------
