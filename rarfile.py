@@ -573,13 +573,22 @@ class RarFile:
 
     # old-style volume naming
     def _gen_oldvol(self, volume):
-        if volume == 0: return self.rarfile
+        if volume == 0:
+            return self.rarfile
+        # although 'rar' can generate them, it's unlikely they work well
+        if volume > 900:
+            raise BadRarName("Cannot construct volume name")
+
+        # strip extension
         i = self.rarfile.rfind(".")
-        base = self.rarfile[:i]
-        if volume <= 100:
-            ext = ".r%02d" % (volume - 1)
+        if i >= 0:
+            base = self.rarfile[:i]
         else:
-            ext = ".s%02d" % (volume - 101)
+            base = self.rarfile
+
+        # generate new extension
+        d, m = divmod(volume - 1, 100)
+        ext = '.%c%02d' % (ord('r') + d, m)
         return base + ext
 
     def _open_clear(self, inf):
