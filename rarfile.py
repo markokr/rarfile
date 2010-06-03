@@ -84,7 +84,7 @@ RAR_BLOCK_OLD_AUTH      = 0x79 # y
 RAR_BLOCK_SUB           = 0x7a # z
 RAR_BLOCK_ENDARC        = 0x7b # {
 
-# main header flags
+# flags for RAR_BLOCK_MAIN
 RAR_MAIN_VOLUME         = 0x0001
 RAR_MAIN_COMMENT        = 0x0002
 RAR_MAIN_LOCK           = 0x0004
@@ -96,7 +96,7 @@ RAR_MAIN_PASSWORD       = 0x0080
 RAR_MAIN_FIRSTVOLUME    = 0x0100
 RAR_MAIN_ENCRYPTVER     = 0x0200
 
-# file header flags
+# flags for RAR_BLOCK_FILE
 RAR_FILE_SPLIT_BEFORE   = 0x0001
 RAR_FILE_SPLIT_AFTER    = 0x0002
 RAR_FILE_PASSWORD       = 0x0004
@@ -118,6 +118,7 @@ RAR_FILE_VERSION        = 0x0800
 RAR_FILE_EXTTIME        = 0x1000
 RAR_FILE_EXTFLAGS       = 0x2000
 
+# flags for RAR_BLOCK_ENDARC
 RAR_ENDARC_NEXT_VOLUME  = 0x0001
 RAR_ENDARC_DATACRC      = 0x0002
 RAR_ENDARC_REVSPACE     = 0x0004
@@ -837,7 +838,10 @@ class DirectReader(BaseReader):
             # got some data
             cnt -= len(data)
             self.cur_avail -= len(data)
-            buf += data
+            if buf:
+                buf += data
+            else:
+                buf = data
 
         return buf
 
