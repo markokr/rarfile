@@ -314,17 +314,23 @@ class RarFile:
         '''Return open file object, where the data can be read.
         
         The object has only .read() and .close() methods.
+
+        @param fname: file name or RarInfo instance.
+        @param psw: password to use for extracting.
         '''
-        inf = self.getinfo(fname)
-        if not inf:
-            raise NoRarEntry("No such file")
+        if isinstance(fname, RarInfo):
+            inf = fname
+        else:
+            inf = self.getinfo(fname)
+            if not inf:
+                raise NoRarEntry("No such file")
 
         if inf.isdir():
             raise TypeError("Directory does not have any data")
         if inf.needs_password():
             psw = psw or self._password
             if psw is None:
-                raise PasswordRequired("File %s requires password" % fname)
+                raise PasswordRequired("File %s requires password" % inf.filename)
         else:
             psw = None
 
@@ -341,6 +347,9 @@ class RarFile:
         """Return uncompressed data for archive entry.
         
         For longer files using .open() may be better idea.
+
+        @param fname: filename or RarInfo instance
+        @param psw: password to use for extracting.
         """
 
         f = self.open(fname, psw)
