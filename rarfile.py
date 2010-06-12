@@ -305,10 +305,15 @@ class RarFile:
 
     def getinfo(self, fname):
         '''Return RarInfo for file.'''
+
+        if isinstance(fname, RarInfo):
+            return fname
+
         fname2 = fname.replace("/", "\\")
         for f in self._info_list:
             if fname == f.filename or fname2 == f.filename:
                 return f
+        raise NoRarEntry("No such file")
 
     def open(self, fname, psw = None):
         '''Return open file object, where the data can be read.
@@ -318,15 +323,13 @@ class RarFile:
         @param fname: file name or RarInfo instance.
         @param psw: password to use for extracting.
         '''
-        if isinstance(fname, RarInfo):
-            inf = fname
-        else:
-            inf = self.getinfo(fname)
-            if not inf:
-                raise NoRarEntry("No such file")
 
+        # entry lookup
+        inf = self.getinfo(fname)
         if inf.isdir():
             raise TypeError("Directory does not have any data")
+
+        # check password
         if inf.needs_password():
             psw = psw or self._password
             if psw is None:
