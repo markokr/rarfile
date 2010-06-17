@@ -315,14 +315,18 @@ class RarFile:
                 return f
         raise NoRarEntry("No such file")
 
-    def open(self, fname, psw = None):
+    def open(self, fname, mode = 'r', psw = None):
         '''Return open file object, where the data can be read.
         
         The object has only .read() and .close() methods.
 
         @param fname: file name or RarInfo instance.
+        @param mode: must be 'r'
         @param psw: password to use for extracting.
         '''
+
+        if mode != 'r':
+            raise NotImplementedError("RarFile.open() supports only mode=r")
 
         # entry lookup
         inf = self.getinfo(fname)
@@ -355,7 +359,7 @@ class RarFile:
         @param psw: password to use for extracting.
         """
 
-        f = self.open(fname, psw)
+        f = self.open(fname, 'r', psw)
         data = f.read()
         f.close()
         return data
