@@ -414,13 +414,17 @@ class RarFile:
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
-                if h.flags & RAR_MAIN_VOLUME:
-                    if not h.flags & RAR_MAIN_FIRSTVOLUME:
-                        raise NeedFirstVolume("Need to start from first volume")
                 if h.flags & RAR_MAIN_NEWNUMBERING:
                     self._gen_volname = self._gen_newvol
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
+            elif h.type == RAR_BLOCK_FILE:
+                # rar files < version 3 don't have RAR_ENDARC_NEXT_VOLUME
+                if h.flags & RAR_FILE_SPLIT_AFTER:
+                    more_vols = 1
+                # rar files < version 3 don't have RAR_MAIN_FIRSTVOLUME
+                if volume == 0 and h.flags & RAR_FILE_SPLIT_BEFORE:
+                    raise NeedFirstVolume("Need to start from first volume")
 
             # store it
             self._process_entry(h)
