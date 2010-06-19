@@ -333,6 +333,9 @@ class RarFile:
         if inf.isdir():
             raise TypeError("Directory does not have any data")
 
+        if inf.flags & RAR_FILE_SPLIT_BEFORE:
+            raise NeedFirstVolume("Partial file, please start from first volume")
+
         # check password
         if inf.needs_password():
             psw = psw or self._password
@@ -415,14 +418,18 @@ class RarFile:
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
                 if h.flags & RAR_MAIN_NEWNUMBERING:
+                    # RAR 2.x does not set FIRSTVOLUME,
+                    # so check it only if NEWNUMBERING is used
+                    if (h.flags & RAR_MAIN_FIRSTVOLUME) == 0:
+                        raise NeedFirstVolume("Need to start from first volume")
                     self._gen_volname = self._gen_newvol
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
             elif h.type == RAR_BLOCK_FILE:
-                # rar files < version 3 don't have RAR_ENDARC_NEXT_VOLUME
+                # RAR 2.x does not write RAR_BLOCK_ENDARC
                 if h.flags & RAR_FILE_SPLIT_AFTER:
                     more_vols = 1
-                # rar files < version 3 don't have RAR_MAIN_FIRSTVOLUME
+                # RAR 2.x does not set RAR_MAIN_FIRSTVOLUME
                 if volume == 0 and h.flags & RAR_FILE_SPLIT_BEFORE:
                     raise NeedFirstVolume("Need to start from first volume")
 
