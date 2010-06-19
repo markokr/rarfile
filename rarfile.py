@@ -403,13 +403,18 @@ class RarFile:
 
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
+        endarc = 0
         while 1:
-            h = self._parse_header(fd)
+            if endarc:
+                h = None    # don't read past ENDARC
+            else:
+                h = self._parse_header(fd)
             if not h:
                 if more_vols:
                     volume += 1
                     fd = open(self._gen_volname(volume), "rb")
                     more_vols = 0
+                    endarc = 0
                     if fd:
                         continue
                 break
@@ -425,6 +430,7 @@ class RarFile:
                     self._gen_volname = self._gen_newvol
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
+                endarc = 1
             elif h.type == RAR_BLOCK_FILE:
                 # RAR 2.x does not write RAR_BLOCK_ENDARC
                 if h.flags & RAR_FILE_SPLIT_AFTER:
