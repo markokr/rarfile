@@ -10,22 +10,76 @@ is made as `zipfile` like as possible.
 
 Features:
 
-- Supports RAR 3.x archives.
+- Supports both RAR 2.x and 3.x archives.
 - Supports multi volume archives.
 - Supports Unicode filenames.
 - Supports password-protected archives.
 - Supports archive comments.
-- Handles non-compressed files without outside help.
+- Handles non-compressed files without external utilities.
 - For compressed files runs `unrar` utility.
 
 
-2. Documentation
-----------------
+2. Links
+--------
 
-http://rarfile.berlios.de/doc/[]
+- API documentation: http://rarfile.berlios.de/doc/[]
+- Downloads, GIT: http://developer.berlios.de/projects/rarfile[]
 
-3. History
+3. FAQ
+------
+
+Will rarfile support wrapping unrarlib/unrar.dll/etc in the future?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No.  The command line tools are supported across all interesting
+operating systems (Windows/Linux/MacOS), wrapping a library does
+not bring any advantages.
+
+Simple execution of command-line tools is also legally simpler situation
+than linking with external library.
+
+How can I get it work on Windows?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On Windows the `unrar.exe` is not in `PATH` so simple `Popen("unrar ..")` does not work.
+It can be solved several ways:
+
+1. Add location of `unrar.exe` to PATH.
+2. Set rarfile.UNRAR_TOOL to full path of `unrar.exe`.
+3. Copy `unrar.exe` to your program directory.
+4. Copy `unrar.exe` to system directory that is in PATH, eg. C:\Windows.
+
+How to avoid the need for user to manually install rarfile/unrar?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Include `rarfile.py` and/or `unrar` with your application.
+
+
+4. History
 ----------
+
+Version 2.1
+~~~~~~~~~~~
+
+Features::
+ * Minimal implmentation for .extract(), .extractall(), .testrar().
+   They are quick shortcuts to command-line tools.
+ * Accept RarInfo object where filename is expected.
+ * Include dumprar.py in .tgz.  It can be used to visualize RAR structure
+   and test module.
+
+Fixes::
+ * Don't read past ENDARC, there could be non-RAR data there.
+ * RAR 2.x: It does not write ENDARC, but our volume code expected it.  Fix that.
+ * RAR 2.x: Support more than 200 old-style volumes.
+
+Cleanups::
+ * Load comment only when requested.
+ * Cleanup of internal config variables.  They should have now final names.
+ * .open(): Add mode=r argument to match zipfile.
+ * Doc and comments cleanup, minimize duplication.
+ * Common wrappers for both compressed and uncompressed files,
+   now .open() also does CRC-checking.
 
 Version 2.0 (2010-04-29)
 ~~~~~~~~~~~~~~~~~~~~~~~~

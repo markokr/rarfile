@@ -49,6 +49,10 @@ if sys.hexversion < 0x3000000:
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 
+##
+## Module configuration.  Can be tuned after importing.
+##
+
 # default fallback charset
 DEFAULT_CHARSET = "windows-1252"
 
@@ -68,9 +72,9 @@ COMMENT_ARGS = ('cw', '-y', '-inul', '-p-')
 # whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
 
-#
-# rar constants
-#
+##
+## rar constants
+##
 
 # block types
 RAR_BLOCK_MARK          = 0x72 # r
@@ -164,12 +168,12 @@ def is_rarfile(fn):
     buf = open(fn, "rb").read(len(RAR_ID))
     return buf == RAR_ID
 
-class RarInfo:
+class RarInfo(object):
     '''An entry in rar archive.
     
     @ivar filename:
         File name with relative path.
-        Note that Rar uses "\" as directory separator.
+        Note that Rar uses "\\" as directory separator.
         Always unicode string.
     @ivar date_time:
         Modification time, tuple of (year, month, day, hour, minute, second).
@@ -199,11 +203,14 @@ class RarInfo:
     @ivar mtime:
         Optional time field: Modification time, tuple of (year, month, day, hour, minute, second).
     @ivar ctime:
-        Optional time field: ctime time.
+        Optional time field: creation time.
     @ivar atime:
-        Optional time field: access time.
+        Optional time field: last access time.
     @ivar arctime:
         Optional time field: archival time.
+
+    @ivar unicode_filename:
+        Obsolete: same as .filename
     '''
 
     __slots__ = (
