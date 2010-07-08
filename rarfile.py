@@ -39,7 +39,7 @@ import sys, os, re
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 # py2.6 has broken bytes()
 if sys.hexversion < 0x3000000:
@@ -149,6 +149,25 @@ RAR_OS_BEOS  = 5
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
 ZERO = bytes("\0", 'ascii')
 EMPTY = bytes("", 'ascii')
+
+# disconnect cmd from parent fds, read only from stdout
+def custom_popen(cmd):
+    # needed for py2exe
+    creationflags = 0
+    if sys.platform == 'win32':
+        creationflags = 0x08000000 # CREATE_NO_WINDOW
+
+    # 3xPIPE seems unreliable, at least on osx
+    try:
+        null = open(os.devnull, "wb")
+        _in = null
+        _err = null
+    except IOError:
+        _in = PIPE
+        _err = STDOUT
+
+    # run command
+    return Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
 
 #
 # Public interface
@@ -427,7 +446,7 @@ class RarFile:
         else:
             cmd.append('-p-')
         cmd.append(self.rarfile)
-        p = Popen(cmd)
+        p = custom_popen(cmd)
         if p.wait() != 0:
             raise BadRarFile("Testing failed")
 
@@ -732,18 +751,8 @@ class RarFile:
             fn = fn.replace('\\', os.sep)
             cmd.append(fn)
 
-        # 3xPIPE seems unreliable, at least on osx
-        try:
-            null = open("/dev/null", "wb")
-            _in = null
-            _err = null
-        except IOError:
-            _in = PIPE
-            _err = PIPE
-
-        # run unrar
-        p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err)
-        return PipeReader(self, inf, p, tmpfile)
+        # read from unrar pipe
+        return PipeReader(self, inf, cmd, tmpfile)
 
     def _read_comment(self):
         if not RAR_TOOL:
@@ -754,7 +763,7 @@ class RarFile:
             cmd.append(self.rarfile)
             cmd.append(tmpname)
             try:
-                p = Popen(cmd)
+                p = custom_popen(cmd)
                 cmt = None
                 if p.wait() == 0:
                     cmt = os.fdopen(tmpfd, 'rb').read()
@@ -789,8 +798,8 @@ class RarFile:
             cmd.append(path + os.sep)
 
         # call
-        p = Popen(cmd)
-        p.communicate()
+        p = custom_popen(cmd)
+        p.wait()
 
 # handle unicode filename compression
 class _UnicodeFilename:
@@ -912,9 +921,10 @@ class BaseReader:
 class PipeReader(BaseReader):
     """Read data from pipe, handle tempfile cleanup."""
 
-    def __init__(self, rf, inf, proc, tempfile=None):
+    def __init__(self, rf, inf, cmd, tempfile=None):
         BaseReader.__init__(self, rf, inf, tempfile)
-        self.fd = proc.stdout
+        self.proc = custom_popen(cmd)
+        self.fd = self.proc.stdout
 
     def _read(self, cnt):
         """Read from pipe."""
