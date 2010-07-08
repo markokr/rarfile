@@ -147,6 +147,7 @@ cf_verbose = 0
 cf_charset = None
 cf_extract = 0
 cf_test_read = 0
+cf_test_unrar = 0
 
 def test_read_long(r, inf):
     f = r.open(inf.filename)
@@ -234,9 +235,15 @@ def test(fn, psw):
         if cf_test_read:
             test_read(r, inf)
 
+    if cf_test_unrar:
+        try:
+            r.testrar()
+        except rf.BadRarFile:
+            print '\ntestrar() failed'
+
 def main():
     global cf_verbose, cf_show_comment, cf_charset
-    global cf_extract, cf_test_read
+    global cf_extract, cf_test_read, cf_test_unrar
 
     # parse args
     args = []
@@ -266,6 +273,8 @@ def main():
             cf_extract = 1
         elif a == '-t':
             cf_test_read = 1
+        elif a == '-T':
+            cf_test_unrar = 1
         elif a[1] == 'C':
             cf_charset = a[2:]
         else:

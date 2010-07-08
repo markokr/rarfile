@@ -57,17 +57,23 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 DEFAULT_CHARSET = "windows-1252"
 
 # 'unrar', 'rar' or full path to either one
-EXTRACT_TOOL = "unrar"
+UNRAR_TOOL = "unrar"
 
-# Must be 'rar', because 'unrar' does not have 'cw' command.
-# Can be full path, or None to disable comment extraction
-COMMENT_TOOL = "rar"
+# For comment extraction we need 'rar'.
+# Can be full path, or None to disable
+RAR_TOOL = "rar"
 
-# command line args to use for extracting.  (rar, file) will be added.
-EXTRACT_ARGS = ('p', '-inul')
+# Command line args to use for opening file for reading.
+OPEN_ARGS = ('p', '-inul')
+
+# Command line args to use for extracting file to disk.
+EXTRACT_ARGS = ('x', '-y', '-idq')
 
 # how to extract comment from archive.  (rar, tmpfile) will be added.
 COMMENT_ARGS = ('cw', '-y', '-inul', '-p-')
+
+# args for testrar()
+TEST_ARGS = ('t', '-idq')
 
 # whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
@@ -383,6 +389,52 @@ class RarFile:
         for f in self._info_list:
             print(f.filename)
 
+    def extract(self, member, path=None, pwd=None):
+        """Extract single file into current directory.
+        
+        @param member: filename or RarInfo instance
+        @param path: optional destination path
+        @param pwd: optional password to use
+        """
+        if isinstance(member, RarInfo):
+            fname = member.filename
+        else:
+            fname = member
+        self._extract([fname], path, pwd)
+
+    def extractall(self, path=None, members=None, pwd=None):
+        """Extract all files into current directory.
+        
+        @param path: optional destination path
+        @param members: optional filename or RarInfo instance list to extract
+        @param pwd: optional password to use
+        """
+        fnlist = []
+        if members is not None:
+            for m in members:
+                if isinstance(m, RarInfo):
+                    fnlist.append(m.filename)
+                else:
+                    fnlist.append(m)
+        self._extract(fnlist, path, pwd)
+
+    def testrar(self):
+        """Let 'unrar' test the archive.
+        """
+        cmd = [UNRAR_TOOL] + list(TEST_ARGS)
+        if self._password is not None:
+            cmd.append('-p' + self._password)
+        else:
+            cmd.append('-p-')
+        cmd.append(self.rarfile)
+        p = Popen(cmd)
+        if p.wait() != 0:
+            raise BadRarFile("Testing failed")
+
+    ##
+    ## private methods
+    ##
+
     # store entry
     def _process_entry(self, item):
         # RAR_BLOCK_NEWSUB has files too: CMT, RR
@@ -669,7 +721,7 @@ class RarFile:
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
-        cmd = [EXTRACT_TOOL] + list(EXTRACT_ARGS)
+        cmd = [UNRAR_TOOL] + list(OPEN_ARGS)
         if psw is not None:
             cmd.append("-p" + psw)
         cmd.append(rarfile)
@@ -694,11 +746,11 @@ class RarFile:
         return PipeReader(self, inf, p, tmpfile)
 
     def _read_comment(self):
-        if not COMMENT_TOOL:
+        if not RAR_TOOL:
             return
         tmpfd, tmpname = mkstemp(suffix='.txt')
         try:
-            cmd = [COMMENT_TOOL] + list(COMMENT_ARGS)
+            cmd = [RAR_TOOL] + list(COMMENT_ARGS)
             cmd.append(self.rarfile)
             cmd.append(tmpname)
             try:
@@ -714,6 +766,31 @@ class RarFile:
                 pass
         finally:
             os.unlink(tmpname)
+
+    # call unrar to extract a file
+    def _extract(self, fnlist, path=None, psw=None):
+        cmd = [UNRAR_TOOL] + list(EXTRACT_ARGS)
+
+        # pasoword
+        psw = psw or self._password
+        if psw is not None:
+            cmd.append('-p' + psw)
+        else:
+            cmd.append('-p-')
+
+        # rar file
+        cmd.append(self.rarfile)
+
+        # file list
+        cmd += fnlist
+
+        # destination path
+        if path is not None:
+            cmd.append(path + os.sep)
+
+        # call
+        p = Popen(cmd)
+        p.communicate()
 
 # handle unicode filename compression
 class _UnicodeFilename:
