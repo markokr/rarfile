@@ -239,7 +239,7 @@ def test(fn, psw):
         try:
             r.testrar()
         except rf.BadRarFile:
-            print '\ntestrar() failed'
+            print('\ntestrar() failed')
 
 def main():
     global cf_verbose, cf_show_comment, cf_charset
