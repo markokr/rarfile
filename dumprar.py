@@ -160,58 +160,32 @@ def test_read_long(r, inf):
         total += len(data)
         crc = crc32(data, crc)
     f.close()
-    if crc < 0:
-        crc += long(1) << 32
     if total != inf.file_size:
         print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
         print(" *** short read: got=%d, need=%d ***\n" % (total, inf.file_size))
-    elif crc != inf.CRC:
-        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
-        print(" *** bad crc: got=%d, need=%d ***\n" % (crc, inf.CRC))
 
 def test_read(r, inf):
-    try:
-        if inf.file_size > 2*1024*1024:
-            test_read_long(r, inf)
-        else:
-            dat = r.read(inf.filename)
-            if cf_extract:
-                open(inf.filename, "wb").write(dat)
-    except rf.BadRarFile:
-        exc, msg, tb = sys.exc_info()
-        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
-        print(" *** %s ***\n" % (msg,))
-        del tb
-    except IOError:
-        exc, msg, tb = sys.exc_info()
-        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
-        print(" *** %s ***\n" % (msg,))
-        del tb
+    if inf.file_size > 2*1024*1024:
+        test_read_long(r, inf)
+    else:
+        dat = r.read(inf.filename)
+        if cf_extract:
+            open(inf.filename, "wb").write(dat)
 
-def test(fn, psw):
+def test_real(fn, psw):
     print("Archive: %s" % fn)
 
     cb = None
     if cf_verbose > 1:
         cb = show_item
 
-    try:
-        # check if rar
-        if not rf.is_rarfile(fn):
-            print(" --- %s is not a RAR file ---" % fn)
-            return
-        # open
-        r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
-    except rf.NeedFirstVolume:
-        print(" --- %s is middle part of multi-vol archive ---" % fn)
-        return
-    except IOError:
-        exc, msg, tb = sys.exc_info()
-        print("\n *** %s problem reading file: ***" % (fn,))
-        print(" *** %s ***\n" % (msg,))
-        del tb
+    # check if rar
+    if not rf.is_rarfile(fn):
+        print(" --- %s is not a RAR file ---" % fn)
         return
 
+    # open
+    r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
     # set password
     if r.needs_password():
         if psw:
@@ -236,10 +210,21 @@ def test(fn, psw):
             test_read(r, inf)
 
     if cf_test_unrar:
-        try:
-            r.testrar()
-        except rf.BadRarFile:
-            print('\ntestrar() failed')
+        r.testrar()
+
+def test(fn, psw):
+    try:
+        test_real(fn, psw)
+    except rf.BadRarFile:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s ***\n" % (msg,))
+        del tb
+    except rf.NeedFirstVolume:
+        print(" --- %s is middle part of multi-vol archive ---" % fn)
+    except IOError:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s ***\n" % (msg,))
+        del tb
 
 def main():
     global cf_verbose, cf_show_comment, cf_charset
