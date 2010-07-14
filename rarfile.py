@@ -345,7 +345,7 @@ class RarFile:
         for f in self._info_list:
             if fname == f.filename or fname2 == f.filename:
                 return f
-        raise NoRarEntry("No such file")
+        raise NoRarEntry("No such file: "+fname)
 
     def open(self, fname, mode = 'r', psw = None):
         '''Return open file object, where the data can be read.
@@ -363,10 +363,10 @@ class RarFile:
         # entry lookup
         inf = self.getinfo(fname)
         if inf.isdir():
-            raise TypeError("Directory does not have any data")
+            raise TypeError("Directory does not have any data: " + inf.filename)
 
         if inf.flags & RAR_FILE_SPLIT_BEFORE:
-            raise NeedFirstVolume("Partial file, please start from first volume")
+            raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename)
 
         # check password
         if inf.needs_password():
@@ -477,7 +477,7 @@ class RarFile:
         fd = open(self.rarfile, "rb")
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
-            raise NotRarFile("Not a Rar archive")
+            raise NotRarFile("Not a Rar archive: "+self.rarfile)
 
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
@@ -500,6 +500,8 @@ class RarFile:
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
+                if h.flags & RAR_MAIN_PASSWORD:
+                    raise BadRarFile('Encrypted headers not supported')
                 if h.flags & RAR_MAIN_NEWNUMBERING:
                     # RAR 2.x does not set FIRSTVOLUME,
                     # so check it only if NEWNUMBERING is used
@@ -676,7 +678,7 @@ class RarFile:
 
         m = re.search(r"([0-9][0-9]*)[^0-9]*$", fn)
         if not m:
-            raise BadRarName("Cannot construct volume name")
+            raise BadRarName("Cannot construct volume name: "+fn)
         n1 = m.start(1)
         n2 = m.end(1)
         fmt = "%%0%dd" % (n2 - n1)
