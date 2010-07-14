@@ -284,7 +284,7 @@ class RarInfo(object):
     def needs_password(self):
         return self.flags & RAR_FILE_PASSWORD
 
-class RarFile:
+class RarFile(object):
     '''Rar archive handling.'''
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
         """Open and parse a RAR archive.
@@ -296,7 +296,6 @@ class RarFile:
         @param crc_check: set to False to disable CRC checks
         """
         self.rarfile = rarfile
-        self.comment = None
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
 
@@ -305,6 +304,7 @@ class RarFile:
         self._needs_password = False
         self._password = None
         self._crc_check = crc_check
+        self._has_comment = False
 
         self._main = None
 
@@ -313,8 +313,15 @@ class RarFile:
 
         self._parse()
 
-        if self._main.flags & RAR_MAIN_COMMENT:
-            self._read_comment()
+    def __getattr__(self, name):
+        '''Lazy extraction of archive comment.'''
+        if name == 'comment':
+            cmt = None
+            if self._has_comment:
+                cmt = self._read_comment()
+            self.comment = cmt
+            return cmt
+        return object.__getattr__(self, name)
 
     def setpassword(self, password):
         '''Sets the password to use when extracting.'''
@@ -456,7 +463,6 @@ class RarFile:
 
     # store entry
     def _process_entry(self, item):
-        # RAR_BLOCK_NEWSUB has files too: CMT, RR
         if item.type == RAR_BLOCK_FILE:
             # use only first part
             if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
@@ -508,6 +514,8 @@ class RarFile:
                     if (h.flags & RAR_MAIN_FIRSTVOLUME) == 0:
                         raise NeedFirstVolume("Need to start from first volume")
                     self._gen_volname = self._gen_newvol
+                if h.flags & RAR_MAIN_COMMENT:
+                    self._has_comment = True
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
                 endarc = 1
@@ -518,6 +526,10 @@ class RarFile:
                 # RAR 2.x does not set RAR_MAIN_FIRSTVOLUME
                 if volume == 0 and h.flags & RAR_FILE_SPLIT_BEFORE:
                     raise NeedFirstVolume("Need to start from first volume")
+            elif h.type == RAR_BLOCK_SUB:
+                # CMT, RR
+                if h.filename == 'CMT':
+                    self._has_comment = True
 
             # store it
             self._process_entry(h)
@@ -760,6 +772,7 @@ class RarFile:
         if not RAR_TOOL:
             return
         tmpfd, tmpname = mkstemp(suffix='.txt')
+        comment = None
         try:
             cmd = [RAR_TOOL] + list(COMMENT_ARGS)
             cmd.append(self.rarfile)
@@ -770,13 +783,15 @@ class RarFile:
                 if p.wait() == 0:
                     cmt = os.fdopen(tmpfd, 'rb').read()
                     try:
-                        self.comment = cmt.decode('utf8')
+                        comment = cmt.decode('utf8')
                     except UnicodeError:
-                        self.comment = cmt.decode(self._charset, 'replace')
+                        comment = cmt.decode(self._charset, 'replace')
             except (OSError, IOError):
                 pass
         finally:
             os.unlink(tmpname)
+
+        return comment
 
     # call unrar to extract a file
     def _extract(self, fnlist, path=None, psw=None):

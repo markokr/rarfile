@@ -193,7 +193,7 @@ def test_real(fn, psw):
             return
 
     # show comment
-    if r.comment and cf_show_comment:
+    if cf_show_comment and r.comment:
         for ln in r.comment.split('\n'):
             print("    %s" % ln)
 
