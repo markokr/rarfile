@@ -169,8 +169,6 @@ def test_read(r, inf):
         test_read_long(r, inf)
     else:
         dat = r.read(inf.filename)
-        if cf_extract:
-            open(inf.filename, "wb").write(dat)
 
 def test_real(fn, psw):
     print("Archive: %s" % fn)
@@ -208,6 +206,11 @@ def test_real(fn, psw):
             show_item(inf)
         if cf_test_read:
             test_read(r, inf)
+
+    if cf_extract:
+        r.extractall()
+        for inf in r.infolist():
+            r.extract(inf)
 
     if cf_test_unrar:
         r.testrar()
