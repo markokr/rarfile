@@ -218,16 +218,12 @@ def test_real(fn, psw):
 def test(fn, psw):
     try:
         test_real(fn, psw)
-    except rf.BadRarFile:
-        exc, msg, tb = sys.exc_info()
-        print("\n *** %s ***\n" % (msg,))
-        del tb
     except rf.NeedFirstVolume:
         print(" --- %s is middle part of multi-vol archive ---" % fn)
-    except IOError:
-        exc, msg, tb = sys.exc_info()
-        print("\n *** %s ***\n" % (msg,))
-        del tb
+    except rf.Error, d:
+        print("\n *** %s: %s ***\n" % (d.__class__.__name__, str(d),))
+    except IOError, d:
+        print("\n *** %s: %s ***\n" % (d.__class__.__name__, str(d),))
 
 def main():
     global cf_verbose, cf_show_comment, cf_charset
