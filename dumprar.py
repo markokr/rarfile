@@ -220,10 +220,14 @@ def test(fn, psw):
         test_real(fn, psw)
     except rf.NeedFirstVolume:
         print(" --- %s is middle part of multi-vol archive ---" % fn)
-    except rf.Error, d:
-        print("\n *** %s: %s ***\n" % (d.__class__.__name__, str(d),))
-    except IOError, d:
-        print("\n *** %s: %s ***\n" % (d.__class__.__name__, str(d),))
+    except rf.Error:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s: %s ***\n" % (exc.__name__, msg))
+        del tb
+    except IOError:
+        exc, msg, tb = sys.exc_info()
+        print("\n *** %s: %s ***\n" % (exc.__name__, msg))
+        del tb
 
 def main():
     global cf_verbose, cf_show_comment, cf_charset
