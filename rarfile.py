@@ -709,8 +709,13 @@ class RarFile(object):
 
     def _parse_ext_time(self, h, pos):
         data = h.header_data
-        flags = unpack("<H", data[pos : pos + 2])[0]
-        pos += 2
+
+        # flags and rest of data can be missing
+        flags = 0
+        if pos + 2 <= len(data):
+            flags = unpack("<H", data[pos : pos + 2])[0]
+            pos += 2
+
         h.mtime, pos = self._parse_xtime(flags >> 3*4, data, pos, h.date_time)
         h.ctime, pos = self._parse_xtime(flags >> 2*4, data, pos)
         h.atime, pos = self._parse_xtime(flags >> 1*4, data, pos)
