@@ -17,20 +17,14 @@
 """RAR archive reader.
 
 This is Python module for Rar archive reading.  The interface
-is made as `zipfile` like as possible.
+is made as zipfile like as possible.
 
-The archive structure parsing and uncompressed files
-are handled in pure Python.  Decompression is done
-via 'unrar' command line utility.
-
-Features:
-
- - Works with both Python 2.x and 3.x
- - Supports RAR 3.x archives.
- - Supports multi volume archives.
- - Supports Unicode filenames.
- - Supports password-protected archives.
- - Supports archive comments.
+Basic logic:
+ - Parse archive structure with Python.
+ - Extract non-compressed files with Python
+ - Extract compressed files with unrar.
+ - Optionally write compressed data to temp file to speed up unrar,
+   otherwise it needs to scan whole archive on each execution.
 """
 
 __version__ = '2.1'
@@ -41,8 +35,11 @@ from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
 
-# py2.6 has broken bytes()
+# compat with 2.x
 if sys.hexversion < 0x3000000:
+    # prefer 3.x behaviour
+    range = xrange
+    # py2.6 has broken bytes()
     def bytes(foo, enc):
         return str(foo)
 
@@ -321,7 +318,7 @@ class RarFile(object):
                 cmt = self._read_comment()
             self.comment = cmt
             return cmt
-        return object.__getattr__(self, name)
+        raise AttributeError(name)
 
     def setpassword(self, password):
         '''Sets the password to use when extracting.'''
