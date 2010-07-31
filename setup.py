@@ -4,8 +4,8 @@ from distutils.core import setup
 
 import rarfile
 
-ldesc = rarfile.__doc__.strip()
-sdesc = ldesc.split('\n')[0]
+ldesc = open("README").read().strip()
+sdesc = ldesc.split('\n')[0].split(' - ')[1].strip()
 
 setup(
     name = "rarfile",

@@ -1,12 +1,14 @@
 
-rarfile - Rar archive reader for Python
+rarfile - RAR archive reader for Python
 =======================================
 
-1.  Description
-----------------
+This is Python module for RAR_ archive reading.  The interface
+is made as zipfile_ like as possible.  Licensed under ISC_
+license.
 
-This is Python module for Rar archive reading.  The interface
-is made as `zipfile` like as possible.
+.. _RAR: http://en.wikipedia.org/wiki/RAR
+.. _zipfile: http://docs.python.org/library/zipfile.html
+.. _ISC: http://en.wikipedia.org/wiki/ISC_license
 
 Features:
 
@@ -15,107 +17,14 @@ Features:
 - Supports Unicode filenames.
 - Supports password-protected archives.
 - Supports archive comments.
-- Handles non-compressed files without external utilities.
-- For compressed files runs `unrar` utility.
+- Archive parsing and non-compressed files are handled in pure Python code.
+- For compressed files runs ``unrar`` utility.
+- Works with both Python 2.x and 3.x.
 
+Links:
 
-2. Links
---------
-
-- API documentation: http://rarfile.berlios.de/doc/[]
-- Downloads, GIT: http://developer.berlios.de/projects/rarfile[]
-
-3. FAQ
-------
-
-Will rarfile support wrapping unrarlib/unrar.dll/etc in the future?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-No.  The command line tools are supported across all interesting
-operating systems (Windows/Linux/MacOS), wrapping a library does
-not bring any advantages.
-
-Simple execution of command-line tools is also legally simpler situation
-than linking with external library.
-
-How can I get it work on Windows?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-On Windows the `unrar.exe` is not in `PATH` so simple `Popen("unrar ..")` does not work.
-It can be solved several ways:
-
-1. Add location of `unrar.exe` to PATH.
-2. Set rarfile.UNRAR_TOOL to full path of `unrar.exe`.
-3. Copy `unrar.exe` to your program directory.
-4. Copy `unrar.exe` to system directory that is in PATH, eg. C:\Windows.
-
-How to avoid the need for user to manually install rarfile/unrar?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Include `rarfile.py` and/or `unrar` with your application.
-
-
-4. History
-----------
-
-Version 2.1
-~~~~~~~~~~~
-
-Features::
- * Minimal implmentation for .extract(), .extractall(), .testrar().
-   They are quick shortcuts to command-line tools.
- * Accept RarInfo object where filename is expected.
- * Include dumprar.py in .tgz.  It can be used to visualize RAR structure
-   and test module.
-
-Fixes::
- * Don't read past ENDARC, there could be non-RAR data there.
- * RAR 2.x: It does not write ENDARC, but our volume code expected it.  Fix that.
- * RAR 2.x: Support more than 200 old-style volumes.
-
-Cleanups::
- * Load comment only when requested.
- * Cleanup of internal config variables.  They should have now final names.
- * .open(): Add mode=r argument to match zipfile.
- * Doc and comments cleanup, minimize duplication.
- * Common wrappers for both compressed and uncompressed files,
-   now .open() also does CRC-checking.
-
-Version 2.0 (2010-04-29)
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Features::
- * Python 3 support.  Still works with 2.x.
- * Parses extended time fields. (.mtime, .ctime, .atime)
- * .open() method.  This makes possible to process large
-   entries that do not fit into memory.
- * Supports password-protected archives.
- * Supports archive comments.
-
-Cleanups::
- * Uses subprocess module to launch unrar.
- * .filename is always Unicode string, .unicode_filename is now deprecated.
- * .CRC is unsigned again, as python3 crc32() is unsigned.
-
-Version 1.1 (2008-08-31)
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Fixes::
- * Replace os.tempnam() with tempfile.mkstemp().  (Jason Moiron)
- * Fix infinite loop in _extract_hack on unexpected EOF
- * RarInfo.CRC is now signed value to match crc32()
- * RarFile.read() now checks file crc
-
-Cleanups::
- * more docstrings
- * throw proper exceptions (subclasses of rarfile.Error)
- * RarInfo has fields pre-initialized, so they appear in help()
- * rename RarInfo.data to RarInfo.header_data
- * dont use "print" when header parsing fails
- * use try/finally to delete temp rar
-
-Version 1.0 (2005-08-08)
-~~~~~~~~~~~~~~~~~~~~~~~~
-
- * First release.
+- News: http://rarfile.berlios.de/NEWS.html
+- FAQ: http://rarfile.berlios.de/FAQ.html
+- API documentation: http://rarfile.berlios.de/doc/
+- Downloads, GIT: http://developer.berlios.de/projects/rarfile
 

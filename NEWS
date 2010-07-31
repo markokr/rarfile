@@ -1,0 +1,73 @@
+
+rarfile history
+===============
+
+Version 2.1
+-----------
+
+Features:
+
+* Minimal implmentation for .extract(), .extractall(), .testrar().
+  They are simple shortcuts to ``unrar`` invocation.
+* Accept RarInfo object where filename is expected.
+* Include dumprar.py in .tgz.  It can be used to visualize RAR structure
+  and test module.
+* Support for encrypted file headers.
+
+Fixes:
+
+* Don't read past ENDARC, there could be non-RAR data there.
+* RAR 2.x: It does not write ENDARC, but our volume code expected it.  Fix that.
+* RAR 2.x: Support more than 200 old-style volumes.
+
+Cleanups:
+
+* Load comment only when requested.
+* Cleanup of internal config variables.  They should have now final names.
+* .open(): Add mode=r argument to match zipfile.
+* Doc and comments cleanup, minimize duplication.
+* Common wrappers for both compressed and uncompressed files,
+  now .open() also does CRC-checking.
+
+Version 2.0 (2010-04-29)
+------------------------
+
+Features:
+
+* Python 3 support.  Still works with 2.x.
+* Parses extended time fields. (.mtime, .ctime, .atime)
+* .open() method.  This makes possible to process large
+  entries that do not fit into memory.
+* Supports password-protected archives.
+* Supports archive comments.
+
+Cleanups:
+
+* Uses subprocess module to launch unrar.
+* .filename is always Unicode string, .unicode_filename is now deprecated.
+* .CRC is unsigned again, as python3 crc32() is unsigned.
+
+Version 1.1 (2008-08-31)
+------------------------
+
+Fixes:
+
+* Replace os.tempnam() with tempfile.mkstemp().  (Jason Moiron)
+* Fix infinite loop in _extract_hack on unexpected EOF
+* RarInfo.CRC is now signed value to match crc32()
+* RarFile.read() now checks file crc
+
+Cleanups:
+
+* more docstrings
+* throw proper exceptions (subclasses of rarfile.Error)
+* RarInfo has fields pre-initialized, so they appear in help()
+* rename RarInfo.data to RarInfo.header_data
+* dont use "print" when header parsing fails
+* use try/finally to delete temp rar
+
+Version 1.0 (2005-08-08)
+------------------------
+
+* First release.
+

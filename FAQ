@@ -1,0 +1,46 @@
+
+rarfile FAQ
+===========
+
+Will rarfile support wrapping unrarlib/unrar.dll/unrar.so in the future?
+------------------------------------------------------------------------
+
+No.  The current architecture - parsing in Python and decompression with
+command line tools work well across all interesting operating systems
+(Windows/Linux/MacOS), wrapping a library does not bring any advantages.
+
+Simple execution of command-line tools is also legally simpler situation
+than linking with external library.
+
+How can I get it work on Windows?
+---------------------------------
+
+On Windows the ``unrar.exe`` is not in ``PATH`` so simple ``Popen("unrar ..")`` does not work.
+It can be solved several ways:
+
+1. Add location of ``unrar.exe`` to PATH.
+2. Set rarfile.UNRAR_TOOL to full path of ``unrar.exe``.
+3. Copy ``unrar.exe`` to your program directory.
+4. Copy ``unrar.exe`` to system directory that is in PATH, eg. C:\Windows.
+
+How to avoid the need for user to manually install rarfile/unrar?
+-----------------------------------------------------------------
+
+Include ``rarfile.py`` and/or ``unrar`` with your application.
+
+Will it support creating RAR archives?
+--------------------------------------
+
+There are 2 ways rarfile could do it - either wrap ``rar`` tool
+or create non-compressed archives with pure Python code.
+
+But RARLAB_ licenses seem to allow neither one, so until there is
+some clarification what is allowed, I won't include writing code.
+
+In the meanstime use either Zip_ (better compatibility) or 7z_ (better compression)
+formats for your own archives.
+
+.. _RARLAB: http://www.rarlab.com/
+.. _Zip: http://en.wikipedia.org/wiki/ZIP_%28file_format%29
+.. _7z:  http://en.wikipedia.org/wiki/7z
+
