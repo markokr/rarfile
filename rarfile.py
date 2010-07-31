@@ -75,6 +75,9 @@ TEST_ARGS = ('t', '-idq')
 # whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
 
+# limit the filesize for tmp archive usage
+HACK_SIZE_LIMIT = 20*1024*1024
+
 ##
 ## rar constants
 ##
@@ -380,11 +383,12 @@ class RarFile(object):
         else:
             psw = None
 
-        is_solid = self._main.flags & RAR_MAIN_SOLID
-        uses_vols = self._main.flags & RAR_MAIN_VOLUME
+        # is temp write usable?
+        skip_hack = self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_VOLUME)
+
         if inf.compress_type == 0x30 and psw is None:
             return self._open_clear(inf)
-        elif USE_EXTRACT_HACK and not is_solid and not uses_vols:
+        elif USE_EXTRACT_HACK and not skip_hack and inf.file_size <= HACK_SIZE_LIMIT:
             return self._open_hack(inf, psw)
         else:
             return self._open_unrar(self.rarfile, inf, psw)
