@@ -35,6 +35,14 @@ from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
 
+# only needed for encryped headers
+try:
+    from Crypto.Cipher import AES
+    from hashlib import sha1
+    _have_crypto = 1
+except ImportError:
+    _have_crypto = 0
+
 # compat with 2.x
 if sys.hexversion < 0x3000000:
     # prefer 3.x behaviour
@@ -187,6 +195,8 @@ class PasswordRequired(Error):
     """File requires password"""
 class NeedFirstVolume(Error):
     """Need to start from first volume."""
+class NoCrypto(Error):
+    """Cannot parse encrypted headers - no crypto available."""
 
 def is_rarfile(fn):
     '''Check quickly whether file is rar archive.'''
@@ -326,6 +336,8 @@ class RarFile(object):
     def setpassword(self, password):
         '''Sets the password to use when extracting.'''
         self._password = password
+        if not self._main:
+            self._parse()
 
     def needs_password(self):
         '''Returns True if any archive entries require password for extraction.'''
@@ -384,7 +396,7 @@ class RarFile(object):
             psw = None
 
         # is temp write usable?
-        skip_hack = self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_VOLUME)
+        skip_hack = self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_VOLUME | RAR_MAIN_PASSWORD)
 
         if inf.compress_type == 0x30 and psw is None:
             return self._open_clear(inf)
@@ -507,8 +519,6 @@ class RarFile(object):
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
-                if h.flags & RAR_MAIN_PASSWORD:
-                    raise BadRarFile('Encrypted headers not supported')
                 if h.flags & RAR_MAIN_NEWNUMBERING:
                     # RAR 2.x does not set FIRSTVOLUME,
                     # so check it only if NEWNUMBERING is used
@@ -517,6 +527,11 @@ class RarFile(object):
                     self._gen_volname = self._gen_newvol
                 if h.flags & RAR_MAIN_COMMENT:
                     self._has_comment = True
+                if h.flags & RAR_MAIN_PASSWORD:
+                    self._needs_password = True
+                    if not self._password:
+                        self._main = None
+                        break
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = h.flags & RAR_ENDARC_NEXT_VOLUME
                 endarc = 1
@@ -540,8 +555,28 @@ class RarFile(object):
                 fd.seek(h.file_offset + h.add_size, 0)
         fd.close()
 
+    # AES encrypted headers
+    _last_aes_key = (None, None, None) # (salt, key, iv)
+    def _decrypt_header(self, fd):
+        if not _have_crypto:
+            raise NoCrypto('Cannot parse encrypted headers - no crypto')
+        salt = fd.read(8)
+        if self._last_aes_key[0] == salt:
+            key, iv = self._last_aes_key[1:]
+        else:
+            key, iv = rar3_s2k(self._password, salt)
+            self._last_aes_key = (salt, key, iv)
+        return HeaderDecrypt(fd, key, iv)
+
     # read single header
     def _parse_header(self, fd):
+        # handle encrypted headers
+        if self._main and self._main.flags & RAR_MAIN_PASSWORD:
+            if not self._password:
+                return
+            fd = self._decrypt_header(fd)
+
+        # now read actual header
         h = self._parse_block_header(fd)
         if h and (h.type == RAR_BLOCK_FILE or h.type == RAR_BLOCK_SUB):
             self._parse_file_header(h)
@@ -1016,6 +1051,61 @@ class DirectReader(BaseReader):
             self.cur = cur
             self.cur_avail = cur.add_size
             return True
+
+# string-to-key hashing
+def rar3_s2k(psw, salt):
+    seed = psw.encode('utf_16_le') + salt
+    iv = EMPTY
+    h = sha1()
+    for i in range(16):
+        for j in range(0x4000):
+            cnt = pack("<L", i*0x4000 + j)[:3]
+            h.update(seed + cnt)
+            if j == 0:
+                iv += h.digest()[-1]
+    key_be = h.digest()[:16]
+    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
+    return key_le, iv
+
+# file-like object that decrypts from another file
+class HeaderDecrypt:
+    def __init__(self, f, key, iv):
+        self.f = f
+        self.ciph = AES.new(key, AES.MODE_CBC, iv)
+        self.buf = EMPTY
+
+    def tell(self):
+        return self.f.tell()
+
+    def read(self, cnt=None):
+        if cnt > 8*1024:
+            raise BadRarFile('Bad count to header decrypt - wrong password?')
+
+        # consume old data
+        if cnt <= len(self.buf):
+            res = self.buf[:cnt]
+            self.buf = self.buf[cnt:]
+            return res
+        res = self.buf
+        self.buf = EMPTY
+        cnt -= len(res)
+
+        # decrypt new data
+        BLK = self.ciph.block_size
+        while cnt > 0:
+            enc = self.f.read(BLK)
+            if len(enc) < BLK:
+                break
+            dec = self.ciph.decrypt(enc)
+            if cnt >= len(dec):
+                res += dec
+                cnt -= len(dec)
+            else:
+                res += dec[:cnt]
+                self.buf = dec[cnt:]
+                cnt = 0
+
+        return res
 
 # see if compat bytearray() is needed
 try:
