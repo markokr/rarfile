@@ -56,9 +56,9 @@ DEFAULT_CHARSET = "windows-1252"
 # 'unrar', 'rar' or full path to either one
 UNRAR_TOOL = "unrar"
 
-# For comment extraction we need 'rar'.
+# For some reason 'unrar' does not have 'cw' comment.  Use 'rar' here then.
 # Can be full path, or None to disable
-RAR_TOOL = "rar"
+COMMENT_TOOL = "rar"
 
 # Command line args to use for opening file for reading.
 OPEN_ARGS = ('p', '-inul')
@@ -823,12 +823,12 @@ class RarFile(object):
         return PipeReader(self, inf, cmd, tmpfile)
 
     def _read_comment(self):
-        if not RAR_TOOL:
+        if not COMMENT_TOOL:
             return
         tmpfd, tmpname = mkstemp(suffix='.txt')
         comment = None
         try:
-            cmd = [RAR_TOOL] + list(COMMENT_ARGS)
+            cmd = [COMMENT_TOOL] + list(COMMENT_ARGS)
             cmd.append(self.rarfile)
             cmd.append(tmpname)
             try:
