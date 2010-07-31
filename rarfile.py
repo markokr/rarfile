@@ -43,14 +43,6 @@ try:
 except ImportError:
     _have_crypto = 0
 
-# compat with 2.x
-if sys.hexversion < 0x3000000:
-    # prefer 3.x behaviour
-    range = xrange
-    # py2.6 has broken bytes()
-    def bytes(foo, enc):
-        return str(foo)
-
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 
@@ -152,6 +144,32 @@ RAR_OS_WIN32 = 2
 RAR_OS_UNIX  = 3
 RAR_OS_MACOS = 4
 RAR_OS_BEOS  = 5
+
+##
+## Compatibility code to support both python 2 and 3
+##
+
+# compat with 2.x
+if sys.hexversion < 0x3000000:
+    # prefer 3.x behaviour
+    range = xrange
+    # py2.6 has broken bytes()
+    def bytes(foo, enc):
+        return str(foo)
+
+# see if compat bytearray() is needed
+try:
+    bytearray()
+except NameError:
+    import array
+    class bytearray:
+        def __init__(self, val = ''):
+            self.arr = array.array('B', val)
+            self.append = self.arr.append
+            self.__getitem__ = self.arr.__getitem__
+            self.__len__ = self.arr.__len__
+        def decode(self, *args):
+            return self.arr.tostring().decode(*args)
 
 # internal byte constants
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
@@ -1106,18 +1124,4 @@ class HeaderDecrypt:
                 cnt = 0
 
         return res
-
-# see if compat bytearray() is needed
-try:
-    bytearray()
-except NameError:
-    import array
-    class bytearray:
-        def __init__(self, val = ''):
-            self.arr = array.array('B', val)
-            self.append = self.arr.append
-            self.__getitem__ = self.arr.__getitem__
-            self.__len__ = self.arr.__len__
-        def decode(self, *args):
-            return self.arr.tostring().decode(*args)
 
