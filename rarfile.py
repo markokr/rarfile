@@ -705,7 +705,7 @@ class RarFile(object):
         day = stamp & 0x1F; stamp = stamp >> 5
         mon = stamp & 0x0F; stamp = stamp >> 4
         yr = (stamp & 0x7F) + 1980
-        return (yr, mon, day, hr, min, sec)
+        return (yr, mon, day, hr, min, sec * 2)
 
     def _parse_ext_time(self, h, pos):
         data = h.header_data
