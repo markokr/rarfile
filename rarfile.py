@@ -171,10 +171,33 @@ except NameError:
         def decode(self, *args):
             return self.arr.tostring().decode(*args)
 
+# Struct() for older python
+try:
+    from struct import Struct
+except ImportError:
+    from struct import calcsize
+    class Struct:
+        def __init__(self, fmt):
+            self.format = fmt
+            self.size = calcsize(fmt)
+        def unpack(self, buf):
+            return unpack(self.format, buf)
+        def unpack_from(self, buf, ofs = 0):
+            return unpack(self.format, buf[ofs : ofs + self.size])
+        def pack(self, *args):
+            return pack(self.format, *args)
+
 # internal byte constants
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
 ZERO = bytes("\0", 'ascii')
 EMPTY = bytes("", 'ascii')
+
+# Struct() constants
+S_BLK_HDR = Struct('<HBHH')
+S_FILE_HDR = Struct('<LLBLLBBHL')
+S_LONG = Struct('<L')
+S_SHORT = Struct('<H')
+S_BYTE = Struct('<B')
 
 # disconnect cmd from parent fds, read only from stdout
 def custom_popen(cmd):
@@ -606,25 +629,24 @@ class RarFile(object):
 
     # common header
     def _parse_block_header(self, fd):
-        HDRLEN = 7
         h = RarInfo()
         h.header_offset = fd.tell()
-        buf = fd.read(HDRLEN)
+        buf = fd.read(S_BLK_HDR.size)
         if not buf:
             return None
 
-        t = unpack("<HBHH", buf)
+        t = S_BLK_HDR.unpack_from(buf)
         h.header_crc, h.type, h.flags, h.header_size = t
-        h.header_unknown = h.header_size - HDRLEN
+        h.header_unknown = h.header_size - S_BLK_HDR.size
 
-        if h.header_size > HDRLEN:
-            h.header_data = fd.read(h.header_size - HDRLEN)
+        if h.header_size > S_BLK_HDR.size:
+            h.header_data = fd.read(h.header_size - S_BLK_HDR.size)
         else:
             h.header_data = EMPTY
         h.file_offset = fd.tell()
 
         if h.flags & RAR_LONG_BLOCK:
-            h.add_size = unpack("<L", h.header_data[:4])[0]
+            h.add_size = S_LONG.unpack_from(h.header_data)[0]
         else:
             h.add_size = 0
 
@@ -653,8 +675,7 @@ class RarFile(object):
 
     # read file-specific header
     def _parse_file_header(self, h):
-        HDRLEN = 4+4+1+4+4+1+1+2+4
-        fld = unpack("<LLBLLBBHL", h.header_data[ : HDRLEN])
+        fld = S_FILE_HDR.unpack_from(h.header_data)
         h.compress_size = fld[0]
         h.file_size = fld[1]
         h.host_os = fld[2]
@@ -664,10 +685,11 @@ class RarFile(object):
         h.compress_type = fld[6]
         h.name_size = fld[7]
         h.mode = fld[8]
-        pos = HDRLEN
+        pos = S_FILE_HDR.size
 
         if h.flags & RAR_FILE_LARGE:
-            h1, h2 = unpack("<LL", h.header_data[pos:pos+8])
+            h1 = S_LONG.unpack_from(h.header_data, pos)
+            h2 = S_LONG.unpack_from(h.header_data, pos + 4)
             h.compress_size |= h1 << 32
             h.file_size |= h2 << 32
             pos += 8
@@ -717,7 +739,7 @@ class RarFile(object):
         # flags and rest of data can be missing
         flags = 0
         if pos + 2 <= len(data):
-            flags = unpack("<H", data[pos : pos + 2])[0]
+            flags = S_SHORT.unpack_from(data, pos)[0]
             pos += 2
 
         h.mtime, pos = self._parse_xtime(flags >> 3*4, data, pos, h.date_time)
@@ -730,7 +752,7 @@ class RarFile(object):
         unit = 10000000.0 # 100 ns units
         if flag & 8:
             if not dostime:
-                t = unpack("<I", data[pos : pos + 4])[0]
+                t = S_LONG.unpack_from(data, pos)[0]
                 dostime = self._parse_dos_time(t)
                 pos += 4
             rem = 0
@@ -738,7 +760,7 @@ class RarFile(object):
             for i in range(3):
                 rem <<= 8
                 if i < cnt:
-                    rem += unpack("B", data[pos : pos + 1])[0]
+                    rem += S_BYTE.unpack_from(data, pos)[0]
                     pos += 1
             sec = dostime[5] + rem / unit
             if flag & 4:
@@ -796,7 +818,7 @@ class RarFile(object):
 
         try:
             # create main header: crc, type, flags, size, res1, res2
-            mh = pack("<HBHHHL", 0x90CF, 0x73, 0, 13, 0, 0)
+            mh = S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + ZERO * (2+4)
             tmpf.write(RAR_ID + mh)
             while size > 0:
                 if size > BSIZE:
@@ -1085,8 +1107,8 @@ def rar3_s2k(psw, salt):
     h = sha1()
     for i in range(16):
         for j in range(0x4000):
-            cnt = pack("<L", i*0x4000 + j)[:3]
-            h.update(seed + cnt)
+            cnt = S_LONG.pack(i*0x4000 + j)
+            h.update(seed + cnt[:3])
             if j == 0:
                 iv += h.digest()[-1]
     key_be = h.digest()[:16]
