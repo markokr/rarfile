@@ -29,7 +29,7 @@ Basic logic:
 
 __version__ = '2.1'
 
-import sys, os, re
+import sys, os
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
@@ -246,6 +246,8 @@ class RarInfo(object):
         CRC-32 of uncompressed file, unsigned int.
     @ivar volume:
         Volume nr, starting from 0.
+    @ivar volume_file:
+        Volume file name, where file starts.
     @ivar type:
         One of RAR_BLOCK_* types.  Only entries with type==RAR_BLOCK_FILE are shown in .infolist().
     @ivar flags:
@@ -301,6 +303,7 @@ class RarInfo(object):
         'header_unknown',
         'header_offset',
         'salt',
+        'volume_file',
     )
 
     def isdir(self):
@@ -328,7 +331,6 @@ class RarFile(object):
         self._info_callback = info_callback
 
         self._info_list = []
-        self._gen_volname = self._gen_oldvol
         self._needs_password = False
         self._password = None
         self._crc_check = crc_check
@@ -519,6 +521,7 @@ class RarFile(object):
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
         endarc = 0
+        volfile = self.rarfile
         while 1:
             if endarc:
                 h = None    # don't read past ENDARC
@@ -527,13 +530,15 @@ class RarFile(object):
             if not h:
                 if more_vols:
                     volume += 1
-                    fd = open(self._gen_volname(volume), "rb")
+                    volfile = self._next_volname(volfile)
+                    fd = open(volfile, "rb")
                     more_vols = 0
                     endarc = 0
                     if fd:
                         continue
                 break
             h.volume = volume
+            h.volume_file = volfile
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
@@ -542,7 +547,6 @@ class RarFile(object):
                     # so check it only if NEWNUMBERING is used
                     if (h.flags & RAR_MAIN_FIRSTVOLUME) == 0:
                         raise NeedFirstVolume("Need to start from first volume")
-                    self._gen_volname = self._gen_newvol
                 if h.flags & RAR_MAIN_COMMENT:
                     self._has_comment = True
                 if h.flags & RAR_MAIN_PASSWORD:
@@ -742,39 +746,38 @@ class RarFile(object):
             dostime = dostime[:5] + (sec,)
         return dostime, pos
 
-    # new-style volume name
-    def _gen_newvol(self, volume):
-        # allow % in filenames
-        fn = self.rarfile.replace("%", "%%")
+    # given current vol name, construct next one
+    def _next_volname(self, volfile):
+        if self._main.flags & RAR_MAIN_NEWNUMBERING:
+            return self._next_newvol(volfile)
+        return self._next_oldvol(volfile)
 
-        m = re.search(r"([0-9][0-9]*)[^0-9]*$", fn)
-        if not m:
-            raise BadRarName("Cannot construct volume name: "+fn)
-        n1 = m.start(1)
-        n2 = m.end(1)
-        fmt = "%%0%dd" % (n2 - n1)
-        volfmt = fn[:n1] + fmt + fn[n2:]
-        return volfmt % (volume + 1)
+    # new-style next volume
+    def _next_newvol(self, volfile):
+        i = len(volfile) - 1
+        while i >= 0:
+            if volfile[i] >= '0' and volfile[i] <= '9':
+                return self._inc_volname(volfile, i)
+            i -= 1
+        raise BadRarName("Cannot construct volume name: "+fn)
 
-    # old-style volume naming
-    def _gen_oldvol(self, volume):
-        if volume == 0:
-            return self.rarfile
-        # although 'rar' can generate them, it's unlikely they work well
-        if volume > 900:
-            raise BadRarName("Cannot construct volume name")
+    # old-style next volume
+    def _next_oldvol(self, volfile):
+        # rar -> r00
+        if volfile[-4:].lower() == '.rar':
+            return volfile[:-2] + '00'
+        return self._inc_volname(volfile, len(volfile) - 1)
 
-        # strip extension
-        i = self.rarfile.rfind(".")
-        if i >= 0:
-            base = self.rarfile[:i]
-        else:
-            base = self.rarfile
-
-        # generate new extension
-        d, m = divmod(volume - 1, 100)
-        ext = '.%c%02d' % (ord('r') + d, m)
-        return base + ext
+    # increase digits with carry, otherwise just increment char
+    def _inc_volname(self, volfile, i):
+        fn = list(volfile)
+        while i >= 0:
+            if fn[i] != '9':
+                fn[i] = chr(ord(fn[i]) + 1)
+                break
+            fn[i] = '0'
+            i -= 1
+        return ''.join(fn)
 
     def _open_clear(self, inf):
         return DirectReader(self, inf)
@@ -1012,10 +1015,10 @@ class DirectReader(BaseReader):
 
     def __init__(self, rf, inf):
         BaseReader.__init__(self, rf, inf)
-        self.vol = inf.volume
+        self.volfile = inf.volume_file
         self.size = inf.file_size
 
-        self.fd = open(self.rf._gen_volname(self.vol), "rb")
+        self.fd = open(self.volfile, "rb")
         self.fd.seek(self.inf.header_offset, 0)
         self.cur = self.rf._parse_header(self.fd)
         self.cur_avail = self.cur.add_size
@@ -1056,8 +1059,8 @@ class DirectReader(BaseReader):
             return False
 
         # open next part
-        self.vol += 1
-        fd = open(self.rf._gen_volname(self.vol), "rb")
+        self.volfile = self.rf._next_volname(self.volfile)
+        fd = open(self.volfile, "rb")
         self.fd = fd
 
         # loop until first file header
