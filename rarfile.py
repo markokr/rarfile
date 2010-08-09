@@ -536,6 +536,7 @@ class RarFile(object):
                 # final crc is in last block
                 old = self._info_list[-1]
                 old.CRC = item.CRC
+                old.compress_size += item.compress_size
 
         if self._info_callback:
             self._info_callback(item)
