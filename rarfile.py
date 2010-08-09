@@ -187,6 +187,12 @@ except ImportError:
         def pack(self, *args):
             return pack(self.format, *args)
 
+# for python 2.3
+try:
+    DEVNULL = os.devnull
+except AttributeError:
+    DEVNULL = '/dev/null'
+
 # internal byte constants
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
 ZERO = bytes("\0", 'ascii')
@@ -208,7 +214,7 @@ def custom_popen(cmd):
 
     # 3xPIPE seems unreliable, at least on osx
     try:
-        null = open(os.devnull, "wb")
+        null = open(DEVNULL, "wb")
         _in = null
         _err = null
     except IOError:
