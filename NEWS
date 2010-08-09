@@ -2,6 +2,22 @@
 rarfile history
 ===============
 
+Version 2.2 (unreleased)
+------------------------
+
+Fixes:
+
+* Relaxed volume naming.  Now it just calculates new volume name by finding number
+  in old one and increasing it, without any expectations what that number should be.
+* Compressed size is per-volume, sum them together, so that user sees complete
+  compressed size for files split over several volumes.
+* Couple timestamp parsing fixes.
+
+Cleanups:
+
+* Use ``struct.Struct()`` to cache unpack formats.
+* Support missing ``os.devnull``. (Python 2.3)
+
 Version 2.1 (2010-07-31)
 ------------------------
 
