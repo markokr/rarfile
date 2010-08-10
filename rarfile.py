@@ -695,11 +695,12 @@ class RarFile(object):
         pos = S_FILE_HDR.size
 
         if h.flags & RAR_FILE_LARGE:
-            h1 = S_LONG.unpack_from(h.header_data, pos)
-            h2 = S_LONG.unpack_from(h.header_data, pos + 4)
+            h1 = S_LONG.unpack_from(h.header_data, pos)[0]
+            h2 = S_LONG.unpack_from(h.header_data, pos + 4)[0]
             h.compress_size |= h1 << 32
             h.file_size |= h2 << 32
             pos += 8
+            h.add_size = h.compress_size
 
         name = h.header_data[pos : pos + h.name_size ]
         pos += h.name_size
