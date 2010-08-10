@@ -152,13 +152,11 @@ cf_test_unrar = 0
 def test_read_long(r, inf):
     f = r.open(inf.filename)
     total = 0
-    crc = 0
     while 1:
         data = f.read(8192)
         if not data:
             break
         total += len(data)
-        crc = crc32(data, crc)
     f.close()
     if total != inf.file_size:
         print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
