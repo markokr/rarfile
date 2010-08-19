@@ -48,6 +48,7 @@ endarc_bits = (
     (rf.RAR_ENDARC_NEXT_VOLUME, "NEXTVOL"),
     (rf.RAR_ENDARC_DATACRC, "DATACRC"),
     (rf.RAR_ENDARC_REVSPACE, "REVSPACE"),
+    (rf.RAR_ENDARC_VOLNR, "VOLNR"),
     (rf.RAR_SKIP_IF_UNKNOWN, "SKIP"),
     (rf.RAR_LONG_BLOCK, "LONG"),
 )
@@ -78,13 +79,23 @@ file_parms = ("D64", "D128", "D256", "D512",
 
 def render_flags(flags, bit_list):
     res = []
+    known = 0
     for bit in bit_list:
+        known = known | bit[0]
         if flags & bit[0]:
             res.append(bit[1])
+    unknown = flags & ~known
+    n = 0
+    while unknown:
+        if unknown & 1:
+            res.append("UNK_%04x" % (1 << n))
+        unknown = unknown >> 1
+        n += 1
+
     return ",".join(res)
 
 def get_file_flags(flags):
-    res = render_flags(flags, file_bits)
+    res = render_flags(flags & ~rf.RAR_FILE_DICTMASK, file_bits)
 
     xf = (flags & rf.RAR_FILE_DICTMASK) >> 5
     res += "," + file_parms[xf]
@@ -139,6 +150,8 @@ def show_item(h):
         print("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_ENDARC:
         print("  flags=0x%04x:%s" % (h.flags, get_endarc_flags(h.flags)))
+    elif h.type == rf.RAR_BLOCK_MARK:
+        print("  flags=0x%04x:" % (h.flags,))
     else:
         print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
 
