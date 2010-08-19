@@ -27,7 +27,7 @@ Basic logic:
    otherwise it needs to scan whole archive on each execution.
 """
 
-__version__ = '2.1'
+__version__ = '2.2'
 
 import sys, os
 from struct import pack, unpack
