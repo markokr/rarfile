@@ -766,11 +766,10 @@ class RarFile(object):
                 pos += 4
             rem = 0
             cnt = flag & 3
-            for i in range(3):
-                rem <<= 8
-                if i < cnt:
-                    rem += S_BYTE.unpack_from(data, pos)[0]
-                    pos += 1
+            for i in range(cnt):
+                b = S_BYTE.unpack_from(data, pos)[0]
+                rem = (b << 16) | (rem >> 8)
+                pos += 1
             sec = dostime[5] + rem / unit
             if flag & 4:
                 sec += 1
