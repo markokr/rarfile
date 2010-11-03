@@ -4,7 +4,9 @@
 
 import sys
 import rarfile as rf
-from binascii import crc32
+from binascii import crc32, hexlify
+
+rf.REPORT_BAD_HEADER = 1
 
 usage = """
 dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
@@ -115,11 +117,12 @@ def fmt_time(t):
 
 def show_item(h):
     st = rarType(h.type)
+    unknown = h.header_size - h.header_base
     print("%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
-                h.add_size, h.header_unknown))
-    if h.header_unknown > 0:
-        dat = h.header_data[-h.header_unknown:]
-        print("  unknown:", repr(dat))
+                h.add_size, unknown))
+    if unknown > 0:
+        dat = h.header_data[h.header_base : ]
+        print("  unknown: %s" % hexlify(dat))
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
         if h.host_os == rf.RAR_OS_UNIX:
             s_mode = "0%o" % h.mode
@@ -154,6 +157,9 @@ def show_item(h):
         print("  flags=0x%04x:" % (h.flags,))
     else:
         print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
+
+    if h.comment is not None:
+        print("  comment=%s" % repr(h.comment))
 
 cf_show_comment = 0
 cf_verbose = 0
@@ -207,6 +213,8 @@ def test_real(fn, psw):
     if cf_show_comment and r.comment:
         for ln in r.comment.split('\n'):
             print("    %s" % ln)
+    elif cf_verbose == 1 and r.comment:
+        print("  comment=%s" % repr(r.comment))
 
     # process
     for n in r.namelist():
