@@ -4,18 +4,20 @@ from distutils.core import setup
 
 import rarfile
 
+ver = rarfile.__version__
 ldesc = open("README").read().strip()
 sdesc = ldesc.split('\n')[0].split(' - ')[1].strip()
 
 setup(
     name = "rarfile",
-    version = rarfile.__version__,
+    version = ver,
     description = sdesc,
     long_description = ldesc,
     author = "Marko Kreen",
     license = "ISC",
     author_email = "markokr@gmail.com",
     url = "http://rarfile.berlios.de/",
+    download_url = "http://download.berlios.de/rarfile/rarfile-%s.tar.gz" % ver,
     py_modules = ['rarfile'],
     keywords = ['rar', 'archive'],
     classifiers = [
