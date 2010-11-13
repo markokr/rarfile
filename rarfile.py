@@ -463,11 +463,21 @@ class RarFile(object):
             psw = None
 
         # is temp write usable?
-        skip_hack = self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_VOLUME | RAR_MAIN_PASSWORD)
+        if not USE_EXTRACT_HACK:
+            use_hack = 0
+        elif self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_PASSWORD):
+            use_hack = 0
+        elif inf.flags & (RAR_FILE_SPLIT_BEFORE | RAR_FILE_SPLIT_AFTER):
+            use_hack = 0
+        elif inf.file_size > HACK_SIZE_LIMIT:
+            use_hack = 0
+        else:
+            use_hack = 1
 
-        if inf.compress_type == RAR_M0 and psw is None:
+        # now extract
+        if inf.compress_type == RAR_M0 and (inf.flags & RAR_FILE_PASSWORD) == 0:
             return self._open_clear(inf)
-        elif USE_EXTRACT_HACK and not skip_hack and inf.file_size <= HACK_SIZE_LIMIT:
+        elif use_hack:
             return self._open_hack(inf, psw)
         else:
             return self._open_unrar(self.rarfile, inf, psw)
@@ -918,7 +928,7 @@ class RarFile(object):
         BSIZE = 32*1024
 
         size = inf.compress_size + inf.header_size
-        rf = open(self.rarfile, "rb")
+        rf = open(inf.volume_file, "rb")
         rf.seek(inf.header_offset)
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
