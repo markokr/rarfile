@@ -25,6 +25,15 @@ Basic logic:
  - Extract compressed files with unrar.
  - Optionally write compressed data to temp file to speed up unrar,
    otherwise it needs to scan whole archive on each execution.
+
+There are few module-level parameters to tune behaviour::
+
+    import rarfile
+    rarfile.NEED_COMMENTS = 0  # default: 1
+    rarfile.USE_DATETIME = 1   # default: 0
+
+For details, refer to source.
+
 """
 
 __version__ = '2.2'
@@ -34,6 +43,7 @@ from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
+from datetime import datetime
 
 # only needed for encryped headers
 try:
@@ -77,6 +87,9 @@ NEED_COMMENTS = 1
 # When RAR is corrupt, stopping on bad header is better
 # On unknown/misparsed RAR headers reporting is better
 REPORT_BAD_HEADER = 0
+
+# Convert RAR time tuple into datetime() object
+USE_DATETIME = 0
 
 ##
 ## rar constants
@@ -269,6 +282,7 @@ class RarInfo(object):
         Always unicode string.
     @ivar date_time:
         Modification time, tuple of (year, month, day, hour, minute, second).
+        Or datetime() object if USE_DATETIME is set.
     @ivar file_size:
         Uncompressed size.
     @ivar compress_size:
@@ -295,13 +309,14 @@ class RarInfo(object):
         File comment (unicode string or None).
 
     @ivar mtime:
-        Optional time field: Modification time, tuple of (year, month, day, hour, minute, second).
+        Optional time field: Modification time, with float seconds.
+        Same as .date_time but with more precision.
     @ivar ctime:
-        Optional time field: creation time.
+        Optional time field: creation time, with float seconds.
     @ivar atime:
-        Optional time field: last access time.
+        Optional time field: last access time, with float seconds.
     @ivar arctime:
-        Optional time field: archival time.
+        Optional time field: archival time, with float seconds.
     '''
 
     __slots__ = (
@@ -320,8 +335,8 @@ class RarInfo(object):
         'comment',
 
         # optional extended time fields
-        # same format as date_time, but sec is float
-        'mtime',
+        # tuple where the sec is float, or datetime().
+        'mtime', # same as .date_time
         'ctime',
         'atime',
         'arctime',
@@ -775,6 +790,22 @@ class RarFile(object):
 
         if h.flags & RAR_FILE_COMMENT:
             self._parse_subblocks(h, pos)
+
+        # convert timestamps
+        if USE_DATETIME:
+            h.date_time = to_datetime(h.date_time)
+            h.mtime = to_datetime(h.mtime)
+            h.atime = to_datetime(h.atime)
+            h.ctime = to_datetime(h.ctime)
+            h.arctime = to_datetime(h.arctime)
+
+        # .mtime is .date_time with more precision
+        if h.mtime:
+            if USE_DATETIME:
+                h.date_time = h.mtime
+            else:
+                # keep seconds int
+                h.date_time = h.mtime[:5] + (int(h.mtime[5]),)
 
         return pos
 
@@ -1285,4 +1316,15 @@ def rar_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=No
         return p.communicate()[0]
     finally:
         os.unlink(tmpname)
+
+def to_datetime(t):
+    """Convert 6-part time tuple into datetime object."""
+
+    if t is None:
+        return None
+    mon = t[1] or 1
+    day = t[2] or 1
+    sec = int(t[5])
+    usec = int(1000000 * (t[5] - sec))
+    return datetime(t[0], mon, day, t[3], t[4], sec, usec)
 

@@ -5,6 +5,7 @@
 import sys
 import rarfile as rf
 from binascii import crc32, hexlify
+from datetime import datetime
 
 rf.REPORT_BAD_HEADER = 1
 
@@ -113,6 +114,8 @@ def get_generic_flags(flags):
     return render_flags(flags, generic_bits)
 
 def fmt_time(t):
+    if isinstance(t, datetime):
+        return t.isoformat(' ')
     return "%04d-%02d-%02d %02d:%02d:%02d" % t
 
 def show_item(h):
@@ -142,13 +145,13 @@ def show_item(h):
         print("  name=%s" % h.filename)
         print("  name=%s" % h.unicode_filename)
         if h.mtime:
-            print("  mtime=%s" % repr(h.mtime))
+            print("  mtime=%s" % fmt_time(h.mtime))
         if h.ctime:
-            print("  ctime=%s" % repr(h.ctime))
+            print("  ctime=%s" % fmt_time(h.ctime))
         if h.atime:
-            print("  atime=%s" % repr(h.atime))
+            print("  atime=%s" % fmt_time(h.atime))
         if h.arctime:
-            print("  arctime=%s" % repr(h.arctime))
+            print("  arctime=%s" % fmt_time(h.arctime))
     elif h.type == rf.RAR_BLOCK_MAIN:
         print("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_ENDARC:
