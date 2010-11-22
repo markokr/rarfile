@@ -143,7 +143,6 @@ def show_item(h):
         ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
         print("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
         print("  name=%s" % h.filename)
-        print("  name=%s" % h.unicode_filename)
         if h.mtime:
             print("  mtime=%s" % fmt_time(h.mtime))
         if h.ctime:
