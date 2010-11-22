@@ -91,6 +91,10 @@ REPORT_BAD_HEADER = 0
 # Convert RAR time tuple into datetime() object
 USE_DATETIME = 0
 
+# Separator for path name components.  RAR internally uses '\\'.
+# Use '/' to be similar with zipfile.
+PATH_SEP = '/'
+
 ##
 ## rar constants
 ##
@@ -278,7 +282,7 @@ class RarInfo(object):
     
     @ivar filename:
         File name with relative path.
-        Note that Rar uses "\\" as directory separator.
+        Default path separator is '/', to change set rarfile.PATH_SEP.
         Always unicode string.
     @ivar date_time:
         Modification time, tuple of (year, month, day, hour, minute, second).
@@ -427,7 +431,12 @@ class RarFile(object):
         if isinstance(fname, RarInfo):
             return fname
 
-        fname2 = fname.replace("/", "\\")
+        # accept both ways here
+        if PATH_SEP == '/':
+            fname2 = fname.replace("\\", "/")
+        else:
+            fname2 = fname.replace("/", "\\")
+
         for f in self._info_list:
             if fname == f.filename or fname2 == f.filename:
                 return f
@@ -776,12 +785,17 @@ class RarFile(object):
             nul = name.find(ZERO)
             h.orig_filename = name[:nul]
             u = _UnicodeFilename(h.orig_filename, name[nul + 1 : ])
-            h.unicode_filename = u.decode()
+            h.filename = u.decode()
         else:
             h.orig_filename = name
-            h.unicode_filename = self._decode(name)
+            h.filename = self._decode(name)
 
-        h.filename = h.unicode_filename
+        # change separator, if requested
+        if PATH_SEP != '\\':
+            h.filename = h.filename.replace('\\', PATH_SEP)
+
+        # compat
+        h.unicode_filename = h.filename
 
         if h.flags & RAR_FILE_SALT:
             h.salt = h.header_data[pos : pos + 8]
@@ -986,7 +1000,8 @@ class RarFile(object):
         # not giving filename avoids encoding related problems
         if not tmpfile:
             fn = inf.filename
-            fn = fn.replace('\\', os.sep)
+            if PATH_SEP != os.sep:
+                fn = fn.replace(PATH_SEP, os.sep)
             cmd.append(fn)
 
         # read from unrar pipe
@@ -1015,7 +1030,10 @@ class RarFile(object):
         cmd.append(self.rarfile)
 
         # file list
-        cmd += fnlist
+        for fn in fnlist:
+            if os.sep != PATH_SEP:
+                fn = fn.replace(PATH_SEP, os.sep)
+            cmd.append(fn)
 
         # destination path
         if path is not None:
