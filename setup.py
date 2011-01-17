@@ -19,7 +19,7 @@ setup(
     url = "http://rarfile.berlios.de/",
     download_url = "http://download.berlios.de/rarfile/rarfile-%s.tar.gz" % ver,
     py_modules = ['rarfile'],
-    keywords = ['rar', 'archive'],
+    keywords = ['rar', 'unrar', 'archive'],
     classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
