@@ -324,19 +324,23 @@ class RarInfo(object):
     '''
 
     __slots__ = (
-        'compress_size',
+        # zipfile-compatible fields
+        'filename',
         'file_size',
-        'host_os',
+        'compress_size',
+        'date_time',
+        'comment',
         'CRC',
+        'volume',
+        'orig_filename', # bytes in unknown encoding
+
+        # rar-specific fields
         'extract_version',
         'compress_type',
+        'host_os',
         'mode',
         'type',
         'flags',
-        'volume',
-        'filename',
-        'date_time',
-        'comment',
 
         # optional extended time fields
         # tuple where the sec is float, or datetime().
@@ -344,10 +348,6 @@ class RarInfo(object):
         'ctime',
         'atime',
         'arctime',
-
-        # obsolete
-        'unicode_filename', # same as filename
-        'orig_filename', # bytes in unknown encoding
 
         # RAR internals
         'name_size',
@@ -793,9 +793,6 @@ class RarFile(object):
         # change separator, if requested
         if PATH_SEP != '\\':
             h.filename = h.filename.replace('\\', PATH_SEP)
-
-        # compat
-        h.unicode_filename = h.filename
 
         if h.flags & RAR_FILE_SALT:
             h.salt = h.header_data[pos : pos + 8]
