@@ -96,7 +96,7 @@ USE_DATETIME = 0
 
 # Separator for path name components.  RAR internally uses '\\'.
 # Use '/' to be similar with zipfile.
-PATH_SEP = '/'
+PATH_SEP = '\\'
 
 ##
 ## rar constants
