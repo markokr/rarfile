@@ -84,6 +84,9 @@ HACK_SIZE_LIMIT = 20*1024*1024
 # whether to parse file/archive comments.
 NEED_COMMENTS = 1
 
+# whether to convert comments to unicode strings
+UNICODE_COMMENTS = 0
+
 # When RAR is corrupt, stopping on bad header is better
 # On unknown/misparsed RAR headers reporting is better
 REPORT_BAD_HEADER = 0
@@ -848,9 +851,9 @@ class RarFile(object):
                 cmt = rar_decompress(ver, meth, data, declen, sflags,
                                      crc, self._password)
                 if not self._crc_check:
-                    h.comment = self._decode(cmt)
+                    h.comment = self._decode_comment(cmt)
                 elif crc32(cmt) & 0xFFFF == crc:
-                    h.comment = self._decode(cmt)
+                    h.comment = self._decode_comment(cmt)
 
             pos = pos_next
 
@@ -985,7 +988,7 @@ class RarFile(object):
             if crc != inf.CRC:
                 return None
 
-        return self._decode(cmt)
+        return self._decode_comment(cmt)
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
@@ -1011,6 +1014,11 @@ class RarFile(object):
             except UnicodeError:
                 pass
         return val.decode(self._charset, 'replace')
+
+    def _decode_comment(self, val):
+        if UNICODE_COMMENTS:
+            return self._decode(val)
+        return val
 
     # call unrar to extract a file
     def _extract(self, fnlist, path=None, psw=None):
