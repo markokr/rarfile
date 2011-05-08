@@ -23,7 +23,7 @@ clean:
 
 docs: $(htmls)
 	rm -f html/*
-	epydoc --no-private --no-sourcecode -n rarfile --no-frames -v rarfile
+	epydoc --simple-term --no-private --no-sourcecode -n rarfile --no-frames -v rarfile
 
 lint:
 	pylint -E rarfile.py
