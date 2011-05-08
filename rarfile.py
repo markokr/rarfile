@@ -1287,7 +1287,7 @@ def rar3_s2k(psw, salt):
             cnt = S_LONG.pack(i*0x4000 + j)
             h.update(seed + cnt[:3])
             if j == 0:
-                iv += h.digest()[-1]
+                iv += h.digest()[19:20]
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
     return key_le, iv
