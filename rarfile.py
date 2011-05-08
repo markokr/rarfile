@@ -14,7 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-"""RAR archive reader.
+r"""RAR archive reader.
 
 This is Python module for Rar archive reading.  The interface
 is made as zipfile like as possible.
@@ -26,13 +26,41 @@ Basic logic:
  - Optionally write compressed data to temp file to speed up unrar,
    otherwise it needs to scan whole archive on each execution.
 
-There are few module-level parameters to tune behaviour::
+Example::
 
     import rarfile
-    rarfile.NEED_COMMENTS = 0  # default: 1
-    rarfile.USE_DATETIME = 1   # default: 0
 
-For details, refer to source.
+    rf = rarfile.RarFile('myarchive.rar')
+    for f in rf.infolist():
+        print f.filename, f.file_size
+        if f.filename == 'README':
+            print rf.read(f)
+
+There are few module-level parameters to tune behaviour,
+here they are with defaults, and reason to change it::
+
+    import rarfile
+
+    # Set to full path of unrar.exe if it is not in PATH
+    rarfile.UNRAR_TOOL = "unrar"
+
+    # Set to 0 if you don't look at comments and want to
+    # avoid wasting time for parsing them
+    rarfile.NEED_COMMENTS = 1
+
+    # Set up to 1 if you don't want to deal with decoding comments
+    # from unknown encoding.  rarfile will try couple of common
+    # encodings in sequence.
+    rarfile.UNICODE_COMMENTS = 0
+
+    # Set to 1 if you prefer timestamps to be datetime objects
+    # instead tuples
+    rarfile.USE_DATETIME = 0
+
+    # Set to '/' to be more compatible with zipfile
+    rarfile.PATH_SEP = '\\'
+
+For more details, refer to source.
 
 """
 
