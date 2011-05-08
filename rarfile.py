@@ -94,6 +94,9 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile']
 # default fallback charset
 DEFAULT_CHARSET = "windows-1252"
 
+# list of encodings to try, with fallback to DEFAULT_CHARSET if none succeed
+TRY_ENCODINGS = ('utf8', 'utf-16le')
+
 # 'unrar', 'rar' or full path to either one
 UNRAR_TOOL = "unrar"
 
@@ -1039,7 +1042,7 @@ class RarFile(object):
         return PipeReader(self, inf, cmd, tmpfile)
 
     def _decode(self, val):
-        for c in ('utf8', 'utf-16le'):
+        for c in TRY_ENCODINGS:
             try:
                 return val.decode(c)
             except UnicodeError:
