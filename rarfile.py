@@ -76,7 +76,10 @@ from datetime import datetime
 # only needed for encryped headers
 try:
     from Crypto.Cipher import AES
-    from hashlib import sha1
+    try:
+        from hashlib import sha1
+    except ImportError:
+        from sha import new as sha1
     _have_crypto = 1
 except ImportError:
     _have_crypto = 0
