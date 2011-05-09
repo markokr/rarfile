@@ -278,9 +278,8 @@ def custom_popen(cmd):
 
     # 3xPIPE seems unreliable, at least on osx
     try:
-        null = open(DEVNULL, "wb")
-        _in = null
-        _err = null
+        _in = open(DEVNULL, "rb")
+        _err = open(DEVNULL, "wb")
     except IOError:
         _in = PIPE
         _err = STDOUT
