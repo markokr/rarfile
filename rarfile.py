@@ -256,6 +256,13 @@ try:
 except AttributeError:
     DEVNULL = '/dev/null'
 
+try:
+    from io import RawIOBase
+except ImportError:
+    class RawIOBase(object):
+        def close(self):
+            pass
+
 # internal byte constants
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
 ZERO = bytes("\0", 'ascii')
@@ -289,7 +296,9 @@ def custom_popen(cmd):
             _err = STDOUT
 
     # run command
-    p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
+    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
+
+    # explicitly close devnull fds, this process does not use them
     if _in == PIPE:
         p.stdin.close()
     else:
@@ -986,7 +995,7 @@ class RarFile(object):
         BSIZE = 32*1024
 
         size = inf.compress_size + inf.header_size
-        rf = open(inf.volume_file, "rb")
+        rf = open(inf.volume_file, "rb", 0)
         rf.seek(inf.header_offset)
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
@@ -1140,14 +1149,17 @@ class _UnicodeFilename:
                         self.put(self.std_byte(), 0)
         return self.buf.decode("utf-16le", "replace")
 
-
-class BaseReader:
+class BaseReader(RawIOBase):
     """Base class for 'file-like' object that RarFile.open() returns.
 
     Provides public methods and common crc checking.
     """
 
     def __init__(self, rf, inf, tempfile = None):
+        # standard io.* properties
+        self.name = inf.filename
+        self.mode = 'rb'
+
         self.rf = rf
         self.inf = inf
         self.crc_check = rf._crc_check
@@ -1166,11 +1178,11 @@ class BaseReader:
         """Read all or specified amount of data from archive entry."""
 
         # sanitize cnt
-        if cnt is None:
+        if cnt is None or cnt < 0:
             cnt = self.remain
         elif cnt > self.remain:
             cnt = self.remain
-        if cnt <= 0:
+        if cnt == 0:
             return EMPTY
 
         # actual read
@@ -1203,6 +1215,8 @@ class BaseReader:
     def close(self):
         """Close open resources."""
 
+        RawIOBase.close(self)
+
         if self.fd:
             self.fd.close()
             self.fd = None
@@ -1213,6 +1227,19 @@ class BaseReader:
     def __del__(self):
         """Hook delete to make sure tempfile is removed."""
         self.close()
+
+    def readinto(self, buf):
+        """Read directly info buffer."""
+        data = self.read(len(buf))
+        n = len(data)
+        try:
+            buf[:n] = data
+        except TypeError:
+            import array
+            if not isinstance(buf, array.array):
+                raise
+            buf[:n] = array.array('b', data)
+        return n
 
     def tell(self):
         """Return current reading position in uncompressed data."""
@@ -1251,6 +1278,7 @@ class BaseReader:
             # reopen and seek
             self._open()
             self._skip(new_ofs)
+        return self.tell()
 
     def _skip(self, cnt):
         """Read and discard data"""
@@ -1263,6 +1291,18 @@ class BaseReader:
                 break
             cnt -= len(buf)
 
+    def readable(self):
+        """Returns True"""
+        return True
+
+    def seekable(self):
+        """Returns True"""
+        return True
+
+    def readall(self):
+        """Read all remaining data"""
+        # avoid RawIOBase default impl
+        return self.read()
 
 class PipeReader(BaseReader):
     """Read data from pipe, handle tempfile cleanup."""
@@ -1301,7 +1341,7 @@ class DirectReader(BaseReader):
         BaseReader._open(self)
 
         self.volfile = self.inf.volume_file
-        self.fd = open(self.volfile, "rb")
+        self.fd = open(self.volfile, "rb", 0)
         self.fd.seek(self.inf.header_offset, 0)
         self.cur = self.rf._parse_header(self.fd)
         self.cur_avail = self.cur.add_size
@@ -1364,7 +1404,7 @@ class DirectReader(BaseReader):
 
         # open next part
         self.volfile = self.rf._next_volname(self.volfile)
-        fd = open(self.volfile, "rb")
+        fd = open(self.volfile, "rb", 0)
         self.fd = fd
 
         # loop until first file header
