@@ -15,7 +15,9 @@ tgz:
 	python setup.py sdist
 
 clean:
-	rm -rf *.pyc build dist MANIFEST *.orig *.rej *.html
+	rm -rf __pycache__ build dist
+	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class
+	make -C test clean
 
 
 %.html: %
