@@ -276,16 +276,27 @@ def custom_popen(cmd):
     if sys.platform == 'win32':
         creationflags = 0x08000000 # CREATE_NO_WINDOW
 
-    # 3xPIPE seems unreliable, at least on osx
-    try:
-        _in = open(DEVNULL, "rb")
-        _err = open(DEVNULL, "wb")
-    except IOError:
+    if sys.platform[:4] == 'java':
         _in = PIPE
         _err = STDOUT
+    else:
+        # 3xPIPE seems unreliable, at least on osx
+        try:
+            _in = open(DEVNULL, "rb")
+            _err = open(DEVNULL, "wb")
+        except IOError:
+            _in = PIPE
+            _err = STDOUT
 
     # run command
-    return Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
+    p = Popen(cmd, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
+    if _in == PIPE:
+        p.stdin.close()
+    else:
+        _in.close()
+    if _err != STDOUT:
+        _err.close()
+    return p
 
 #
 # Public interface
