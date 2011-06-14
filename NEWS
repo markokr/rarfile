@@ -2,6 +2,35 @@
 rarfile history
 ===============
 
+Version 2.3 (2011-xx-xx)
+------------------------
+
+Features:
+
+* Support .seek() method on file streams.  (Kristian Larsson)
+* Support file comments - ``RarInfo.comment`` contains decompressed data if available.
+* File objects returned from RarFile.open() are io.RawIOBase-compatible
+* Option ``rarfile.UNICODE_COMMENTS`` to decode both archive and file comments to unicode.
+  Default: 0
+* Option ``rarfile.PATH_SEP`` to change path separator.  Default: ``r'\'``,
+  set ``rarfile.PATH_SEP='/'`` to be compatibe with zipfile.
+* Option ``rarfile.USE_DATETIME`` to convert timestamps to datetime objects.
+  Default: 0, timestamps are tuples.
+* Option ``rarfile.TRY_ENCODINGS`` to allow tuning attempted encoding list.
+* Standardize regtests to make sure various features work
+
+Compatibility:
+
+* Drop ``RarInfo.unicode_filename``, plain ``RarInfo.filename`` is already unicode since 2.0.
+* Reorder RarInfo fiels to better show zipfile-compatible fields.
+
+Fixes:
+
+* Make encrypted headers work with Python 3.x bytes() and with old 2.x 'sha' module.
+* Open /dev/null with proper mode for stdin/err.  Makes rarfile work on Jython
+  and works around subprocess bug in Python 3.2.
+* Use temp rar file hack on multi-volume archives too.
+
 Version 2.2 (2010-08-19)
 ------------------------
 
