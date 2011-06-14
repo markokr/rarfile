@@ -8,6 +8,8 @@ from binascii import crc32, hexlify
 from datetime import datetime
 
 rf.REPORT_BAD_HEADER = 1
+rf.UNICODE_COMMENTS = 1
+rf.USE_DATETIME = 1
 
 usage = """
 dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
@@ -123,7 +125,7 @@ def show_item(h):
     unknown = h.header_size - h.header_base
     print("%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
                 h.add_size, unknown))
-    if unknown > 0:
+    if unknown > 0 and cf_verbose > 1:
         dat = h.header_data[h.header_base : ]
         print("  unknown: %s" % hexlify(dat))
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
@@ -161,7 +163,10 @@ def show_item(h):
         print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
 
     if h.comment is not None:
-        print("  comment=%s" % repr(h.comment))
+        cm = repr(h.comment)
+        if cm[0] == 'u':
+            cm = cm[1:]
+        print("  comment=%s" % cm)
 
 cf_show_comment = 0
 cf_verbose = 0
@@ -216,7 +221,10 @@ def test_real(fn, psw):
         for ln in r.comment.split('\n'):
             print("    %s" % ln)
     elif cf_verbose == 1 and r.comment:
-        print("  comment=%s" % repr(r.comment))
+        cm = repr(r.comment)
+        if cm[0] == 'u':
+            cm = cm[1:]
+        print("  comment=%s" % cm)
 
     # process
     for n in r.namelist():
