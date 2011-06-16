@@ -1151,10 +1151,16 @@ class BaseReader:
         self.rf = rf
         self.inf = inf
         self.crc_check = rf._crc_check
-        self.CRC = 0
-        self.remain = inf.file_size
         self.tempfile = tempfile
         self.fd = None
+        self._open()
+
+    def _open(self):
+        if self.fd:
+            self.fd.close()
+        self.fd = None
+        self.CRC = 0
+        self.remain = self.inf.file_size
 
     def read(self, cnt = None):
         """Read all or specified amount of data from archive entry."""
@@ -1175,7 +1181,7 @@ class BaseReader:
 
         # done?
         if not data or self.remain == 0:
-            self.close()
+            #self.close()
             self._check()
         return data
 
@@ -1208,13 +1214,79 @@ class BaseReader:
         """Hook delete to make sure tempfile is removed."""
         self.close()
 
+    def tell(self):
+        """Return current reading position in uncompressed data."""
+        return self.inf.file_size - self.remain
+
+    def seek(self, ofs, whence = 0):
+        """Seek in data."""
+
+        # disable crc check when seeking
+        self.crc_check = 0
+
+        fsize = self.inf.file_size
+        cur_ofs = self.tell()
+
+        if whence == 0:     # seek from beginning of file
+            new_ofs = ofs
+        elif whence == 1:   # seek from current position
+            new_ofs = cur_ofs + ofs
+        elif whence == 2:   # seek from end of file
+            new_ofs = fsize + ofs
+        else:
+            raise ValueError('Invalid value for whence')
+
+        # sanity check
+        if new_ofs < 0:
+            new_ofs = 0
+        elif new_ofs > fsize:
+            new_ofs = fsize
+
+        # do the actual seek
+        if new_ofs >= cur_ofs:
+            self._skip(new_ofs - cur_ofs)
+        else:
+            # process old data ?
+            #self._skip(fsize - cur_ofs)
+            # reopen and seek
+            self._open()
+            self._skip(new_ofs)
+
+    def _skip(self, cnt):
+        """Read and discard data"""
+        while cnt > 0:
+            if cnt > 8192:
+                buf = self.read(8192)
+            else:
+                buf = self.read(cnt)
+            if not buf:
+                break
+            cnt -= len(buf)
+
 
 class PipeReader(BaseReader):
     """Read data from pipe, handle tempfile cleanup."""
 
     def __init__(self, rf, inf, cmd, tempfile=None):
+        self.cmd = cmd
+        self.proc = None
         BaseReader.__init__(self, rf, inf, tempfile)
-        self.proc = custom_popen(cmd)
+
+    def _open(self):
+        BaseReader._open(self)
+
+        # stop old process
+        if self.proc and self.proc.poll() is None:
+            if hasattr(self.proc, 'terminate'):
+                self.proc.terminate()
+            if self.proc.stdin:
+                self.proc.stdin.close()
+            if self.proc.stderr:
+                self.proc.stderr.close()
+            self.proc.wait()
+
+        # launch new process
+        self.proc = custom_popen(self.cmd)
         self.fd = self.proc.stdout
 
     def _read(self, cnt):
@@ -1225,15 +1297,35 @@ class PipeReader(BaseReader):
 class DirectReader(BaseReader):
     """Read uncompressed data directly from archive."""
 
-    def __init__(self, rf, inf):
-        BaseReader.__init__(self, rf, inf)
-        self.volfile = inf.volume_file
-        self.size = inf.file_size
+    def _open(self):
+        BaseReader._open(self)
 
+        self.volfile = self.inf.volume_file
         self.fd = open(self.volfile, "rb")
         self.fd.seek(self.inf.header_offset, 0)
         self.cur = self.rf._parse_header(self.fd)
         self.cur_avail = self.cur.add_size
+
+    def _skip(self, cnt):
+        """RAR Seek, skipping through rar files to get to correct position
+        """
+
+        while cnt > 0:
+            # next vol needed?
+            if self.cur_avail == 0:
+                if not self._open_next():
+                    break
+
+            # fd is in read pos, do the read
+            if cnt > self.cur_avail:
+                cnt -= self.cur_avail
+                self.remain -= self.cur_avail
+                self.cur_avail = 0
+            else:
+                self.fd.seek(cnt, 1)
+                self.cur_avail -= cnt
+                self.remain -= cnt
+                cnt = 0
 
     def _read(self, cnt):
         """Read from potentially multi-volume archive."""
