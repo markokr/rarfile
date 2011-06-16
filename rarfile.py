@@ -64,7 +64,7 @@ For more details, refer to source.
 
 """
 
-__version__ = '2.2'
+__version__ = '2.3'
 
 import sys, os
 from struct import pack, unpack
