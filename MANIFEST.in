@@ -1,1 +1,2 @@
 include README FAQ NEWS Makefile MANIFEST.in LICENSE dumprar.py
+include test/Makefile test/*.sh test/files/*.rar test/files/*.exp
