@@ -11,7 +11,7 @@ all:
 install:
 	python setup.py install --prefix=$(prefix)
 
-tgz:
+tgz: clean
 	python setup.py sdist
 
 clean:
