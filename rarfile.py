@@ -66,7 +66,7 @@ For more details, refer to source.
 
 __version__ = '2.3'
 
-import sys, os
+import sys, os, struct
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
@@ -726,14 +726,19 @@ class RarFile(object):
 
     # read single header
     def _parse_header(self, fd):
-        # handle encrypted headers
-        if self._main and self._main.flags & RAR_MAIN_PASSWORD:
-            if not self._password:
-                return
-            fd = self._decrypt_header(fd)
+        try:
+            # handle encrypted headers
+            if self._main and self._main.flags & RAR_MAIN_PASSWORD:
+                if not self._password:
+                    return
+                fd = self._decrypt_header(fd)
 
-        # now read actual header
-        return self._parse_block_header(fd)
+            # now read actual header
+            return self._parse_block_header(fd)
+        except struct.error:
+            if REPORT_BAD_HEADER:
+                raise BadRarFile('Broken header in RAR file')
+            return None
 
     # common header
     def _parse_block_header(self, fd):
