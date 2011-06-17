@@ -17,12 +17,13 @@ Features:
 * Option ``rarfile.USE_DATETIME`` to convert timestamps to datetime objects.
   Default: 0, timestamps are tuples.
 * Option ``rarfile.TRY_ENCODINGS`` to allow tuning attempted encoding list.
-* Standardize regtests to make sure various features work
+* Standard regtests to make sure various features work
 
 Compatibility:
 
 * Drop ``RarInfo.unicode_filename``, plain ``RarInfo.filename`` is already unicode since 2.0.
 * Reorder RarInfo fiels to better show zipfile-compatible fields.
+* .read(-1) reads now until EOF.  Previously it returned empty buffer.
 
 Fixes:
 
@@ -30,6 +31,8 @@ Fixes:
 * Open /dev/null with proper mode for stdin/err.  Makes rarfile work on Jython
   and works around subprocess bug in Python 3.2.
 * Use temp rar file hack on multi-volume archives too.
+* Always .wait() on unrar, to avoid zombies
+* Convert struct.error to BadRarFile
 
 Version 2.2 (2010-08-19)
 ------------------------
