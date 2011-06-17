@@ -1338,6 +1338,11 @@ class PipeReader(BaseReader):
         """Read from pipe."""
         return self.fd.read(cnt)
 
+    def close(self):
+        BaseReader.close(self)
+        if self.proc:
+            self.proc.wait()
+            self.proc = None
 
 class DirectReader(BaseReader):
     """Read uncompressed data directly from archive."""
