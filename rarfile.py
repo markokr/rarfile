@@ -234,6 +234,13 @@ except NameError:
         def decode(self, *args):
             return self.arr.tostring().decode(*args)
 
+# Optimized .readinto() requires memoryview
+try:
+    memoryview
+    have_memoryview = 1
+except NameError:
+    have_memoryview = 0
+
 # Struct() for older python
 try:
     from struct import Struct
@@ -1234,7 +1241,8 @@ class BaseReader(RawIOBase):
         self.close()
 
     def readinto(self, buf):
-        """Read directly info buffer."""
+        """Slow emulated read into buffer"""
+
         data = self.read(len(buf))
         n = len(data)
         try:
@@ -1243,7 +1251,7 @@ class BaseReader(RawIOBase):
             import array
             if not isinstance(buf, array.array):
                 raise
-            buf[:n] = array.array('b', data)
+            buf[:n] = array.array(buf.typecode, data)
         return n
 
     def tell(self):
@@ -1344,6 +1352,20 @@ class PipeReader(BaseReader):
             self.proc.wait()
             self.proc = None
 
+    if have_memoryview:
+        def readinto(self, buf):
+            """Zero-copy read directly into buffer."""
+            cnt = len(buf)
+            if cnt > self.remain:
+                cnt = self.remain
+            vbuf = memoryview(buf)
+            res = self.fd.readinto(vbuf[0:cnt])
+            if res:
+                if self.crc_check:
+                    self.CRC = crc32(vbuf[:res], self.CRC)
+                self.remain -= res
+            return res
+
 class DirectReader(BaseReader):
     """Read uncompressed data directly from archive."""
 
@@ -1431,6 +1453,33 @@ class DirectReader(BaseReader):
             self.cur = cur
             self.cur_avail = cur.add_size
             return True
+
+    if have_memoryview:
+        def readinto(self, buf):
+            """Zero-copy read directly into buffer."""
+            got = 0
+            vbuf = memoryview(buf)
+            while got < len(buf):
+                # next vol needed?
+                if self.cur_avail == 0:
+                    if not self._open_next():
+                        break
+
+                # lenght for next read
+                cnt = len(buf) - got
+                if cnt > self.cur_avail:
+                    cnt = self.cur_avail
+
+                # read into temp view
+                res = self.fd.readinto(vbuf[got : got + cnt])
+                if not res:
+                    break
+                if self.crc_check:
+                    self.CRC = crc32(vbuf[got : got + res], self.CRC)
+                self.cur_avail -= res
+                self.remain -= res
+                got += res
+            return got
 
 # string-to-key hashing
 def rar3_s2k(psw, salt):
