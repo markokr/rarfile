@@ -7,6 +7,13 @@ import rarfile as rf
 from binascii import crc32, hexlify
 from datetime import datetime
 
+try:
+    bytearray
+except NameError:
+    import array
+    def bytearray(v):
+        return array.array('B', v)
+
 rf.REPORT_BAD_HEADER = 1
 rf.UNICODE_COMMENTS = 1
 rf.USE_DATETIME = 1
@@ -175,6 +182,13 @@ cf_extract = 0
 cf_test_read = 0
 cf_test_unrar = 0
 
+def check_crc(f, inf):
+    ucrc = f.CRC
+    if ucrc < 0:
+        ucrc += (long(1) << 32)
+    if ucrc != inf.CRC:
+        print ('crc error')
+
 def test_read_long(r, inf):
     f = r.open(inf.filename)
     total = 0
@@ -183,16 +197,34 @@ def test_read_long(r, inf):
         if not data:
             break
         total += len(data)
-    f.close()
     if total != inf.file_size:
         print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
         print(" *** short read: got=%d, need=%d ***\n" % (total, inf.file_size))
+    check_crc(f, inf)
+
+    # test .seek() & .readinto()
+    if cf_test_read > 1:
+        f.seek(0,0)
+
+        # hack: re-enable crc calc
+        f.crc_check = 1
+        f.CRC = 0
+
+        total = 0
+        buf = bytearray(rf.ZERO*4096)
+        while 1:
+            res = f.readinto(buf)
+            if not res:
+                break
+            total += res
+        if inf.file_size != total:
+            print(" *** readinto failed: got=%d, need=%d ***\n" % (total, inf.file_size))
+        check_crc(f, inf)
+    f.close()
 
 def test_read(r, inf):
-    if inf.file_size > 2*1024*1024:
-        test_read_long(r, inf)
-    else:
-        dat = r.read(inf.filename)
+    test_read_long(r, inf)
+
 
 def test_real(fn, psw):
     print("Archive: %s" % fn)
@@ -289,7 +321,7 @@ def main():
         elif a == '-x':
             cf_extract = 1
         elif a == '-t':
-            cf_test_read = 1
+            cf_test_read += 1
         elif a == '-T':
             cf_test_unrar = 1
         elif a[1] == 'C':

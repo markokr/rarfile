@@ -14,7 +14,7 @@ for py in $plist; do
   if which $py > /dev/null; then
     for f in files/*.rar; do
       printf "%s -> %-30s .. " $py $f
-      $py ../dumprar.py -t -v -ppassword $f > $f.$py
+      $py ../dumprar.py -t -t -v -ppassword $f > $f.$py
       if cmp -s $f.exp $f.$py; then
         echo "ok"
       else
@@ -26,6 +26,7 @@ for py in $plist; do
     echo ""
   else
     echo $py not available
+    echo ""
   fi
 done
 
