@@ -1167,7 +1167,7 @@ class BaseReader(RawIOBase):
     Provides public methods and common crc checking.
     """
 
-    def __init__(self, rf, inf, tempfile = None):
+    def __init__(self, rf, inf):
         # standard io.* properties
         self.name = inf.filename
         self.mode = 'rb'
@@ -1175,7 +1175,6 @@ class BaseReader(RawIOBase):
         self.rf = rf
         self.inf = inf
         self.crc_check = rf._crc_check
-        self.tempfile = tempfile
         self.fd = None
         self._open()
 
@@ -1232,9 +1231,6 @@ class BaseReader(RawIOBase):
         if self.fd:
             self.fd.close()
             self.fd = None
-        if self.tempfile:
-            os.unlink(self.tempfile)
-            self.tempfile = None
 
     def __del__(self):
         """Hook delete to make sure tempfile is removed."""
@@ -1323,20 +1319,26 @@ class PipeReader(BaseReader):
     def __init__(self, rf, inf, cmd, tempfile=None):
         self.cmd = cmd
         self.proc = None
-        BaseReader.__init__(self, rf, inf, tempfile)
+        self.tempfile = tempfile
+        BaseReader.__init__(self, rf, inf)
+
+    def _close_proc(self):
+        if not self.proc:
+            return
+        if self.proc.stdout:
+            self.proc.stdout.close()
+        if self.proc.stdin:
+            self.proc.stdin.close()
+        if self.proc.stderr:
+            self.proc.stderr.close()
+        self.proc.wait()
+        self.proc = None
 
     def _open(self):
         BaseReader._open(self)
 
         # stop old process
-        if self.proc and self.proc.poll() is None:
-            if hasattr(self.proc, 'terminate'):
-                self.proc.terminate()
-            if self.proc.stdin:
-                self.proc.stdin.close()
-            if self.proc.stderr:
-                self.proc.stderr.close()
-            self.proc.wait()
+        self._close_proc()
 
         # launch new process
         self.proc = custom_popen(self.cmd)
@@ -1347,10 +1349,15 @@ class PipeReader(BaseReader):
         return self.fd.read(cnt)
 
     def close(self):
+        self._close_proc()
         BaseReader.close(self)
-        if self.proc:
-            self.proc.wait()
-            self.proc = None
+
+        if self.tempfile:
+            try:
+                os.unlink(self.tempfile)
+            except OSError:
+                pass
+            self.tempfile = None
 
     if have_memoryview:
         def readinto(self, buf):
