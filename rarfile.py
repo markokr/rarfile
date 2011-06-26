@@ -508,7 +508,15 @@ class RarFile(object):
     def open(self, fname, mode = 'r', psw = None):
         '''Return open file object, where the data can be read.
         
-        The object has only .read() and .close() methods.
+        The object implements io.RawIOBase interface, so it can
+        be further wrapped with io.BufferedReader and io.TextIOWrapper.
+
+        On older Python where io module is not available, it implements
+        only .read(), .seek(), .tell() and .close() methods.
+
+        The object is seekable, although the seeking is fast only on
+        uncompressed files, on compressed files the seeking is implemented
+        by reading ahead and/or restaring the decompression.
 
         @param fname: file name or RarInfo instance.
         @param mode: must be 'r'
