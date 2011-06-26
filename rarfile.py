@@ -257,12 +257,7 @@ except ImportError:
         def pack(self, *args):
             return pack(self.format, *args)
 
-# for python 2.3
-try:
-    DEVNULL = os.devnull
-except AttributeError:
-    DEVNULL = '/dev/null'
-
+# file object superclass
 try:
     from io import RawIOBase
 except ImportError:
@@ -290,28 +285,9 @@ def custom_popen(cmd):
     if sys.platform == 'win32':
         creationflags = 0x08000000 # CREATE_NO_WINDOW
 
-    if sys.platform[:4] == 'java':
-        _in = PIPE
-        _err = STDOUT
-    else:
-        # 3xPIPE seems unreliable, at least on osx
-        try:
-            _in = open(DEVNULL, "rb")
-            _err = open(DEVNULL, "wb")
-        except IOError:
-            _in = PIPE
-            _err = STDOUT
-
     # run command
-    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = _in, stderr = _err, creationflags = creationflags)
-
-    # explicitly close devnull fds, this process does not use them
-    if _in == PIPE:
-        p.stdin.close()
-    else:
-        _in.close()
-    if _err != STDOUT:
-        _err.close()
+    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = PIPE, stderr = STDOUT,
+              creationflags = creationflags)
     return p
 
 #
@@ -624,7 +600,8 @@ class RarFile(object):
             cmd.append('-p-')
         cmd.append(self.rarfile)
         p = custom_popen(cmd)
-        if p.wait() != 0:
+        p.communicate()
+        if p.returncode != 0:
             raise BadRarFile("Testing failed")
 
     ##
@@ -1119,7 +1096,7 @@ class RarFile(object):
 
         # call
         p = custom_popen(cmd)
-        p.wait()
+        p.communicate()
 
 # handle unicode filename compression
 class _UnicodeFilename:
@@ -1351,6 +1328,10 @@ class PipeReader(BaseReader):
         # launch new process
         self.proc = custom_popen(self.cmd)
         self.fd = self.proc.stdout
+
+        # avoid situation where unrar waits on stdin
+        if self.proc.stdin:
+            self.proc.stdin.close()
 
     def _read(self, cnt):
         """Read from pipe."""
