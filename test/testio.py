@@ -12,15 +12,12 @@ except ImportError:
 
 def test_readline(rf, fn):
     f = rf.open(fn)
-    br = BufferedReader(f)
-    tr = TextIOWrapper(br)
+    tr = TextIOWrapper(BufferedReader(f))
     while 1:
         ln = tr.readline()
         if not ln:
             break
     tr.close()
-    br.close()
-    f.close()
 
 def main():
     files = ['stest1.txt', 'stest2.txt']
