@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005-2010  Marko Kreen <markokr@gmail.com>
+# Copyright (c) 2005-2011  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -66,6 +66,13 @@ For more details, refer to source.
 
 __version__ = '2.3'
 
+# export only interesting items
+__all__ = ['is_rarfile', 'RarInfo', 'RarFile']
+
+##
+## Imports and compat - support both Python 2.x and 3.x
+##
+
 import sys, os, struct
 from struct import pack, unpack
 from binascii import crc32
@@ -84,8 +91,58 @@ try:
 except ImportError:
     _have_crypto = 0
 
-# export only interesting items
-__all__ = ['is_rarfile', 'RarInfo', 'RarFile']
+# compat with 2.x
+if sys.hexversion < 0x3000000:
+    # prefer 3.x behaviour
+    range = xrange
+    # py2.6 has broken bytes()
+    def bytes(s, enc):
+        return str(s)
+
+# see if compat bytearray() is needed
+try:
+    bytearray
+except NameError:
+    import array
+    class bytearray:
+        def __init__(self, val = ''):
+            self.arr = array.array('B', val)
+            self.append = self.arr.append
+            self.__getitem__ = self.arr.__getitem__
+            self.__len__ = self.arr.__len__
+        def decode(self, *args):
+            return self.arr.tostring().decode(*args)
+
+# Optimized .readinto() requires memoryview
+try:
+    memoryview
+    have_memoryview = 1
+except NameError:
+    have_memoryview = 0
+
+# Struct() for older python
+try:
+    from struct import Struct
+except ImportError:
+    class Struct:
+        def __init__(self, fmt):
+            self.format = fmt
+            self.size = struct.calcsize(fmt)
+        def unpack(self, buf):
+            return unpack(self.format, buf)
+        def unpack_from(self, buf, ofs = 0):
+            return unpack(self.format, buf[ofs : ofs + self.size])
+        def pack(self, *args):
+            return pack(self.format, *args)
+
+# file object superclass
+try:
+    from io import RawIOBase
+except ImportError:
+    class RawIOBase(object):
+        def close(self):
+            pass
+
 
 ##
 ## Module configuration.  Can be tuned after importing.
@@ -209,68 +266,13 @@ RAR_M4 = 0x34
 RAR_M5 = 0x35
 
 ##
-## Compatibility code to support both python 2 and 3
+## internal constants
 ##
 
-# compat with 2.x
-if sys.hexversion < 0x3000000:
-    # prefer 3.x behaviour
-    range = xrange
-    # py2.6 has broken bytes()
-    def bytes(foo, enc):
-        return str(foo)
-
-# see if compat bytearray() is needed
-try:
-    bytearray()
-except NameError:
-    import array
-    class bytearray:
-        def __init__(self, val = ''):
-            self.arr = array.array('B', val)
-            self.append = self.arr.append
-            self.__getitem__ = self.arr.__getitem__
-            self.__len__ = self.arr.__len__
-        def decode(self, *args):
-            return self.arr.tostring().decode(*args)
-
-# Optimized .readinto() requires memoryview
-try:
-    memoryview
-    have_memoryview = 1
-except NameError:
-    have_memoryview = 0
-
-# Struct() for older python
-try:
-    from struct import Struct
-except ImportError:
-    from struct import calcsize
-    class Struct:
-        def __init__(self, fmt):
-            self.format = fmt
-            self.size = calcsize(fmt)
-        def unpack(self, buf):
-            return unpack(self.format, buf)
-        def unpack_from(self, buf, ofs = 0):
-            return unpack(self.format, buf[ofs : ofs + self.size])
-        def pack(self, *args):
-            return pack(self.format, *args)
-
-# file object superclass
-try:
-    from io import RawIOBase
-except ImportError:
-    class RawIOBase(object):
-        def close(self):
-            pass
-
-# internal byte constants
 RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
 ZERO = bytes("\0", 'ascii')
 EMPTY = bytes("", 'ascii')
 
-# Struct() constants
 S_BLK_HDR = Struct('<HBHH')
 S_FILE_HDR = Struct('<LLBLLBBHL')
 S_LONG = Struct('<L')
@@ -278,21 +280,9 @@ S_SHORT = Struct('<H')
 S_BYTE = Struct('<B')
 S_COMMENT_HDR = Struct('<HBBH')
 
-# disconnect cmd from parent fds, read only from stdout
-def custom_popen(cmd):
-    # needed for py2exe
-    creationflags = 0
-    if sys.platform == 'win32':
-        creationflags = 0x08000000 # CREATE_NO_WINDOW
-
-    # run command
-    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = PIPE, stderr = STDOUT,
-              creationflags = creationflags)
-    return p
-
-#
-# Public interface
-#
+##
+## Public interface
+##
 
 class Error(Exception):
     """Base class for rarfile errors."""
@@ -311,10 +301,12 @@ class NeedFirstVolume(Error):
 class NoCrypto(Error):
     """Cannot parse encrypted headers - no crypto available."""
 
+
 def is_rarfile(fn):
     '''Check quickly whether file is rar archive.'''
     buf = open(fn, "rb").read(len(RAR_ID))
     return buf == RAR_ID
+
 
 class RarInfo(object):
     '''An entry in rar archive.
@@ -410,6 +402,7 @@ class RarInfo(object):
     def needs_password(self):
         return self.flags & RAR_FILE_PASSWORD
 
+
 class RarFile(object):
     '''Rar archive handling.
 
@@ -492,7 +485,7 @@ class RarFile(object):
 
         The object is seekable, although the seeking is fast only on
         uncompressed files, on compressed files the seeking is implemented
-        by reading ahead and/or restaring the decompression.
+        by reading ahead and/or restarting the decompression.
 
         @param fname: file name or RarInfo instance.
         @param mode: must be 'r'
@@ -817,7 +810,7 @@ class RarFile(object):
         h.file_size = fld[1]
         h.host_os = fld[2]
         h.CRC = fld[3]
-        h.date_time = self._parse_dos_time(fld[4])
+        h.date_time = parse_dos_time(fld[4])
         h.extract_version = fld[5]
         h.compress_type = fld[6]
         h.name_size = fld[7]
@@ -837,7 +830,7 @@ class RarFile(object):
         if h.flags & RAR_FILE_UNICODE:
             nul = name.find(ZERO)
             h.orig_filename = name[:nul]
-            u = _UnicodeFilename(h.orig_filename, name[nul + 1 : ])
+            u = UnicodeFilename(h.orig_filename, name[nul + 1 : ])
             h.filename = u.decode()
         else:
             h.orig_filename = name
@@ -907,15 +900,6 @@ class RarFile(object):
 
             pos = pos_next
 
-    def _parse_dos_time(self, stamp):
-        sec = stamp & 0x1F; stamp = stamp >> 5
-        min = stamp & 0x3F; stamp = stamp >> 6
-        hr  = stamp & 0x1F; stamp = stamp >> 5
-        day = stamp & 0x1F; stamp = stamp >> 5
-        mon = stamp & 0x0F; stamp = stamp >> 4
-        yr = (stamp & 0x7F) + 1980
-        return (yr, mon, day, hr, min, sec * 2)
-
     def _parse_ext_time(self, h, pos):
         data = h.header_data
 
@@ -936,7 +920,7 @@ class RarFile(object):
         if flag & 8:
             if not dostime:
                 t = S_LONG.unpack_from(data, pos)[0]
-                dostime = self._parse_dos_time(t)
+                dostime = parse_dos_time(t)
                 pos += 4
             rem = 0
             cnt = flag & 3
@@ -1098,8 +1082,13 @@ class RarFile(object):
         p = custom_popen(cmd)
         p.communicate()
 
-# handle unicode filename compression
-class _UnicodeFilename:
+##
+## Utility classes
+##
+
+class UnicodeFilename:
+    """Handle unicode filename decompression"""
+
     def __init__(self, name, encdata):
         self.std_name = bytearray(name)
         self.encdata = bytearray(encdata)
@@ -1146,6 +1135,7 @@ class _UnicodeFilename:
                         self.put(self.std_byte(), 0)
         return self.buf.decode("utf-16le", "replace")
 
+
 class BaseReader(RawIOBase):
     """Base class for 'file-like' object that RarFile.open() returns.
 
@@ -1153,6 +1143,10 @@ class BaseReader(RawIOBase):
     """
 
     def __init__(self, rf, inf):
+        """Basic setup"""
+
+        RawIOBase.__init__(self)
+
         # standard io.* properties
         self.name = inf.filename
         self.mode = 'rb'
@@ -1161,6 +1155,9 @@ class BaseReader(RawIOBase):
         self.inf = inf
         self.crc_check = rf._crc_check
         self.fd = None
+        self.CRC = 0
+        self.remain = 0
+
         self._open()
 
     def _open(self):
@@ -1298,6 +1295,7 @@ class BaseReader(RawIOBase):
         # avoid RawIOBase default impl
         return self.read()
 
+
 class PipeReader(BaseReader):
     """Read data from pipe, handle tempfile cleanup."""
 
@@ -1338,6 +1336,8 @@ class PipeReader(BaseReader):
         return self.fd.read(cnt)
 
     def close(self):
+        """Close open resources."""
+
         self._close_proc()
         BaseReader.close(self)
 
@@ -1361,6 +1361,7 @@ class PipeReader(BaseReader):
                     self.CRC = crc32(vbuf[:res], self.CRC)
                 self.remain -= res
             return res
+
 
 class DirectReader(BaseReader):
     """Read uncompressed data directly from archive."""
@@ -1477,23 +1478,9 @@ class DirectReader(BaseReader):
                 got += res
             return got
 
-# string-to-key hashing
-def rar3_s2k(psw, salt):
-    seed = psw.encode('utf-16le') + salt
-    iv = EMPTY
-    h = sha1()
-    for i in range(16):
-        for j in range(0x4000):
-            cnt = S_LONG.pack(i*0x4000 + j)
-            h.update(seed + cnt[:3])
-            if j == 0:
-                iv += h.digest()[19:20]
-    key_be = h.digest()[:16]
-    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
-    return key_le, iv
 
-# file-like object that decrypts from another file
 class HeaderDecrypt:
+    """File-like object that decrypts from another file"""
     def __init__(self, f, key, iv):
         self.f = f
         self.ciph = AES.new(key, AES.MODE_CBC, iv)
@@ -1532,8 +1519,31 @@ class HeaderDecrypt:
 
         return res
 
-# decompress blob of compressed data
+##
+## Utility functions
+##
+
+def rar3_s2k(psw, salt):
+    """String-to-key hash for RAR3."""
+
+    seed = psw.encode('utf-16le') + salt
+    iv = EMPTY
+    h = sha1()
+    for i in range(16):
+        for j in range(0x4000):
+            cnt = S_LONG.pack(i*0x4000 + j)
+            h.update(seed + cnt[:3])
+            if j == 0:
+                iv += h.digest()[19:20]
+    key_be = h.digest()[:16]
+    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
+    return key_le, iv
+
 def rar_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=None):
+    """Decompress blob of compressed data.
+
+    Used for data with non-standard header - eg. comments.
+    """
 
     # already uncompressed?
     if meth == RAR_M0 and (flags & RAR_FILE_PASSWORD) == 0:
@@ -1591,4 +1601,28 @@ def to_datetime(t):
     sec = int(t[5])
     usec = int(1000000 * (t[5] - sec))
     return datetime(t[0], mon, day, t[3], t[4], sec, usec)
+
+def parse_dos_time(stamp):
+    """Parse standard 32-bit DOS timestamp."""
+
+    sec = stamp & 0x1F; stamp = stamp >> 5
+    min = stamp & 0x3F; stamp = stamp >> 6
+    hr  = stamp & 0x1F; stamp = stamp >> 5
+    day = stamp & 0x1F; stamp = stamp >> 5
+    mon = stamp & 0x0F; stamp = stamp >> 4
+    yr = (stamp & 0x7F) + 1980
+    return (yr, mon, day, hr, min, sec * 2)
+
+def custom_popen(cmd):
+    """Disconnect cmd from parent fds, read only from stdout."""
+
+    # needed for py2exe
+    creationflags = 0
+    if sys.platform == 'win32':
+        creationflags = 0x08000000 # CREATE_NO_WINDOW
+
+    # run command
+    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = PIPE, stderr = STDOUT,
+              creationflags = creationflags)
+    return p
 
