@@ -8,28 +8,36 @@ Version 2.3 (2011-xx-xx)
 Features:
 
 * Support .seek() method on file streams.  (Kristian Larsson)
+* Support .readinto() method on file streams.  Optimized implementation
+  is available on Python 2.6+ where ``memoryview`` is available.
 * Support file comments - ``RarInfo.comment`` contains decompressed data if available.
-* File objects returned from RarFile.open() are io.RawIOBase-compatible
+* File objects returned by ``RarFile.open()`` are ``io.RawIOBase``-compatible.
+  They can further wrapped with ``io.BufferedReader` and ``io.TextIOWrapper``.
+* Now .getinfo() uses dict lookup instead of sequential scan when
+  searching archive entry.  This speeds up prococessing for archives that
+  have many entries.
 * Option ``rarfile.UNICODE_COMMENTS`` to decode both archive and file comments to unicode.
-  Default: 0
+  It uses ``TRY_ENCODINGS`` for list of encodings to try.  If off, comments are
+  left as byte strings.  Default: 0
 * Option ``rarfile.PATH_SEP`` to change path separator.  Default: ``r'\'``,
   set ``rarfile.PATH_SEP='/'`` to be compatibe with zipfile.
 * Option ``rarfile.USE_DATETIME`` to convert timestamps to datetime objects.
   Default: 0, timestamps are tuples.
 * Option ``rarfile.TRY_ENCODINGS`` to allow tuning attempted encoding list.
+* Reorder RarInfo fiels to better show zipfile-compatible fields.
 * Standard regtests to make sure various features work
 
 Compatibility:
 
 * Drop ``RarInfo.unicode_filename``, plain ``RarInfo.filename`` is already unicode since 2.0.
-* Reorder RarInfo fiels to better show zipfile-compatible fields.
 * .read(-1) reads now until EOF.  Previously it returned empty buffer.
 
 Fixes:
 
 * Make encrypted headers work with Python 3.x bytes() and with old 2.x 'sha' module.
-* Open /dev/null with proper mode for stdin/err.  Makes rarfile work on Jython
-  and works around subprocess bug in Python 3.2.
+* Simplify ``subprocess.Popen()`` usage when launching ``unrar``.  Previously
+  it tried to optimize and work around OS/Python bugs, but this is not
+  maintainable.
 * Use temp rar file hack on multi-volume archives too.
 * Always .wait() on unrar, to avoid zombies
 * Convert struct.error to BadRarFile

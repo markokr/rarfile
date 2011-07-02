@@ -2,6 +2,20 @@
 rarfile FAQ
 ===========
 
+What are the dependencies?
+--------------------------
+
+It depends on ``unrar`` command-line utility to do the actual decompression.
+
+Note that by default it expect it to be in ``PATH``.  If unrar
+launching fails, you need to fix this.
+
+Does it parse ``unrar`` output to get archive contents?
+-------------------------------------------------------
+
+No, ``rarfile`` parses RAR structure in Python code.  Also it can
+read uncompressed files from archive without external utility.
+
 Will rarfile support wrapping unrarlib/unrar.dll/unrar.so in the future?
 ------------------------------------------------------------------------
 
@@ -43,4 +57,10 @@ format for your own archives.
 .. _RARLAB: http://www.rarlab.com/
 .. _Zip: http://en.wikipedia.org/wiki/ZIP_%28file_format%29
 .. _7z:  http://en.wikipedia.org/wiki/7z
+
+Does it breach any RARLAB licence?
+----------------------------------
+
+No.  It does not contain any UNRAR code, nor does it re-implement
+any compression/decompression related algorithms.
 
