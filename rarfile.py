@@ -641,7 +641,17 @@ class RarFile(object):
 
     # read rar
     def _parse(self):
+        self._fd = None
+        try:
+            self._parse_real()
+        finally:
+            if self._fd:
+                self._fd.close()
+                self._fd = None
+
+    def _parse_real(self):
         fd = open(self.rarfile, "rb")
+        self._fd = fd
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
             raise NotRarFile("Not a Rar archive: "+self.rarfile)
@@ -660,6 +670,7 @@ class RarFile(object):
                     volume += 1
                     volfile = self._next_volname(volfile)
                     fd = open(volfile, "rb")
+                    self._fd = fd
                     more_vols = 0
                     endarc = 0
                     if fd:
@@ -999,7 +1010,10 @@ class RarFile(object):
                 tmpf.write(buf)
                 size -= len(buf)
             tmpf.close()
+            rf.close()
         except:
+            rf.close()
+            tmpf.close()
             os.unlink(tmpname)
             raise
 
@@ -1444,6 +1458,10 @@ class DirectReader(RarExtFile):
         if (self.cur.flags & RAR_FILE_SPLIT_AFTER) == 0:
             return False
 
+        if self.fd:
+            self.fd.close()
+            self.fd = None
+
         # open next part
         self.volfile = self.rf._next_volname(self.volfile)
         fd = open(self.volfile, "rb", 0)
@@ -1602,6 +1620,7 @@ def rar_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=No
         p = custom_popen(cmd)
         return p.communicate()[0]
     finally:
+        tmpf.close()
         os.unlink(tmpname)
 
 def to_datetime(t):
