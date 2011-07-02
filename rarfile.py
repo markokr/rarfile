@@ -425,6 +425,7 @@ class RarFile(object):
         self._info_callback = info_callback
 
         self._info_list = []
+        self._info_map = {}
         self._needs_password = False
         self._password = None
         self._crc_check = crc_check
@@ -448,10 +449,7 @@ class RarFile(object):
 
     def namelist(self):
         '''Return list of filenames in archive.'''
-        res = []
-        for f in self._info_list:
-            res.append(f.filename)
-        return res
+        return [f.filename for f in self._info_list]
 
     def infolist(self):
         '''Return RarInfo objects for all files/directories in archive.'''
@@ -469,10 +467,13 @@ class RarFile(object):
         else:
             fname2 = fname.replace("/", "\\")
 
-        for f in self._info_list:
-            if fname == f.filename or fname2 == f.filename:
-                return f
-        raise NoRarEntry("No such file: "+fname)
+        try:
+            return self._info_map[fname]
+        except KeyError:
+            try:
+                return self._info_map[fname2]
+            except KeyError:
+                raise NoRarEntry("No such file: "+fname)
 
     def open(self, fname, mode = 'r', psw = None):
         '''Return open file object, where the data can be read.
@@ -607,6 +608,7 @@ class RarFile(object):
         if item.type == RAR_BLOCK_FILE:
             # use only first part
             if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
+                self._info_map[item.filename] = item
                 self._info_list.append(item)
                 # remember if any items require password
                 if item.needs_password():
