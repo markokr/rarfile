@@ -67,7 +67,7 @@ For more details, refer to source.
 __version__ = '2.3'
 
 # export only interesting items
-__all__ = ['is_rarfile', 'RarInfo', 'RarFile']
+__all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
 
 ##
 ## Imports and compat - support both Python 2.x and 3.x
@@ -1137,7 +1137,7 @@ class UnicodeFilename:
         return self.buf.decode("utf-16le", "replace")
 
 
-class BaseReader(RawIOBase):
+class RarExtFile(RawIOBase):
     """Base class for 'file-like' object that RarFile.open() returns.
 
     Provides public methods and common crc checking.
@@ -1220,7 +1220,7 @@ class BaseReader(RawIOBase):
         self.close()
 
     def readinto(self, buf):
-        """Slow emulated read into buffer"""
+        """Zero-copy read directly into buffer."""
 
         data = self.read(len(buf))
         n = len(data)
@@ -1297,14 +1297,14 @@ class BaseReader(RawIOBase):
         return self.read()
 
 
-class PipeReader(BaseReader):
+class PipeReader(RarExtFile):
     """Read data from pipe, handle tempfile cleanup."""
 
     def __init__(self, rf, inf, cmd, tempfile=None):
         self.cmd = cmd
         self.proc = None
         self.tempfile = tempfile
-        BaseReader.__init__(self, rf, inf)
+        RarExtFile.__init__(self, rf, inf)
 
     def _close_proc(self):
         if not self.proc:
@@ -1319,7 +1319,7 @@ class PipeReader(BaseReader):
         self.proc = None
 
     def _open(self):
-        BaseReader._open(self)
+        RarExtFile._open(self)
 
         # stop old process
         self._close_proc()
@@ -1340,7 +1340,7 @@ class PipeReader(BaseReader):
         """Close open resources."""
 
         self._close_proc()
-        BaseReader.close(self)
+        RarExtFile.close(self)
 
         if self.tempfile:
             try:
@@ -1364,11 +1364,11 @@ class PipeReader(BaseReader):
             return res
 
 
-class DirectReader(BaseReader):
+class DirectReader(RarExtFile):
     """Read uncompressed data directly from archive."""
 
     def _open(self):
-        BaseReader._open(self)
+        RarExtFile._open(self)
 
         self.volfile = self.inf.volume_file
         self.fd = open(self.volfile, "rb", 0)
