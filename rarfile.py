@@ -404,7 +404,7 @@ class RarInfo(object):
 
 
 class RarFile(object):
-    '''Rar archive handling.
+    '''Parse RAR structure, provide access to files in archive.
 
     @ivar comment:
         Archive comment (unicode string or None).
@@ -1143,10 +1143,17 @@ class RarExtFile(RawIOBase):
     """Base class for 'file-like' object that RarFile.open() returns.
 
     Provides public methods and common crc checking.
+
+    Behaviour:
+     - no short reads - .read() and .readinfo() read as much as requested.
+     - no internal buffer, use io.BufferedReader for that.
+
+    @ivar name:
+      filename of the archive entry.
     """
 
     def __init__(self, rf, inf):
-        """Basic setup"""
+        """Fill common fields"""
 
         RawIOBase.__init__(self)
 
@@ -1222,7 +1229,10 @@ class RarExtFile(RawIOBase):
         self.close()
 
     def readinto(self, buf):
-        """Zero-copy read directly into buffer."""
+        """Zero-copy read directly into buffer.
+
+        Returns bytes read.
+        """
 
         data = self.read(len(buf))
         n = len(data)
