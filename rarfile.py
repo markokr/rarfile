@@ -541,9 +541,10 @@ class RarFile(object):
         """
 
         f = self.open(fname, 'r', psw)
-        data = f.read()
-        f.close()
-        return data
+        try:
+            return f.read()
+        finally:
+            f.close()
 
     def close(self):
         """Release open resources."""
