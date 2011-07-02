@@ -513,7 +513,7 @@ class RarFile(object):
             psw = None
 
         # is temp write usable?
-        if not USE_EXTRACT_HACK:
+        if not USE_EXTRACT_HACK or not self._main:
             use_hack = 0
         elif self._main.flags & (RAR_MAIN_SOLID | RAR_MAIN_PASSWORD):
             use_hack = 0
@@ -761,6 +761,12 @@ class RarFile(object):
             h.header_data = buf
         h.file_offset = fd.tell()
 
+        # unexpected EOF?
+        if len(h.header_data) != h.header_size:
+            if REPORT_BAD_HEADER:
+                raise BadRarFile('Unexpected EOF when reading header')
+            return None
+
         # block has data assiciated with it?
         if h.flags & RAR_LONG_BLOCK:
             h.add_size = S_LONG.unpack_from(h.header_data, pos)[0]
@@ -900,8 +906,12 @@ class RarFile(object):
             pos_next = pos + slen
             pos += S_BLK_HDR.size
 
+            # corrupt header
+            if pos_next < pos:
+                break
+
             # followed by block-specific header
-            if stype == RAR_BLOCK_OLD_COMMENT:
+            if stype == RAR_BLOCK_OLD_COMMENT and pos + S_COMMENT_HDR.size <= pos_next:
                 declen, ver, meth, crc = S_COMMENT_HDR.unpack_from(hdata, pos)
                 pos += S_COMMENT_HDR.size
                 data = hdata[pos : pos_next]
@@ -1113,12 +1123,18 @@ class UnicodeFilename:
         self.buf = bytearray()
 
     def enc_byte(self):
-        c = self.encdata[self.encpos]
-        self.encpos += 1
-        return c
+        try:
+            c = self.encdata[self.encpos]
+            self.encpos += 1
+            return c
+        except IndexError:
+            return 0
 
     def std_byte(self):
-        return self.std_name[self.pos]
+        try:
+            return self.std_name[self.pos]
+        except IndexError:
+            return '?'
 
     def put(self, lo, hi):
         self.buf.append(lo)
@@ -1592,6 +1608,8 @@ def rar_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=No
                            date, vers, meth, len(fname), mode)
     fhdr += fname
     if flags & RAR_FILE_SALT:
+        if not salt:
+            return EMPTY
         fhdr += salt
 
     # full header
