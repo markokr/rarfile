@@ -851,6 +851,10 @@ class RarFile(object):
             h.orig_filename = name[:nul]
             u = UnicodeFilename(h.orig_filename, name[nul + 1 : ])
             h.filename = u.decode()
+
+            # if parsing failed fall back to simple name
+            if u.failed:
+                h.filename = self._decode(h.orig_filename)
         else:
             h.orig_filename = name
             h.filename = self._decode(name)
@@ -1120,6 +1124,7 @@ class UnicodeFilename:
         self.encdata = bytearray(encdata)
         self.pos = self.encpos = 0
         self.buf = bytearray()
+        self.failed = 0
 
     def enc_byte(self):
         try:
@@ -1127,12 +1132,14 @@ class UnicodeFilename:
             self.encpos += 1
             return c
         except IndexError:
+            self.failed = 1
             return 0
 
     def std_byte(self):
         try:
             return self.std_name[self.pos]
         except IndexError:
+            self.failed = 1
             return '?'
 
     def put(self, lo, hi):
