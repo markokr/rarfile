@@ -15,12 +15,12 @@ for py in $plist; do
     for f in files/*.rar; do
       printf "%s -> %-30s .. " $py $f
       $py ../dumprar.py -t -t -v -ppassword $f > $f.$py
-      if cmp -s $f.exp $f.$py; then
+      if diff -uw $f.exp $f.$py > /dev/null; then
         echo "ok"
       else
         echo "FAIL"
         echo "#### $py ####" >> test.diffs
-        diff -u $f.exp $f.$py >> test.diffs
+        diff -uw $f.exp $f.$py >> test.diffs
       fi
     done
     echo ""
