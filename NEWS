@@ -2,7 +2,7 @@
 rarfile history
 ===============
 
-Version 2.3 (2011-xx-xx)
+Version 2.3 (2011-07-03)
 ------------------------
 
 Features:
@@ -41,6 +41,8 @@ Fixes:
 * Use temp rar file hack on multi-volume archives too.
 * Always .wait() on unrar, to avoid zombies
 * Convert struct.error to BadRarFile
+* Plug some fd leaks.  Affected: Jython, PyPy.
+* Broken archives are handled more robustly.
 
 Version 2.2 (2010-08-19)
 ------------------------
