@@ -669,12 +669,12 @@ class RarFile(object):
                 if more_vols:
                     volume += 1
                     volfile = self._next_volname(volfile)
+                    fd.close()
                     fd = open(volfile, "rb")
                     self._fd = fd
                     more_vols = 0
                     endarc = 0
-                    if fd:
-                        continue
+                    continue
                 break
             h.volume = volume
             h.volume_file = volfile
@@ -708,7 +708,6 @@ class RarFile(object):
             # go to next header
             if h.add_size > 0:
                 fd.seek(h.file_offset + h.add_size, 0)
-        fd.close()
 
     # AES encrypted headers
     _last_aes_key = (None, None, None) # (salt, key, iv)
