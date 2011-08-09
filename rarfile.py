@@ -1652,11 +1652,28 @@ def to_datetime(t):
 
     if t is None:
         return None
+    year = t[0]
     mon = t[1] or 1
     day = t[2] or 1
-    sec = int(t[5])
-    usec = int(1000000 * (t[5] - sec))
-    return datetime(t[0], mon, day, t[3], t[4], sec, usec)
+    h = t[3]
+    m = t[4]
+    s = int(t[5])
+    us = int(1000000 * (t[5] - s))
+
+    # make sure there are no invalid values
+    if mon > 12:
+        mon = 12
+    if h > 23:
+        h = 23
+    if m > 59:
+        m = 59
+    if s > 59:
+        s = 59
+    try:
+        return datetime(year, mon, day, h, m, s, us)
+    except ValueError:
+        maxd = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        return datetime(year, mon, maxd[mon], h, m, s, us)
 
 def parse_dos_time(stamp):
     """Parse standard 32-bit DOS timestamp."""
