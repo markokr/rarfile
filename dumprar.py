@@ -89,6 +89,12 @@ generic_bits = (
 file_parms = ("D64", "D128", "D256", "D512",
               "D1024", "D2048", "D4096", "DIR")
 
+def xprint(m):
+    if sys.hexversion < 0x3000000:
+        m = m.encode('utf8')
+    sys.stdout.write(m)
+    sys.stdout.write('\n')
+
 def render_flags(flags, bit_list):
     res = []
     known = 0
@@ -130,50 +136,50 @@ def fmt_time(t):
 def show_item(h):
     st = rarType(h.type)
     unknown = h.header_size - h.header_base
-    print("%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
+    xprint("%s: hdrlen=%d datlen=%d hdr_unknown=%d" % (st, h.header_size,
                 h.add_size, unknown))
     if unknown > 0 and cf_verbose > 1:
         dat = h.header_data[h.header_base : ]
-        print("  unknown: %s" % hexlify(dat))
+        xprint("  unknown: %s" % hexlify(dat))
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
         if h.host_os == rf.RAR_OS_UNIX:
             s_mode = "0%o" % h.mode
         else:
             s_mode = "0x%x" % h.mode
-        print("  flags=0x%04x:%s" % (h.flags, get_file_flags(h.flags)))
+        xprint("  flags=0x%04x:%s" % (h.flags, get_file_flags(h.flags)))
         if h.host_os >= 0 and h.host_os < len(os_list):
             s_os = os_list[h.host_os]
         else:
             s_os = "?"
-        print("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d vol=%d" % (
+        xprint("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d vol=%d" % (
                 h.host_os, s_os,
                 h.extract_version, s_mode, h.compress_type,
                 h.compress_size, h.file_size, h.volume))
         ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
-        print("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
-        print("  name=%s" % h.filename)
+        xprint("  crc=0x%08x (%d) time=%s" % (ucrc, h.CRC, fmt_time(h.date_time)))
+        xprint("  name=%s" % h.filename)
         if h.mtime:
-            print("  mtime=%s" % fmt_time(h.mtime))
+            xprint("  mtime=%s" % fmt_time(h.mtime))
         if h.ctime:
-            print("  ctime=%s" % fmt_time(h.ctime))
+            xprint("  ctime=%s" % fmt_time(h.ctime))
         if h.atime:
-            print("  atime=%s" % fmt_time(h.atime))
+            xprint("  atime=%s" % fmt_time(h.atime))
         if h.arctime:
-            print("  arctime=%s" % fmt_time(h.arctime))
+            xprint("  arctime=%s" % fmt_time(h.arctime))
     elif h.type == rf.RAR_BLOCK_MAIN:
-        print("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
+        xprint("  flags=0x%04x:%s" % (h.flags, get_main_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_ENDARC:
-        print("  flags=0x%04x:%s" % (h.flags, get_endarc_flags(h.flags)))
+        xprint("  flags=0x%04x:%s" % (h.flags, get_endarc_flags(h.flags)))
     elif h.type == rf.RAR_BLOCK_MARK:
-        print("  flags=0x%04x:" % (h.flags,))
+        xprint("  flags=0x%04x:" % (h.flags,))
     else:
-        print("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
+        xprint("  flags=0x%04x:%s" % (h.flags, get_generic_flags(h.flags)))
 
     if h.comment is not None:
         cm = repr(h.comment)
         if cm[0] == 'u':
             cm = cm[1:]
-        print("  comment=%s" % cm)
+        xprint("  comment=%s" % cm)
 
 cf_show_comment = 0
 cf_verbose = 0
@@ -198,8 +204,8 @@ def test_read_long(r, inf):
             break
         total += len(data)
     if total != inf.file_size:
-        print("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
-        print(" *** short read: got=%d, need=%d ***\n" % (total, inf.file_size))
+        xprint("\n *** %s has corrupt file: %s ***" % (r.rarfile, inf.filename))
+        xprint(" *** short read: got=%d, need=%d ***\n" % (total, inf.file_size))
     check_crc(f, inf)
 
     # test .seek() & .readinto()
@@ -218,7 +224,7 @@ def test_read_long(r, inf):
                 break
             total += res
         if inf.file_size != total:
-            print(" *** readinto failed: got=%d, need=%d ***\n" % (total, inf.file_size))
+            xprint(" *** readinto failed: got=%d, need=%d ***\n" % (total, inf.file_size))
         check_crc(f, inf)
     f.close()
 
@@ -227,7 +233,7 @@ def test_read(r, inf):
 
 
 def test_real(fn, psw):
-    print("Archive: %s" % fn)
+    xprint("Archive: %s" % fn)
 
     cb = None
     if cf_verbose > 1:
@@ -235,7 +241,7 @@ def test_real(fn, psw):
 
     # check if rar
     if not rf.is_rarfile(fn):
-        print(" --- %s is not a RAR file ---" % fn)
+        xprint(" --- %s is not a RAR file ---" % fn)
         return
 
     # open
@@ -245,18 +251,18 @@ def test_real(fn, psw):
         if psw:
             r.setpassword(psw)
         else:
-            print(" --- %s requires password ---" % fn)
+            xprint(" --- %s requires password ---" % fn)
             return
 
     # show comment
     if cf_show_comment and r.comment:
         for ln in r.comment.split('\n'):
-            print("    %s" % ln)
+            xprint("    %s" % ln)
     elif cf_verbose == 1 and r.comment:
         cm = repr(r.comment)
         if cm[0] == 'u':
             cm = cm[1:]
-        print("  comment=%s" % cm)
+        xprint("  comment=%s" % cm)
 
     # process
     for n in r.namelist():
@@ -280,14 +286,14 @@ def test(fn, psw):
     try:
         test_real(fn, psw)
     except rf.NeedFirstVolume:
-        print(" --- %s is middle part of multi-vol archive ---" % fn)
+        xprint(" --- %s is middle part of multi-vol archive ---" % fn)
     except rf.Error:
         exc, msg, tb = sys.exc_info()
-        print("\n *** %s: %s ***\n" % (exc.__name__, msg))
+        xprint("\n *** %s: %s ***\n" % (exc.__name__, msg))
         del tb
     except IOError:
         exc, msg, tb = sys.exc_info()
-        print("\n *** %s: %s ***\n" % (exc.__name__, msg))
+        xprint("\n *** %s: %s ***\n" % (exc.__name__, msg))
         del tb
 
 def main():
@@ -312,7 +318,7 @@ def main():
         elif a == '--':
             noswitch = True
         elif a == '-h':
-            print(usage)
+            xprint(usage)
             return
         elif a == '-v':
             cf_verbose += 1
@@ -329,7 +335,7 @@ def main():
         else:
             raise Exception("unknown switch: "+a)
     if not args:
-        print(usage)
+        xprint(usage)
 
     for fn in args:
         test(fn, psw)
