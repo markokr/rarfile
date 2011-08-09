@@ -1140,7 +1140,7 @@ class UnicodeFilename:
             return self.std_name[self.pos]
         except IndexError:
             self.failed = 1
-            return '?'
+            return ord('?')
 
     def put(self, lo, hi):
         self.buf.append(lo)
