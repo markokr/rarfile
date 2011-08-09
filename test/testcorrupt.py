@@ -62,6 +62,7 @@ test_rar_list = [
     "files/rar3-comment-hpsw.rar",
     "files/rar3-comment-plain.rar",
     "files/rar3-comment-psw.rar",
+    "files/unicode.rar",
 ]
 
 def main():
