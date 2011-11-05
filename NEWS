@@ -2,6 +2,15 @@
 rarfile history
 ===============
 
+Version 2.4 (2011-11-05)
+------------------------
+
+Fixes:
+
+* USE_DATETIME: survive bad values from RAR
+* Fix bug in corrupt unicode filename handling
+* dumprar: make unicode chars work with both pipe and console
+
 Version 2.3 (2011-07-03)
 ------------------------
 
