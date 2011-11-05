@@ -16,8 +16,7 @@ setup(
     author = "Marko Kreen",
     license = "ISC",
     author_email = "markokr@gmail.com",
-    url = "http://rarfile.berlios.de/",
-    download_url = "http://download.berlios.de/rarfile/rarfile-%s.tar.gz" % ver,
+    url = "https://github.com/markokr/rarfile",
     py_modules = ['rarfile'],
     keywords = ['rar', 'unrar', 'archive'],
     classifiers = [

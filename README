@@ -21,10 +21,3 @@ Features:
 - For compressed files runs ``unrar`` utility.
 - Works with both Python 2.x and 3.x.
 
-Links:
-
-- News: http://rarfile.berlios.de/NEWS.html
-- FAQ: http://rarfile.berlios.de/FAQ.html
-- API documentation: http://rarfile.berlios.de/doc/
-- Downloads, GIT: http://developer.berlios.de/projects/rarfile
-
