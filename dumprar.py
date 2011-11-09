@@ -91,7 +91,8 @@ file_parms = ("D64", "D128", "D256", "D512",
 
 def xprint(m):
     if sys.hexversion < 0x3000000:
-        m = m.encode('utf8')
+        if isinstance(m, unicode):
+            m = m.encode('utf8')
     sys.stdout.write(m)
     sys.stdout.write('\n')
 
