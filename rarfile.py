@@ -1421,12 +1421,16 @@ class PipeReader(RarExtFile):
             if cnt > self.remain:
                 cnt = self.remain
             vbuf = memoryview(buf)
-            res = self.fd.readinto(vbuf[0:cnt])
-            if res:
+            res = got = 0
+            while got < cnt:
+                res = self.fd.readinto(vbuf[got : cnt])
+                if not res:
+                    break
                 if self.crc_check:
-                    self.CRC = crc32(vbuf[:res], self.CRC)
+                    self.CRC = crc32(vbuf[got : got + res], self.CRC)
                 self.remain -= res
-            return res
+                got += res
+            return got
 
 
 class DirectReader(RarExtFile):
