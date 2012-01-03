@@ -1469,7 +1469,7 @@ class DirectReader(RarExtFile):
     def _read(self, cnt):
         """Read from potentially multi-volume archive."""
 
-        buf = EMPTY
+        buf = []
         while cnt > 0:
             # next vol needed?
             if self.cur_avail == 0:
@@ -1487,12 +1487,11 @@ class DirectReader(RarExtFile):
             # got some data
             cnt -= len(data)
             self.cur_avail -= len(data)
-            if buf:
-                buf += data
-            else:
-                buf = data
+            buf.append(data)
 
-        return buf
+        if len(buf) == 1:
+            return buf[0]
+        return EMPTY.join(buf)
 
     def _open_next(self):
         """Proceed to next volume."""
