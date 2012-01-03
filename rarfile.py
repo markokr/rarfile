@@ -1229,6 +1229,8 @@ class RarExtFile(RawIOBase):
         if data:
             self.CRC = crc32(data, self.CRC)
             self.remain -= len(data)
+        if len(data) != cnt:
+            raise BadRarFile("Failed the read enough data")
 
         # done?
         if not data or self.remain == 0:
@@ -1382,7 +1384,22 @@ class PipeReader(RarExtFile):
 
     def _read(self, cnt):
         """Read from pipe."""
-        return self.fd.read(cnt)
+
+        # normal read is usually enough
+        data = self.fd.read(cnt)
+        if len(data) == cnt or not data:
+            return data
+
+        # short read, try looping
+        buf = [data]
+        cnt -= len(data)
+        while cnt > 0:
+            data = self.fd.read(cnt)
+            if not data:
+                break
+            cnt -= len(data)
+            buf.append(data)
+        return EMPTY.join(buf)
 
     def close(self):
         """Close open resources."""
