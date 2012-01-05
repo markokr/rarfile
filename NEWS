@@ -2,6 +2,20 @@
 rarfile history
 ===============
 
+Version 2.5 (2012-01-xx)
+------------------------
+
+Fixes:
+
+* .read() and .readinto() now do looping read to work properly
+  on short reads.  Important for Python 3.2+ where read from pipe
+  can return short result even on blocking file descriptor.
+* Proper error reporting in .extract(), .extractall(), .testrar()
+* Avoid string addition in .read(), instead use always list+join to
+  merge multi-part reads.
+* dumprar: dont re-encode byte strings (python 2.x).  This avoids
+  unneccessary failure when printing invalid unicode.
+
 Version 2.4 (2011-11-05)
 ------------------------
 
