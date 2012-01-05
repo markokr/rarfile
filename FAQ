@@ -45,11 +45,8 @@ Include ``rarfile.py`` and/or ``unrar`` with your application.
 Will it support creating RAR archives?
 --------------------------------------
 
-There are 2 ways rarfile could do it - either wrap ``rar`` tool
-or create non-compressed archives with pure Python code.
-
-But RARLAB_ licenses seem to allow neither one, so until there is
-some clarification what is allowed, I won't include writing code.
+No.  RARLAB_ is not interested in RAR becoming open format
+and specifically discourages writing RAR creation software.
 
 In the meantime use either Zip_ (better compatibility) or 7z_ (better compression)
 format for your own archives.
@@ -58,9 +55,19 @@ format for your own archives.
 .. _Zip: http://en.wikipedia.org/wiki/ZIP_%28file_format%29
 .. _7z:  http://en.wikipedia.org/wiki/7z
 
-Does it breach any RARLAB licence?
-----------------------------------
+What is the USE_EXTRACT_HACK?
+-----------------------------
 
-No.  It does not contain any UNRAR code, nor does it re-implement
-any compression/decompression related algorithms.
+RarFile uses ``unrar`` to extract compressed files.  But when extracting
+single file from archive containing many entries, ``unrar`` needs to parse
+whole archive until it finds the right entry.  This makes random-access
+to entries slow.  To avoid that, RarFile remembers location of compressed
+data for each entry and on read it copies it to temporary archive containing
+only data for that one file, thus making ``unrar`` fast.
+
+The logic is only activated for entries smaller than HACK_SIZE_LIMIT
+(20M by default).  Bigger files are accessed directly from RAR.
+
+Note - it only works for non-solid archives.  So if you care about
+random access to files in your archive, do not create solid archives.
 
