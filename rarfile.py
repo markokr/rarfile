@@ -300,6 +300,32 @@ class NeedFirstVolume(Error):
     """Need to start from first volume."""
 class NoCrypto(Error):
     """Cannot parse encrypted headers - no crypto available."""
+class RarExecError(Error):
+    """Problem reported by unrar/rar."""
+class RarWarning(RarExecError):
+    """Non-fatal error"""
+class RarFatalError(RarExecError):
+    """Fatal error"""
+class RarCRCError(RarExecError):
+    """CRC error during unpacking"""
+class RarLockedArchiveError(RarExecError):
+    """Must not modify locked archive"""
+class RarWriteError(RarExecError):
+    """Write error"""
+class RarOpenError(RarExecError):
+    """Open error"""
+class RarUserError(RarExecError):
+    """User error"""
+class RarMemoryError(RarExecError):
+    """Memory error"""
+class RarCreateError(RarExecError):
+    """Create error"""
+class RarUserBreak(RarExecError):
+    """User stop"""
+class RarUnknownError(RarExecError):
+    """Unknown exit code"""
+class RarSignalExit(RarExecError):
+    """Unknown exit code"""
 
 
 def is_rarfile(fn):
@@ -595,9 +621,8 @@ class RarFile(object):
             cmd.append('-p-')
         cmd.append(self.rarfile)
         p = custom_popen(cmd)
-        p.communicate()
-        if p.returncode != 0:
-            raise BadRarFile("Testing failed")
+        output = p.communicate()[0]
+        check_returncode(p, output)
 
     ##
     ## private methods
@@ -1110,7 +1135,8 @@ class RarFile(object):
 
         # call
         p = custom_popen(cmd)
-        p.communicate()
+        output = p.communicate()[0]
+        check_returncode(p, output)
 
 ##
 ## Utility classes
@@ -1723,4 +1749,33 @@ def custom_popen(cmd):
     p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = PIPE, stderr = STDOUT,
               creationflags = creationflags)
     return p
+
+def check_returncode(p, out):
+    """Raise exception according to unrar exit code"""
+
+    code = p.returncode
+    if code == 0:
+        return
+
+    # map return code to exception class
+    errmap = [None,
+        RarWarning, RarFatalError, RarCRCError, RarLockedArchiveError,
+        RarWriteError, RarOpenError, RarUserError, RarMemoryError,
+        RarCreateError] # codes from rar.txt
+    if code > 0 and code < len(errmap):
+        exc = errmap[code]
+    elif code == 255:
+        exc = RarUserBreak
+    elif code < 0:
+        exc = RarSignalExit
+    else:
+        exc = RarUnknownError
+
+    # format message
+    if out:
+        msg = "%s [%d]: %s" % (exc.__doc__, p.returncode, out)
+    else:
+        msg = "%s [%d]" % (exc.__doc__, p.returncode)
+
+    raise exc(msg)
 
