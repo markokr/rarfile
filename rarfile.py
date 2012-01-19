@@ -1229,6 +1229,7 @@ class RarExtFile(RawIOBase):
         self.fd = None
         self.CRC = 0
         self.remain = 0
+        self.returncode = 0
 
         self._open()
 
@@ -1392,6 +1393,7 @@ class PipeReader(RarExtFile):
         if self.proc.stderr:
             self.proc.stderr.close()
         self.proc.wait()
+        self.returncode = self.proc.returncode
         self.proc = None
 
     def _open(self):
@@ -1401,6 +1403,7 @@ class PipeReader(RarExtFile):
         self._close_proc()
 
         # launch new process
+        self.returncode = 0
         self.proc = custom_popen(self.cmd)
         self.fd = self.proc.stdout
 
