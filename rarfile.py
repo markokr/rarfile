@@ -325,7 +325,7 @@ class RarUserBreak(RarExecError):
 class RarUnknownError(RarExecError):
     """Unknown exit code"""
 class RarSignalExit(RarExecError):
-    """Unknown exit code"""
+    """Unrar exited with signal"""
 
 
 def is_rarfile(fn):
@@ -1269,6 +1269,8 @@ class RarExtFile(RawIOBase):
         """Check final CRC."""
         if not self.crc_check:
             return
+        if self.returncode:
+            check_returncode(self, '')
         if self.remain != 0:
             raise BadRarFile("Failed the read enough data")
         crc = self.CRC
