@@ -2,7 +2,7 @@
 rarfile history
 ===============
 
-Version 2.5 (2012-01-xx)
+Version 2.5 (2012-01-19)
 ------------------------
 
 Fixes:
@@ -11,6 +11,8 @@ Fixes:
   on short reads.  Important for Python 3.2+ where read from pipe
   can return short result even on blocking file descriptor.
 * Proper error reporting in .extract(), .extractall(), .testrar()
+* .read() from unrar pipe: prefer to return unrar error code,
+  if thats not available, do own error checks.
 * Avoid string addition in .read(), instead use always list+join to
   merge multi-part reads.
 * dumprar: dont re-encode byte strings (python 2.x).  This avoids
