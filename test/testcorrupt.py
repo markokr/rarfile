@@ -2,6 +2,7 @@
 
 import rarfile
 import sys, os, time
+import tempfile
 
 def progress():
     sys.stdout.write('.')
@@ -23,8 +24,10 @@ def try_read(tmpfn):
             pass
 
 def test_rar(rarfn):
-    tmpfn = "bad.rar"
     data = open(rarfn, "rb").read()
+
+    fd, tmpfn = tempfile.mkstemp('.rar')
+    os.close(fd)
 
     print('testcorrupt 1')
     for n in range(len(data)):
