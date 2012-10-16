@@ -463,6 +463,12 @@ class RarFile(object):
 
         self._parse()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def setpassword(self, password):
         '''Sets the password to use when extracting.'''
         self._password = password
