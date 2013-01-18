@@ -73,7 +73,7 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
 ## Imports and compat - support both Python 2.x and 3.x
 ##
 
-import sys, os, struct
+import sys, os, struct, errno
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
@@ -1757,8 +1757,15 @@ def custom_popen(cmd):
         creationflags = 0x08000000 # CREATE_NO_WINDOW
 
     # run command
-    p = Popen(cmd, bufsize = 0, stdout = PIPE, stdin = PIPE, stderr = STDOUT,
-              creationflags = creationflags)
+    try:
+        p = Popen(cmd, bufsize = 0,
+                  stdout = PIPE, stdin = PIPE, stderr = STDOUT,
+                  creationflags = creationflags)
+    except OSError:
+        ex = sys.exc_info()[1]
+        if ex.errno == errno.ENOENT:
+            raise RarExecError("Unrar not installed? (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
+        raise
     return p
 
 def check_returncode(p, out):
