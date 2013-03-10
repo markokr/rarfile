@@ -631,7 +631,7 @@ class RarFile(object):
         check_returncode(p, output)
 
     def list_volumes(self):
-        """Let 'unrar' test the archive.
+        """List all volumes for multi volume rar
         """
         cmd = [UNRAR_TOOL] + list(LIST_VOLUMES_ARGS)
         if self._password is not None:
