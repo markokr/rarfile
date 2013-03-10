@@ -336,7 +336,7 @@ def is_rarfile(fn):
 
 class RarInfo(object):
     '''An entry in rar archive.
-    
+
     @ivar filename:
         File name with relative path.
         Default path separator is '/', to change set rarfile.PATH_SEP.
@@ -438,7 +438,7 @@ class RarFile(object):
 
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
         """Open and parse a RAR archive.
-        
+
         @param rarfile: archive file name
         @param mode: only 'r' is supported.
         @param charset: fallback charset to use, if filenames are not already Unicode-enabled.
@@ -509,7 +509,7 @@ class RarFile(object):
 
     def open(self, fname, mode = 'r', psw = None):
         '''Return open file object, where the data can be read.
-        
+
         The object implements io.RawIOBase interface, so it can
         be further wrapped with io.BufferedReader and io.TextIOWrapper.
 
@@ -566,7 +566,7 @@ class RarFile(object):
 
     def read(self, fname, psw = None):
         """Return uncompressed data for archive entry.
-        
+
         For longer files using .open() may be better idea.
 
         @param fname: filename or RarInfo instance
@@ -590,7 +590,7 @@ class RarFile(object):
 
     def extract(self, member, path=None, pwd=None):
         """Extract single file into current directory.
-        
+
         @param member: filename or RarInfo instance
         @param path: optional destination path
         @param pwd: optional password to use
@@ -603,7 +603,7 @@ class RarFile(object):
 
     def extractall(self, path=None, members=None, pwd=None):
         """Extract all files into current directory.
-        
+
         @param path: optional destination path
         @param members: optional filename or RarInfo instance list to extract
         @param pwd: optional password to use
@@ -629,6 +629,20 @@ class RarFile(object):
         p = custom_popen(cmd)
         output = p.communicate()[0]
         check_returncode(p, output)
+
+    def list_volumes(self):
+        """Let 'unrar' test the archive.
+        """
+        cmd = [UNRAR_TOOL] + list(LIST_VOLUMES_ARGS)
+        if self._password is not None:
+            cmd.append('-p' + self._password)
+        else:
+            cmd.append('-p-')
+        cmd.append(self.rarfile)
+        p = custom_popen(cmd)
+        output = p.communicate()[0]
+        output=[volume[7:] for volume in output.splitlines() if volume.startswith('Volume ')]
+        return output
 
     ##
     ## private methods
