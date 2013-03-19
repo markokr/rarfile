@@ -320,6 +320,8 @@ class RarMemoryError(RarExecError):
     """Memory error"""
 class RarCreateError(RarExecError):
     """Create error"""
+class RarNoFilesError(RarExecError):
+    """No files that match pattern were found"""
 class RarUserBreak(RarExecError):
     """User stop"""
 class RarUnknownError(RarExecError):
@@ -1779,7 +1781,7 @@ def check_returncode(p, out):
     errmap = [None,
         RarWarning, RarFatalError, RarCRCError, RarLockedArchiveError,
         RarWriteError, RarOpenError, RarUserError, RarMemoryError,
-        RarCreateError] # codes from rar.txt
+        RarCreateError, RarNoFilesError] # codes from rar.txt
     if code > 0 and code < len(errmap):
         exc = errmap[code]
     elif code == 255:
