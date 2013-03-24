@@ -2,6 +2,8 @@
 rarfile FAQ
 ===========
 
+.. contents:: Table of Contents
+
 What are the dependencies?
 --------------------------
 

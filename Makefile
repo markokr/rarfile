@@ -3,8 +3,6 @@ prefix = /usr/local
 
 web = mkz@shell.berlios.de:/home/groups/rarfile/htdocs
 
-htmls = README.html FAQ.html NEWS.html
-
 all:
 	python setup.py build
 
@@ -20,12 +18,9 @@ clean:
 	make -C test clean
 
 
-%.html: %
-	rst2html $< $@
-
-docs: $(htmls)
-	rm -f html/*
-	epydoc --simple-term --no-private --no-sourcecode -n rarfile --no-frames -v rarfile
+html:
+	rst2html README.rst > README.html
+	make -C doc html
 
 lint:
 	pylint -E rarfile.py

@@ -5,7 +5,7 @@ from distutils.core import setup
 import rarfile
 
 ver = rarfile.__version__
-ldesc = open("README").read().strip()
+ldesc = open("README.rst").read().strip()
 sdesc = ldesc.split('\n')[0].split(' - ')[1].strip()
 
 setup(
