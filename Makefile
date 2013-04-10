@@ -18,18 +18,12 @@ clean:
 	rm -rf doc/_build doc/_static doc/_templates
 	make -C test clean
 
-
 html:
 	rst2html README.rst > README.html
 	make -C doc html
 
 lint:
 	pylint -E rarfile.py
-
-upload: docs
-	rsync -avz html/* $(web)/doc/
-	rsync -avz README.html $(web)/index.html
-	rsync -avz NEWS.html FAQ.html $(web)/
 
 rbuild:
 	curl -X POST http://readthedocs.org/build/6715
