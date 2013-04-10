@@ -30,3 +30,6 @@ upload: docs
 	rsync -avz README.html $(web)/index.html
 	rsync -avz NEWS.html FAQ.html $(web)/
 
+rbuild:
+	curl -X POST http://readthedocs.org/build/6715
+
