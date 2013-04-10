@@ -28,7 +28,7 @@ Documentation:
 .. toctree::
    :maxdepth: 1
 
-   API Documentation <api>
+   Module Documentation <api>
    FAQs <faq>
    Release News  <news>
 

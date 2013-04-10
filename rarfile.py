@@ -365,8 +365,8 @@ class RarInfo(object):
         CRC
             CRC-32 of uncompressed file, unsigned int.
         comment
-            File comment.  None or byte string (str/bytes).
-            If UNICODE_COMMENTS is set then it's unicode string.
+            File comment.  Byte string or None.  Use UNICODE_COMMENTS
+            to get automatic decoding to unicode.
         volume
             Volume nr, starting from 0.
 
@@ -453,7 +453,8 @@ class RarFile(object):
     '''Parse RAR structure, provide access to files in archive.
     '''
 
-    #: Archive comment (unicode string or None).
+    #: Archive comment.  Byte string or None.  Use UNICODE_COMMENTS
+    #: to get automatic decoding to unicode.
     comment = None
 
     def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
@@ -1255,7 +1256,7 @@ class UnicodeFilename:
 
 
 class RarExtFile(RawIOBase):
-    """Base class for 'file-like' object that :meth:`RarFile.open` returns.
+    """Base class for file-like object that :meth:`RarFile.open` returns.
 
     Provides public methods and common crc checking.
 
@@ -1264,7 +1265,7 @@ class RarExtFile(RawIOBase):
      - no internal buffer, use io.BufferedReader for that.
 
     If :mod:`io` module is available (Python 2.6+, 3.x), then this calls
-    will inherit from :py:class:`io.RawIOBase` class.  This makes line-based
+    will inherit from :class:`io.RawIOBase` class.  This makes line-based
     access available: :meth:`RarExtFile.readline` and ``for ln in f``.
     """
 
@@ -1372,7 +1373,13 @@ class RarExtFile(RawIOBase):
         return self.inf.file_size - self.remain
 
     def seek(self, ofs, whence = 0):
-        """Seek in data."""
+        """Seek in data.
+        
+        On uncompressed files, the seeking works by actual
+        seeks so it's fast.  On compresses files its slow
+        - forward seeking happends by reading ahead,
+        backwards by re-opening and decompressing from the start.
+        """
 
         # disable crc check when seeking
         self.crc_check = 0
@@ -1422,11 +1429,16 @@ class RarExtFile(RawIOBase):
         return True
 
     def writable(self):
-        """Returns False"""
+        """Returns False.
+        
+        Writing is not supported."""
         return False
 
     def seekable(self):
-        """Returns True"""
+        """Returns True.
+        
+        Seeking is supported, although it's slow on compressed files.
+        """
         return True
 
     def readall(self):
