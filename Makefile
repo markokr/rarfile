@@ -15,6 +15,7 @@ tgz: clean
 clean:
 	rm -rf __pycache__ build dist
 	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class
+	rm -rf doc/_build doc/_static doc/_templates
 	make -C test clean
 
 
