@@ -483,6 +483,7 @@ class RarFile(object):
         self._needs_password = False
         self._password = None
         self._crc_check = crc_check
+        self._vol_list = []
 
         self._main = None
 
@@ -514,6 +515,14 @@ class RarFile(object):
     def infolist(self):
         '''Return RarInfo objects for all files/directories in archive.'''
         return self._info_list
+
+    def volumelist(self):
+        '''Returns filenames of archive volumes.
+
+        In case of single-volume archive, the list contains
+        just the name of main archive file.
+        '''
+        return self._vol_list
 
     def getinfo(self, fname):
         '''Return RarInfo for file.'''
@@ -739,6 +748,7 @@ class RarFile(object):
         more_vols = 0
         endarc = 0
         volfile = self.rarfile
+        self._vol_list = [self.rarfile]
         while 1:
             if endarc:
                 h = None    # don't read past ENDARC
@@ -753,6 +763,7 @@ class RarFile(object):
                     self._fd = fd
                     more_vols = 0
                     endarc = 0
+                    self._vol_list.append(volfile)
                     continue
                 break
             h.volume = volume
