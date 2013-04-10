@@ -2,6 +2,22 @@
 rarfile history
 ===============
 
+.. py:currentmodule:: rarfile
+
+Version 2.6 (2013-04-10)
+------------------------
+
+* Add context manager support for :class:`RarFile` class.
+  Both :class:`RarFile` and :class:`RarExtFile` support
+  :keyword:`with` statement now.
+  (Wentao Han)
+* :meth:`RarFile.volumelist` method, returns filenames of archive volumes.
+* Re-throw clearer error in case ``unrar`` is not found in ``PATH``.
+* Sync new unrar4.x error code from ``rar.txt``.
+* Use Sphinx for documentation, push docs to rtfd.org_
+
+.. _rtfd.org: https://rarfile.readthedocs.org/
+
 Version 2.5 (2012-01-19)
 ------------------------
 
