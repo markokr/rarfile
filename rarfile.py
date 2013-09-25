@@ -84,11 +84,13 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
 ##
 
 import sys, os, struct, errno
+import StringIO
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime
+
 
 # only needed for encryped headers
 try:
@@ -340,9 +342,41 @@ class RarSignalExit(RarExecError):
     """Unrar exited with signal"""
 
 
+class StringIOProxy(object):
+    def __init__(self, stringio):
+        self._stringio = stringio
+        self._rawdata = stringio.read()
+        stringio.seek(0)
+
+    def _close(self):
+        self._stringio.seek(0)
+        self._rawdata = self._stringio.read()
+        self._stringio.close()
+    
+    def __repr__(self):
+        return "<StringIOProxy: %s>" % repr(self._stringio)
+
+    def __getattr__(self, attr):
+        if attr == 'close':
+            return self._close
+        else:
+            return getattr(self._stringio, attr)
+
+def _open(fn, *args, **kwargs):
+    if isinstance(fn, file):
+        return open(fn.name, *args, **kwargs)
+    elif isinstance(fn, StringIO.StringIO):
+        return StringIOProxy(fn)
+    elif isinstance(fn, StringIOProxy):
+        rawdata = fn._rawdata
+        stringio = StringIO.StringIO(rawdata)
+        return StringIOProxy(stringio)
+    else:
+        return open(fn, *args, **kwargs)
+
 def is_rarfile(fn):
     '''Check quickly whether file is rar archive.'''
-    buf = open(fn, "rb").read(len(RAR_ID))
+    buf = _open(fn, "rb").read(len(RAR_ID))
     return buf == RAR_ID
 
 
@@ -473,7 +507,7 @@ class RarFile(object):
             crc_check
                 set to False to disable CRC checks
         """
-        self.rarfile = rarfile
+        self.rarfile = rarfile if isinstance(rarfile, basestring) else _open(rarfile)
         self.comment = None
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
@@ -738,7 +772,7 @@ class RarFile(object):
                 self._fd = None
 
     def _parse_real(self):
-        fd = open(self.rarfile, "rb")
+        fd = _open(self.rarfile, "rb")
         self._fd = fd
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
@@ -759,7 +793,7 @@ class RarFile(object):
                     volume += 1
                     volfile = self._next_volname(volfile)
                     fd.close()
-                    fd = open(volfile, "rb")
+                    fd = _open(volfile, "rb")
                     self._fd = fd
                     more_vols = 0
                     endarc = 0
@@ -1093,7 +1127,7 @@ class RarFile(object):
         BSIZE = 32*1024
 
         size = inf.compress_size + inf.header_size
-        rf = open(inf.volume_file, "rb", 0)
+        rf = _open(inf.volume_file, "rb", 0)
         rf.seek(inf.header_offset)
 
         tmpfd, tmpname = mkstemp(suffix='.rar')
@@ -1125,7 +1159,7 @@ class RarFile(object):
     def _read_comment_v3(self, inf, psw=None):
 
         # read data
-        rf = open(inf.volume_file, "rb")
+        rf = _open(inf.volume_file, "rb")
         rf.seek(inf.file_offset)
         data = rf.read(inf.compress_size)
         rf.close()
@@ -1553,7 +1587,7 @@ class DirectReader(RarExtFile):
         RarExtFile._open(self)
 
         self.volfile = self.inf.volume_file
-        self.fd = open(self.volfile, "rb", 0)
+        self.fd = _open(self.volfile, "rb", 0)
         self.fd.seek(self.inf.header_offset, 0)
         self.cur = self.rf._parse_header(self.fd)
         self.cur_avail = self.cur.add_size
@@ -1619,7 +1653,7 @@ class DirectReader(RarExtFile):
 
         # open next part
         self.volfile = self.rf._next_volname(self.volfile)
-        fd = open(self.volfile, "rb", 0)
+        fd = _open(self.volfile, "rb", 0)
         self.fd = fd
 
         # loop until first file header
