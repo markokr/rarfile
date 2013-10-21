@@ -756,15 +756,19 @@ class RarFile(object):
                 h = self._parse_header(fd)
             if not h:
                 if more_vols:
-                    volume += 1
-                    volfile = self._next_volname(volfile)
-                    fd.close()
-                    fd = open(volfile, "rb")
-                    self._fd = fd
-                    more_vols = 0
-                    endarc = 0
-                    self._vol_list.append(volfile)
-                    continue
+                    try:
+                        volume += 1
+                        volfile = self._next_volname(volfile)
+                        fd.close()
+                        fd = open(volfile, "rb")
+                        self._fd = fd
+                        more_vols = 0
+                        endarc = 0
+                        self._vol_list.append(volfile)
+                    except IOError:
+                        pass
+                    else:
+                        continue
                 break
             h.volume = volume
             h.volume_file = volfile
