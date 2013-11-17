@@ -15,7 +15,7 @@ launching fails, you need to fix this.
 Does it parse ``unrar`` output to get archive contents?
 -------------------------------------------------------
 
-No, ``rarfile`` parses RAR structure in Python code.  Also it can
+No, :mod:`rarfile` parses RAR structure in Python code.  Also it can
 read uncompressed files from archive without external utility.
 
 Will rarfile support wrapping unrarlib/unrar.dll/unrar.so in the future?
@@ -35,7 +35,7 @@ On Windows the ``unrar.exe`` is not in ``PATH`` so simple ``Popen("unrar ..")`` 
 It can be solved several ways:
 
 1. Add location of ``unrar.exe`` to PATH.
-2. Set rarfile.UNRAR_TOOL to full path of ``unrar.exe``.
+2. Set :data:`rarfile.UNRAR_TOOL` to full path of ``unrar.exe``.
 3. Copy ``unrar.exe`` to your program directory.
 4. Copy ``unrar.exe`` to system directory that is in PATH, eg. ``C:\Windows``.
 
@@ -67,7 +67,7 @@ to entries slow.  To avoid that, RarFile remembers location of compressed
 data for each entry and on read it copies it to temporary archive containing
 only data for that one file, thus making ``unrar`` fast.
 
-The logic is only activated for entries smaller than HACK_SIZE_LIMIT
+The logic is only activated for entries smaller than :data:`rarfile.HACK_SIZE_LIMIT`
 (20M by default).  Bigger files are accessed directly from RAR.
 
 Note - it only works for non-solid archives.  So if you care about

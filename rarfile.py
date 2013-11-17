@@ -453,7 +453,7 @@ class RarFile(object):
     '''Parse RAR structure, provide access to files in archive.
     '''
 
-    #: Archive comment.  Byte string or None.  Use UNICODE_COMMENTS
+    #: Archive comment.  Byte string or None.  Use :data:`UNICODE_COMMENTS`
     #: to get automatic decoding to unicode.
     comment = None
 
@@ -548,8 +548,9 @@ class RarFile(object):
         '''Returns file-like object (:class:`RarExtFile`),
         from where the data can be read.
         
-        The object implements io.RawIOBase interface, so it can
-        be further wrapped with io.BufferedReader and io.TextIOWrapper.
+        The object implements :class:`io.RawIOBase` interface, so it can
+        be further wrapped with :class:`io.BufferedReader`
+        and :class:`io.TextIOWrapper`.
 
         On older Python where io module is not available, it implements
         only .read(), .seek(), .tell() and .close() methods.
@@ -610,7 +611,7 @@ class RarFile(object):
     def read(self, fname, psw = None):
         """Return uncompressed data for archive entry.
         
-        For longer files using .open() may be better idea.
+        For longer files using :meth:`RarFile.open` may be better idea.
 
         Parameters:
 
@@ -641,7 +642,7 @@ class RarFile(object):
         Parameters:
 
             member
-                filename or RarInfo instance
+                filename or :class:`RarInfo` instance
             path
                 optional destination path
             pwd
@@ -661,7 +662,7 @@ class RarFile(object):
             path
                 optional destination path
             members
-                optional filename or RarInfo instance list to extract
+                optional filename or :class:`RarInfo` instance list to extract
             pwd
                 optional password to use
         """
