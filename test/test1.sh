@@ -6,7 +6,7 @@ export PYTHONPATH
 JAVA_OPTIONS="-Dpython.path=`pwd`/.."
 export JAVA_OPTIONS
 
-plist="python2.4 python2.5 python2.6 python2.7 python3.1 python3.2 python3.3 pypy jython jython2.7"
+plist="python2.4 python2.5 python2.6 python2.7 python3.1 python3.2 python3.3 python3.4 pypy jython jython2.7"
 
 rm -f test.diffs
 
