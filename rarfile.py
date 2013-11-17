@@ -188,10 +188,6 @@ NEED_COMMENTS = 1
 #: whether to convert comments to unicode strings
 UNICODE_COMMENTS = 0
 
-#: When RAR is corrupt, stopping on bad header is better
-#: On unknown/misparsed RAR headers reporting is better
-REPORT_BAD_HEADER = 0
-
 #: Convert RAR time tuple into datetime() object
 USE_DATETIME = 0
 
@@ -457,7 +453,8 @@ class RarFile(object):
     #: to get automatic decoding to unicode.
     comment = None
 
-    def __init__(self, rarfile, mode="r", charset=None, info_callback=None, crc_check = True):
+    def __init__(self, rarfile, mode="r", charset=None, info_callback=None,
+                 crc_check = True, errors = "stop"):
         """Open and parse a RAR archive.
         
         Parameters:
@@ -472,6 +469,9 @@ class RarFile(object):
                 debug callback, gets to see all archive entries.
             crc_check
                 set to False to disable CRC checks
+            errors
+                Either "stop" to quietly stop parsing on errors,
+                or "strict" to raise errors.  Default is "stop".
         """
         self.rarfile = rarfile
         self.comment = None
@@ -484,6 +484,13 @@ class RarFile(object):
         self._password = None
         self._crc_check = crc_check
         self._vol_list = []
+
+        if errors == "stop":
+            self._strict = False
+        elif errors == "strict":
+            self._strict = True
+        else:
+            raise ValueError("Invalid value for 'errors' parameter.")
 
         self._main = None
 
@@ -688,9 +695,22 @@ class RarFile(object):
         output = p.communicate()[0]
         check_returncode(p, output)
 
+    def strerror(self):
+        """Return error string if parsing failed,
+        or None if no problems.
+        """
+        return self._parse_error
+
     ##
     ## private methods
     ##
+
+    def _set_error(self, msg, *args):
+        if args:
+            msg = msg % args
+        self._parse_error = msg
+        if self._strict:
+            raise BadRarFile(msg)
 
     # store entry
     def _process_entry(self, item):
@@ -760,7 +780,11 @@ class RarFile(object):
                     volume += 1
                     volfile = self._next_volname(volfile)
                     fd.close()
-                    fd = open(volfile, "rb")
+                    try:
+                        fd = open(volfile, "rb")
+                    except IOError:
+                        self._set_error("Cannot open next volume: %s", volfile)
+                        break
                     self._fd = fd
                     more_vols = 0
                     endarc = 0
@@ -825,8 +849,7 @@ class RarFile(object):
             # now read actual header
             return self._parse_block_header(fd)
         except struct.error:
-            if REPORT_BAD_HEADER:
-                raise BadRarFile('Broken header in RAR file')
+            self._set_error('Broken header in RAR file')
             return None
 
     # common header
@@ -853,8 +876,7 @@ class RarFile(object):
 
         # unexpected EOF?
         if len(h.header_data) != h.header_size:
-            if REPORT_BAD_HEADER:
-                raise BadRarFile('Unexpected EOF when reading header')
+            self._set_error('Unexpected EOF when reading header')
             return None
 
         # block has data assiciated with it?
@@ -897,18 +919,9 @@ class RarFile(object):
         if h.header_crc == calc_crc:
             return h
 
-        # need to panic?
-        if REPORT_BAD_HEADER:
-            xlen = len(crcdat)
-            crcdat = h.header_data[2:]
-            msg = 'Header CRC error (%02x): exp=%x got=%x (xlen = %d)' % ( h.type, h.header_crc, calc_crc, xlen )
-            xlen = len(crcdat)
-            while xlen >= S_BLK_HDR.size - 2:
-                crc = crc32(crcdat[:xlen]) & 0xFFFF
-                if crc == h.header_crc:
-                    msg += ' / crc match, xlen = %d' % xlen
-                xlen -= 1
-            raise BadRarFile(msg)
+        # header parsing failed.
+        self._set_error('Header CRC error (%02x): exp=%x got=%x (xlen = %d)',
+                h.type, h.header_crc, calc_crc, len(crcdat))
 
         # instead panicing, send eof
         return None
