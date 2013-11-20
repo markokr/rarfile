@@ -55,15 +55,45 @@ def test_seek(rf, fn):
 
     print('OK')
 
-def main():
+def test_arc(arc, desc):
     files = ['stest1.txt', 'stest2.txt']
-    arc = 'files/seektest.rar'
-
     rf = rarfile.RarFile(arc, crc_check=0)
     for fn in files:
-        sys.stdout.write('test/seek %s .. ' % fn)
+        sys.stdout.write('%s | test/seek %s .. ' % (desc, fn))
         sys.stdout.flush()
         test_seek(rf, fn)
+
+def main():
+    arc = 'files/seektest.rar'
+    data = open(arc, 'rb').read()
+
+    # filename
+    test_arc(arc, "fn")
+
+    # filelike: cStringIO
+    try:
+        import cStringIO
+        test_arc(cStringIO.StringIO(data), "cStringIO")
+    except ImportError:
+        pass
+
+    # filelike: io.BytesIO, io.open()
+    try:
+        import io
+        test_arc(io.BytesIO(data), "io.BytesIO")
+        test_arc(io.open(arc, 'rb'), "io.open")
+    except ImportError:
+        pass
+
+    # filelike: StringIO
+    try:
+        import StringIO
+        test_arc(StringIO.StringIO(data), "StringIO")
+    except ImportError:
+        pass
+
+    # filelike: file()
+    test_arc(open(arc, 'rb'), "file")
 
     time.sleep(1)
     show_fds()
