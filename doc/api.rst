@@ -45,7 +45,6 @@ Module Configuration
 .. autodata:: PATH_SEP
 .. autodata:: NEED_COMMENTS
 .. autodata:: UNICODE_COMMENTS
-.. autodata:: REPORT_BAD_HEADER
 .. autodata:: USE_EXTRACT_HACK
 .. autodata:: HACK_SIZE_LIMIT
 

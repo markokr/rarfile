@@ -14,7 +14,6 @@ except NameError:
     def bytearray(v):
         return array.array('B', v)
 
-rf.REPORT_BAD_HEADER = 1
 rf.UNICODE_COMMENTS = 1
 rf.USE_DATETIME = 1
 
