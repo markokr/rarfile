@@ -87,7 +87,7 @@ import sys, os, struct, errno
 from struct import pack, unpack
 from binascii import crc32
 from tempfile import mkstemp
-from subprocess import Popen, PIPE, STDOUT, CalledProcessError
+from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime
 
 # only needed for encryped headers
@@ -1920,7 +1920,7 @@ def custom_check(cmd):
     p = custom_popen(cmd)
     out, err = p.communicate()
     if p.returncode:
-        raise CalledProcessError(p.returncode, cmd, out)
+        raise RarExecError("Check-run failed")
     return out
 
 def add_password_arg(cmd, psw, required=False):
@@ -1970,7 +1970,7 @@ def check_returncode(p, out):
 try:
     # does UNRAR_TOOL work?
     custom_check([UNRAR_TOOL] + list(CHECK_ARGS))
-except CalledProcessError:
+except RarExecError:
     try:
         # does ALT_TOOL work?
         custom_check([ALT_TOOL] + list(ALT_CHECK_ARGS))
@@ -1979,7 +1979,7 @@ except CalledProcessError:
         OPEN_ARGS = ALT_OPEN_ARGS
         EXTRACT_ARGS = ALT_EXTRACT_ARGS
         TEST_ARGS = ALT_TEST_ARGS
-    except CalledProcessError:
+    except RarExecError:
         # no usable tool, only uncompressed archives work
         pass
 
