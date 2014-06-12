@@ -4,6 +4,37 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 2.7 (xxxx-xx-xx)
+------------------------
+
+* Allow use of bsdtar_ as decompression backend.  It sits
+  on top of libarchive_, which has support for reading RAR archives.
+
+  Limitations of ``libarchive`` RAR backend:
+
+  - Does not support solid archives.
+  - Does not support password-protected archives.
+
+  Now :mod:`rarfile` checks if ``unrar`` and if not then tries ``bsdtar``.
+  If that works, then keeps using it.  If not then configuration
+  stays with ``unrar`` which will then appear in error messages.
+
+.. _bsdtar: https://github.com/libarchive/libarchive/wiki/ManPageBsdtar1
+.. _libarchive: http://www.libarchive.org/
+
+* Both :class:`RarFile` and :func:`is_rarfile` now accept file-like
+  object.  Eg. :class:`io.BytesIO`.  Only requirement is that the object
+  must be seekable.  This mirrors similar funtionality in zipfile.
+
+  Based on patch by Chase Zhang.
+
+* Uniform error handling.  :class:`RarFile` accepts ``errors="strict"``
+  argument.
+
+  Allow user to tune whether parsing and missing file errors will raise
+  exception.  If error is not raised, the error string can be queried
+  with :meth:`RarFile.strerror` method.
+
 Version 2.6 (2013-04-10)
 ------------------------
 
