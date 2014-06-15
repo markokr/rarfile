@@ -178,8 +178,6 @@ EXTRACT_ARGS = ('x', '-y', '-idq')
 #: args for testrar()
 TEST_ARGS = ('t', '-idq')
 
-CHECK_ARGS = ('-h',)
-
 #
 # Allow use of tool that is not compatible with unrar.
 #
@@ -355,6 +353,8 @@ class RarUnknownError(RarExecError):
     """Unknown exit code"""
 class RarSignalExit(RarExecError):
     """Unrar exited with signal"""
+class RarCannotExec(RarExecError):
+    """Executable not found."""
 
 
 def is_rarfile(xfile):
@@ -1911,15 +1911,15 @@ def custom_popen(cmd):
     except OSError:
         ex = sys.exc_info()[1]
         if ex.errno == errno.ENOENT:
-            raise RarExecError("Unrar not installed? (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
+            raise RarCannotExec("Unrar not installed? (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
         raise
     return p
 
-def custom_check(cmd):
+def custom_check(cmd, ignore_retcode=False):
     """Run command, collect output, raise error if needed."""
     p = custom_popen(cmd)
     out, err = p.communicate()
-    if p.returncode:
+    if p.returncode and not ignore_retcode:
         raise RarExecError("Check-run failed")
     return out
 
@@ -1969,17 +1969,17 @@ def check_returncode(p, out):
 
 try:
     # does UNRAR_TOOL work?
-    custom_check([UNRAR_TOOL] + list(CHECK_ARGS))
-except RarExecError:
+    custom_check([UNRAR_TOOL], True)
+except RarCannotExec:
     try:
         # does ALT_TOOL work?
-        custom_check([ALT_TOOL] + list(ALT_CHECK_ARGS))
+        custom_check([ALT_TOOL] + list(ALT_CHECK_ARGS), True)
         # replace config
         UNRAR_TOOL = ALT_TOOL
         OPEN_ARGS = ALT_OPEN_ARGS
         EXTRACT_ARGS = ALT_EXTRACT_ARGS
         TEST_ARGS = ALT_TEST_ARGS
-    except RarExecError:
+    except RarCannotExec:
         # no usable tool, only uncompressed archives work
         pass
 
