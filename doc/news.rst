@@ -4,7 +4,7 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Version 2.7 (xxxx-xx-xx)
+Version 2.7 (2014-11-23)
 ------------------------
 
 * Allow use of bsdtar_ as decompression backend.  It sits
@@ -14,6 +14,8 @@ Version 2.7 (xxxx-xx-xx)
 
   - Does not support solid archives.
   - Does not support password-protected archives.
+  - Does not support "parsing filters" used for audio/image/executable data,
+    so few non-solid, non-encrypted archives also fail.
 
   Now :mod:`rarfile` checks if ``unrar`` and if not then tries ``bsdtar``.
   If that works, then keeps using it.  If not then configuration

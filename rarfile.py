@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005-2013  Marko Kreen <markokr@gmail.com>
+# Copyright (c) 2005-2014  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -74,7 +74,7 @@ For more details, refer to source.
 
 """
 
-__version__ = '2.6'
+__version__ = '2.7'
 
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
