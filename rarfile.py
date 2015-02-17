@@ -1189,6 +1189,7 @@ class RarFile(object):
             raise ValueError("Cannot use unrar directly on memory buffer")
         cmd = [UNRAR_TOOL] + list(OPEN_ARGS)
         add_password_arg(cmd, psw)
+        cmd.append("--")
         cmd.append(rarfile)
 
         # not giving filename avoids encoding related problems
