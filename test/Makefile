@@ -1,5 +1,6 @@
 test:
-	./test.sh
+	./test1.sh
+	./test2.sh
 
 clean:
 	rm -rf __pycache__
