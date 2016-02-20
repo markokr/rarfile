@@ -1686,7 +1686,7 @@ class DirectReader(RarExtFile):
                     if not self._open_next():
                         break
 
-                # lenght for next read
+                # length for next read
                 cnt = len(buf) - got
                 if cnt > self.cur_avail:
                     cnt = self.cur_avail
