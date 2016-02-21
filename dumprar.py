@@ -24,7 +24,7 @@ switches:
   -pPSW      set password
   -Ccharset  set fallback charset
   -v         increase verbosity
-  -t         attemt to read all files
+  -t         attempt to read all files
   -x         write read files out
   -c         show archive comment
   -h         show usage
