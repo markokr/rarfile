@@ -6,9 +6,9 @@ This is Python module for RAR_ archive reading.  The interface
 is made as zipfile_ like as possible.  Licensed under ISC_
 license.
 
-.. _RAR: http://en.wikipedia.org/wiki/RAR
-.. _zipfile: http://docs.python.org/library/zipfile.html
-.. _ISC: http://en.wikipedia.org/wiki/ISC_license
+.. _RAR: https://en.wikipedia.org/wiki/RAR
+.. _zipfile: https://docs.python.org/library/zipfile.html
+.. _ISC: https://en.wikipedia.org/wiki/ISC_license
 
 Features:
 
