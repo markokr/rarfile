@@ -503,6 +503,7 @@ class RarFile(object):
 
         self._info_list = []
         self._info_map = {}
+        self._parse_error = None
         self._needs_password = False
         self._password = None
         self._crc_check = crc_check
