@@ -94,7 +94,24 @@ from hashlib import sha1
 
 # only needed for encryped headers
 try:
-    from Crypto.Cipher import AES
+    try:
+        from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
+        from cryptography.hazmat.backends import default_backend
+        class AES_CBC_Decrypt:
+            block_size = 16
+            def __init__(self, key, iv):
+                ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
+                self.dec = ciph.decryptor()
+            def decrypt(self, data):
+                return self.dec.update(data)
+    except ImportError:
+        from Crypto.Cipher import AES
+        class AES_CBC_Decrypt:
+            block_size = 16
+            def __init__(self, key, iv):
+                self.dec = AES.new(key, AES.MODE_CBC, iv)
+            def decrypt(self, data):
+                return self.dec.decrypt(data)
     _have_crypto = 1
 except ImportError:
     _have_crypto = 0
@@ -1691,7 +1708,7 @@ class HeaderDecrypt:
     """File-like object that decrypts from another file"""
     def __init__(self, f, key, iv):
         self.f = f
-        self.ciph = AES.new(key, AES.MODE_CBC, iv)
+        self.ciph = AES_CBC_Decrypt(key, iv)
         self.buf = EMPTY
 
     def tell(self):
