@@ -2,6 +2,7 @@
 
 """Dump archive contents, test extraction."""
 
+import io
 import sys
 import rarfile as rf
 from binascii import crc32, hexlify
@@ -190,6 +191,7 @@ cf_charset = None
 cf_extract = 0
 cf_test_read = 0
 cf_test_unrar = 0
+cf_test_memory = 0
 
 def check_crc(f, inf):
     ucrc = f.CRC
@@ -242,13 +244,17 @@ def test_real(fn, psw):
     if cf_verbose > 1:
         cb = show_item
 
+    rfarg = fn
+    if cf_test_memory:
+        fnarg = io.BytesIO(open(fn, 'rb').read())
+
     # check if rar
-    if not rf.is_rarfile(fn):
+    if not rf.is_rarfile(rfarg):
         xprint(" --- %s is not a RAR file ---", fn)
         return
 
     # open
-    r = rf.RarFile(fn, charset = cf_charset, info_callback = cb)
+    r = rf.RarFile(rfarg, charset = cf_charset, info_callback = cb)
     # set password
     if r.needs_password():
         if psw:
@@ -302,6 +308,7 @@ def test(fn, psw):
 def main():
     global cf_verbose, cf_show_comment, cf_charset
     global cf_extract, cf_test_read, cf_test_unrar
+    global cf_test_memory
 
     # parse args
     args = []
@@ -333,6 +340,8 @@ def main():
             cf_test_read += 1
         elif a == '-T':
             cf_test_unrar = 1
+        elif a == '-M':
+            cf_test_memory = 1
         elif a[1] == 'C':
             cf_charset = a[2:]
         else:

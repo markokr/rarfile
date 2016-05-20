@@ -639,6 +639,8 @@ class RarFile(object):
             return self._open_clear(inf)
         elif use_hack:
             return self._open_hack(inf, psw)
+        elif is_filelike(self.rarfile):
+            return self._open_unrar_membuf(self.rarfile, inf, psw)
         else:
             return self._open_unrar(self.rarfile, inf, psw)
 
@@ -1183,6 +1185,27 @@ class RarFile(object):
                 return None
 
         return self._decode_comment(cmt)
+
+    # write in-memory archive to temp file - needed for solid archives
+    def _open_unrar_membuf(self, memfile, inf, psw):
+        memfile.seek(0, 0)
+
+        tmpfd, tmpname = mkstemp(suffix='.rar')
+        tmpf = os.fdopen(tmpfd, "wb")
+
+        try:
+            BSIZE = 32*1024
+            while True:
+                buf = memfile.read(BSIZE)
+                if not buf:
+                    break
+                tmpf.write(buf)
+            tmpf.close()
+        except:
+            tmpf.close()
+            os.unlink(tmpname)
+            raise
+        return self._open_unrar(tmpname, inf, psw, tmpname)
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw = None, tmpfile = None):
