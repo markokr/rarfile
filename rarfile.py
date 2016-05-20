@@ -126,13 +126,6 @@ if sys.hexversion < 0x3000000:
 else:
     unicode = str
 
-# Optimized .readinto() requires memoryview
-try:
-    memoryview
-    have_memoryview = 1
-except NameError:
-    have_memoryview = 0
-
 ##
 ## Module configuration.  Can be tuned after importing.
 ##
@@ -1566,23 +1559,22 @@ class PipeReader(RarExtFile):
                 pass
             self.tempfile = None
 
-    if have_memoryview:
-        def readinto(self, buf):
-            """Zero-copy read directly into buffer."""
-            cnt = len(buf)
-            if cnt > self.remain:
-                cnt = self.remain
-            vbuf = memoryview(buf)
-            res = got = 0
-            while got < cnt:
-                res = self.fd.readinto(vbuf[got : cnt])
-                if not res:
-                    break
-                if self.crc_check:
-                    self.CRC = crc32(vbuf[got : got + res], self.CRC)
-                self.remain -= res
-                got += res
-            return got
+    def readinto(self, buf):
+        """Zero-copy read directly into buffer."""
+        cnt = len(buf)
+        if cnt > self.remain:
+            cnt = self.remain
+        vbuf = memoryview(buf)
+        res = got = 0
+        while got < cnt:
+            res = self.fd.readinto(vbuf[got : cnt])
+            if not res:
+                break
+            if self.crc_check:
+                self.CRC = crc32(vbuf[got : got + res], self.CRC)
+            self.remain -= res
+            got += res
+        return got
 
 
 class DirectReader(RarExtFile):
@@ -1676,32 +1668,31 @@ class DirectReader(RarExtFile):
             self.cur_avail = cur.add_size
             return True
 
-    if have_memoryview:
-        def readinto(self, buf):
-            """Zero-copy read directly into buffer."""
-            got = 0
-            vbuf = memoryview(buf)
-            while got < len(buf):
-                # next vol needed?
-                if self.cur_avail == 0:
-                    if not self._open_next():
-                        break
-
-                # length for next read
-                cnt = len(buf) - got
-                if cnt > self.cur_avail:
-                    cnt = self.cur_avail
-
-                # read into temp view
-                res = self.fd.readinto(vbuf[got : got + cnt])
-                if not res:
+    def readinto(self, buf):
+        """Zero-copy read directly into buffer."""
+        got = 0
+        vbuf = memoryview(buf)
+        while got < len(buf):
+            # next vol needed?
+            if self.cur_avail == 0:
+                if not self._open_next():
                     break
-                if self.crc_check:
-                    self.CRC = crc32(vbuf[got : got + res], self.CRC)
-                self.cur_avail -= res
-                self.remain -= res
-                got += res
-            return got
+
+            # length for next read
+            cnt = len(buf) - got
+            if cnt > self.cur_avail:
+                cnt = self.cur_avail
+
+            # read into temp view
+            res = self.fd.readinto(vbuf[got : got + cnt])
+            if not res:
+                break
+            if self.crc_check:
+                self.CRC = crc32(vbuf[got : got + res], self.CRC)
+            self.cur_avail -= res
+            self.remain -= res
+            got += res
+        return got
 
 
 class HeaderDecrypt:
