@@ -465,7 +465,7 @@ class RarInfo(object):
         return False
 
     def needs_password(self):
-        return self.flags & RAR_FILE_PASSWORD
+        return (self.flags & RAR_FILE_PASSWORD) > 0
 
 
 class RarFile(object):
