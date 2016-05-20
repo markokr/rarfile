@@ -84,19 +84,17 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
 ##
 
 import sys, os, struct, errno
-from struct import pack, unpack
+from struct import pack, unpack, Struct
 from binascii import crc32
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime
+from io import RawIOBase
+from hashlib import sha1
 
 # only needed for encryped headers
 try:
     from Crypto.Cipher import AES
-    try:
-        from hashlib import sha1
-    except ImportError:
-        from sha import new as sha1
     _have_crypto = 1
 except ImportError:
     _have_crypto = 0
@@ -111,50 +109,12 @@ if sys.hexversion < 0x3000000:
 else:
     unicode = str
 
-# see if compat bytearray() is needed
-try:
-    bytearray
-except NameError:
-    import array
-    class bytearray:
-        def __init__(self, val = ''):
-            self.arr = array.array('B', val)
-            self.append = self.arr.append
-            self.__getitem__ = self.arr.__getitem__
-            self.__len__ = self.arr.__len__
-        def decode(self, *args):
-            return self.arr.tostring().decode(*args)
-
 # Optimized .readinto() requires memoryview
 try:
     memoryview
     have_memoryview = 1
 except NameError:
     have_memoryview = 0
-
-# Struct() for older python
-try:
-    from struct import Struct
-except ImportError:
-    class Struct:
-        def __init__(self, fmt):
-            self.format = fmt
-            self.size = struct.calcsize(fmt)
-        def unpack(self, buf):
-            return unpack(self.format, buf)
-        def unpack_from(self, buf, ofs = 0):
-            return unpack(self.format, buf[ofs : ofs + self.size])
-        def pack(self, *args):
-            return pack(self.format, *args)
-
-# file object superclass
-try:
-    from io import RawIOBase
-except ImportError:
-    class RawIOBase(object):
-        def close(self):
-            pass
-
 
 ##
 ## Module configuration.  Can be tuned after importing.
