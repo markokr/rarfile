@@ -246,7 +246,7 @@ def test_real(fn, psw):
 
     rfarg = fn
     if cf_test_memory:
-        fnarg = io.BytesIO(open(fn, 'rb').read())
+        rfarg = io.BytesIO(open(fn, 'rb').read())
 
     # check if rar
     if not rf.is_rarfile(rfarg):
