@@ -759,7 +759,7 @@ class RarFile(object):
         self._fd = fd
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
-            if isinstance(self.rarfile, str):
+            if isinstance(self.rarfile, (str, unicode)):
                 raise NotRarFile("Not a Rar archive: {}".format(self.rarfile))
             raise NonRarFile("Not a Rar archive")
 
