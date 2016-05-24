@@ -120,9 +120,6 @@ except ImportError:
 if sys.hexversion < 0x3000000:
     # prefer 3.x behaviour
     range = xrange
-    # py2.6 has broken bytes()
-    def bytes(s, enc):
-        return str(s)
 else:
     unicode = str
 
@@ -264,9 +261,9 @@ RAR_M5 = 0x35
 ## internal constants
 ##
 
-RAR_ID = bytes("Rar!\x1a\x07\x00", 'ascii')
-ZERO = bytes("\0", 'ascii')
-EMPTY = bytes("", 'ascii')
+RAR_ID = b"Rar!\x1a\x07\x00"
+ZERO = b"\0"
+EMPTY = b""
 
 S_BLK_HDR = Struct('<HBHH')
 S_FILE_HDR = Struct('<LLBLLBBHL')
@@ -1809,7 +1806,7 @@ def rar_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=No
     flags |= RAR_LONG_BLOCK
 
     # file header
-    fname = bytes('data', 'ascii')
+    fname = b'data'
     date = 0
     mode = 0x20
     fhdr = S_FILE_HDR.pack(len(data), declen, RAR_OS_MSDOS, crc,
