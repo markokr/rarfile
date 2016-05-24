@@ -97,7 +97,7 @@ try:
     try:
         from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
         from cryptography.hazmat.backends import default_backend
-        class AES_CBC_Decrypt:
+        class AES_CBC_Decrypt(object):
             block_size = 16
             def __init__(self, key, iv):
                 ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
@@ -106,7 +106,7 @@ try:
                 return self.dec.update(data)
     except ImportError:
         from Crypto.Cipher import AES
-        class AES_CBC_Decrypt:
+        class AES_CBC_Decrypt(object):
             block_size = 16
             def __init__(self, key, iv):
                 self.dec = AES.new(key, AES.MODE_CBC, iv)
@@ -1238,7 +1238,7 @@ class RarFile(object):
 ## Utility classes
 ##
 
-class UnicodeFilename:
+class UnicodeFilename(object):
     """Handle unicode filename decompression"""
 
     def __init__(self, name, encdata):
@@ -1694,7 +1694,7 @@ class DirectReader(RarExtFile):
         return got
 
 
-class HeaderDecrypt:
+class HeaderDecrypt(object):
     """File-like object that decrypts from another file"""
     def __init__(self, f, key, iv):
         self.f = f
