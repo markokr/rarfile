@@ -759,7 +759,7 @@ class RarFile(object):
         self._fd = fd
         id = fd.read(len(RAR_ID))
         if id != RAR_ID:
-            raise NotRarFile("Not a Rar archive: "+self.rarfile)
+            raise NotRarFile("Not a Rar archive: {}".format(self.rarfile))
 
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
