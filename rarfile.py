@@ -508,7 +508,7 @@ class RarFile(object):
 
     def namelist(self):
         '''Return list of filenames in archive.'''
-        return [f.filename for f in self._info_list]
+        return [f.filename for f in self.infolist()]
 
     def infolist(self):
         '''Return RarInfo objects for all files/directories in archive.'''
@@ -636,7 +636,7 @@ class RarFile(object):
 
     def printdir(self):
         """Print archive file list to stdout."""
-        for f in self._info_list:
+        for f in self.infolist():
             print(f.filename)
 
     def extract(self, member, path=None, pwd=None):
