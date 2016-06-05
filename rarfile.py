@@ -683,10 +683,22 @@ class RarFile(object):
         """
         cmd = [UNRAR_TOOL] + list(TEST_ARGS)
         add_password_arg(cmd, self._password)
-        cmd.append(self.rarfile)
-        p = custom_popen(cmd)
-        output = p.communicate()[0]
-        check_returncode(p, output)
+        cmd.append('--')
+
+        if is_filelike(self.rarfile):
+            tmpname = membuf_tempfile(self.rarfile)
+            cmd.append(tmpname)
+        else:
+            tmpname = None
+            cmd.append(self.rarfile)
+
+        try:
+            p = custom_popen(cmd)
+            output = p.communicate()[0]
+            check_returncode(p, output)
+        finally:
+            if tmpname:
+                os.unlink(tmpname)
 
     def strerror(self):
         """Return error string if parsing failed,
@@ -1157,23 +1169,7 @@ class RarFile(object):
 
     # write in-memory archive to temp file - needed for solid archives
     def _open_unrar_membuf(self, memfile, inf, psw):
-        memfile.seek(0, 0)
-
-        tmpfd, tmpname = mkstemp(suffix='.rar')
-        tmpf = os.fdopen(tmpfd, "wb")
-
-        try:
-            BSIZE = 32*1024
-            while True:
-                buf = memfile.read(BSIZE)
-                if not buf:
-                    break
-                tmpf.write(buf)
-            tmpf.close()
-        except:
-            tmpf.close()
-            os.unlink(tmpname)
-            raise
+        tmpname = membuf_tempfile(memfile)
         return self._open_unrar(tmpname, inf, psw, tmpname)
 
     # extract using unrar
@@ -1215,9 +1211,15 @@ class RarFile(object):
         # pasoword
         psw = psw or self._password
         add_password_arg(cmd, psw)
+        cmd.append('--')
 
         # rar file
-        cmd.append(self.rarfile)
+        if is_filelike(self.rarfile):
+            tmpname = membuf_tempfile(self.rarfile)
+            cmd.append(tmpname)
+        else:
+            tmpname = None
+            cmd.append(self.rarfile)
 
         # file list
         for fn in fnlist:
@@ -1230,9 +1232,13 @@ class RarFile(object):
             cmd.append(path + os.sep)
 
         # call
-        p = custom_popen(cmd)
-        output = p.communicate()[0]
-        check_returncode(p, output)
+        try:
+            p = custom_popen(cmd)
+            output = p.communicate()[0]
+            check_returncode(p, output)
+        finally:
+            if tmpname:
+                os.unlink(tmpname)
 
 ##
 ## Utility classes
@@ -1953,6 +1959,26 @@ def check_returncode(p, out):
         msg = "%s [%d]" % (exc.__doc__, p.returncode)
 
     raise exc(msg)
+
+def membuf_tempfile(memfile):
+    memfile.seek(0, 0)
+
+    tmpfd, tmpname = mkstemp(suffix='.rar')
+    tmpf = os.fdopen(tmpfd, "wb")
+
+    try:
+        BSIZE = 32*1024
+        while True:
+            buf = memfile.read(BSIZE)
+            if not buf:
+                break
+            tmpf.write(buf)
+        tmpf.close()
+        return tmpname
+    except:
+        tmpf.close()
+        os.unlink(tmpname)
+        raise
 
 #
 # Check if unrar works
