@@ -4,6 +4,40 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 2.8 (2016-06-07)
+------------------------
+
+* Fix: support solid archives from in-memory file object.
+  Full archive will be written out to temp file.
+  [`#21 <https://github.com/markokr/rarfile/issues/21>`_]
+
+* Fix: ask unrar stop switches scanning,
+  to handle archive names starting with "-".
+  (Alexander Shadchin)
+  [`#12 <https://github.com/markokr/rarfile/pull/12>`_]
+
+* Fix: add missing _parse_error variable to RarFile object.
+  (Gregory Mazzola)
+  [`#20 <https://github.com/markokr/rarfile/pull/20>`_]
+
+* Fix: return proper boolean from :meth:`RarInfo.needs_password`.
+  [`#22 <https://github.com/markokr/rarfile/issues/22>`_]
+
+* Fix: do not insert non-string rarfile into exception string.
+  (Tim Muller)
+  [`#23 <https://github.com/markokr/rarfile/pull/23>`_]
+
+* Fix: make :meth:`RarFile.extract` and :meth:`RarFile.testrar`
+  support in-memory archives.
+
+* Use cryptography_ module as preferred crypto backend.
+  PyCrypto_ will be used as fallback.
+
+* Cleanup: remove compat code for Python 2.4/2.5/2.6.
+
+.. _cryptography: https://pypi.python.org/pypi/cryptography
+.. _PyCrypto: https://pypi.python.org/pypi/pycrypto
+
 Version 2.7 (2014-11-23)
 ------------------------
 
