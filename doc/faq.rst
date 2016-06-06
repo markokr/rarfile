@@ -8,9 +8,21 @@ What are the dependencies?
 --------------------------
 
 It depends on ``unrar`` command-line utility to do the actual decompression.
-
 Note that by default it expect it to be in ``PATH``.  If unrar
 launching fails, you need to fix this.
+
+Alternatively, :mod:`rarfile` can use bsdtar_ from libarchive_ as
+decompression backend, but that is a bit problematic as bsdtar_ does not support
+all RAR features.
+
+.. _bsdtar: https://github.com/libarchive/libarchive/wiki/ManPageBsdtar1
+.. _libarchive: http://www.libarchive.org/
+
+It depends on cryptography_ or PyCrypto_ modules to process
+archives with password-protected headers.
+
+.. _cryptography: https://pypi.python.org/pypi/cryptography
+.. _PyCrypto: https://pypi.python.org/pypi/pycrypto
 
 Does it parse ``unrar`` output to get archive contents?
 -------------------------------------------------------
@@ -54,8 +66,8 @@ In the meantime use either Zip_ (better compatibility) or 7z_ (better compressio
 format for your own archives.
 
 .. _RARLAB: http://www.rarlab.com/
-.. _Zip: http://en.wikipedia.org/wiki/ZIP_%28file_format%29
-.. _7z:  http://en.wikipedia.org/wiki/7z
+.. _Zip: https://en.wikipedia.org/wiki/ZIP_%28file_format%29
+.. _7z:  https://en.wikipedia.org/wiki/7z
 
 What is the USE_EXTRACT_HACK?
 -----------------------------
