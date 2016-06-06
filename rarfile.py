@@ -1315,7 +1315,7 @@ class RarExtFile(RawIOBase):
     name = None
 
     def __init__(self, rf, inf):
-        RawIOBase.__init__(self)
+        super(RarExtFile, self).__init__()
 
         # standard io.* properties
         self.name = inf.filename
@@ -1383,7 +1383,7 @@ class RarExtFile(RawIOBase):
     def close(self):
         """Close open resources."""
 
-        RawIOBase.close(self)
+        super(RarExtFile, self).close()
 
         if self.fd:
             self.fd.close()
@@ -1496,7 +1496,7 @@ class PipeReader(RarExtFile):
         self.cmd = cmd
         self.proc = None
         self.tempfile = tempfile
-        RarExtFile.__init__(self, rf, inf)
+        super(PipeReader, self).__init__(rf, inf)
 
     def _close_proc(self):
         if not self.proc:
@@ -1512,7 +1512,7 @@ class PipeReader(RarExtFile):
         self.proc = None
 
     def _open(self):
-        RarExtFile._open(self)
+        super(PipeReader, self)._open()
 
         # stop old process
         self._close_proc()
@@ -1549,7 +1549,7 @@ class PipeReader(RarExtFile):
         """Close open resources."""
 
         self._close_proc()
-        RarExtFile.close(self)
+        super(PipeReader, self).close()
 
         if self.tempfile:
             try:
@@ -1580,7 +1580,7 @@ class DirectReader(RarExtFile):
     """Read uncompressed data directly from archive."""
 
     def _open(self):
-        RarExtFile._open(self)
+        super(DirectReader, self)._open()
 
         self.volfile = self.inf.volume_file
         self.fd = XFile(self.volfile, 0)
