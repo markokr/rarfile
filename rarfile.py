@@ -74,7 +74,7 @@ For more details, refer to source.
 
 """
 
-__version__ = '2.7'
+__version__ = '2.8'
 
 # export only interesting items
 __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
