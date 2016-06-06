@@ -1,8 +1,6 @@
 
 prefix = /usr/local
 
-web = mkz@shell.berlios.de:/home/groups/rarfile/htdocs
-
 all:
 	python setup.py build
 
@@ -26,5 +24,8 @@ lint:
 	pylint -E rarfile.py
 
 rbuild:
-	curl -X POST http://readthedocs.org/build/6715
+	curl -X POST https://readthedocs.org/build/6715
+
+upload:
+	python setup.py sdist upload
 
