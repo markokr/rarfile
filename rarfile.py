@@ -1149,7 +1149,7 @@ class RarFile(object):
         if self._crc_check:
             crc = crc32(cmt)
             if crc < 0:
-                crc += (long(1) << 32)
+                crc += (1 << 32)
             if crc != inf.CRC:
                 return None
 
@@ -1373,7 +1373,7 @@ class RarExtFile(RawIOBase):
             raise BadRarFile("Failed the read enough data")
         crc = self.CRC
         if crc < 0:
-            crc += (long(1) << 32)
+            crc += (1 << 32)
         if crc != self.inf.CRC:
             raise BadRarFile("Corrupt file - CRC check failed: " + self.inf.filename)
 
