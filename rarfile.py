@@ -758,7 +758,7 @@ class RarFile(object):
         if id != RAR_ID:
             if isinstance(self.rarfile, (str, unicode)):
                 raise NotRarFile("Not a Rar archive: {}".format(self.rarfile))
-            raise NonRarFile("Not a Rar archive")
+            raise NotRarFile("Not a Rar archive")
 
         volume = 0  # first vol (.rar) is 0
         more_vols = 0
