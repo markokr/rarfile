@@ -1,10 +1,14 @@
-#! /usr/bin/env python
+"""Setup script for rarfile.
+"""
 
 from distutils.core import setup
 
-import rarfile
+import re
 
-ver = rarfile.__version__
+vrx = r"""^__version__ *= *['"]([^'"]+)['"]"""
+src = open("rarfile.py").read()
+ver = re.search(vrx, src, re.M).group(1)
+
 ldesc = open("README.rst").read().strip()
 sdesc = ldesc.split('\n')[0].split(' - ')[1].strip()
 
