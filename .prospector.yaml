@@ -1,0 +1,39 @@
+
+strictness: high
+
+max-line-length: 120
+
+member-warnings: true
+
+doc-warnings: false
+
+test-warnings: true
+
+pylint:
+  options:
+    dummy-variables-rgx: _$|dummy|___
+
+  disable:
+    - bad-whitespace
+    - invalid-name
+    - multiple-statements
+    - no-self-use
+    - protected-access
+    - too-many-arguments
+    - too-many-branches
+    - too-many-instance-attributes
+    - too-many-lines
+    - too-many-locals
+    - too-many-statements
+
+pep8:
+  run: true
+  disable:
+    - N801
+    - E203
+    - E221
+    - E302
+
+mccabe:
+  run: false
+
