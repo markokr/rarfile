@@ -22,17 +22,17 @@ import rarfile
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.napoleon']
 
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
 autodoc_default_flags = ['show-inheritance']
 
-intersphinx_mapping = {'python': ('http://docs.python.org/2', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -71,7 +71,7 @@ release = rarfile.__version__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', 'html']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

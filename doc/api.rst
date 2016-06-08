@@ -41,10 +41,7 @@ Module Configuration
 .. autodata:: UNRAR_TOOL
 .. autodata:: DEFAULT_CHARSET
 .. autodata:: TRY_ENCODINGS
-.. autodata:: USE_DATETIME
 .. autodata:: PATH_SEP
-.. autodata:: NEED_COMMENTS
-.. autodata:: UNICODE_COMMENTS
 .. autodata:: USE_EXTRACT_HACK
 .. autodata:: HACK_SIZE_LIMIT
 
@@ -105,7 +102,9 @@ Exceptions
 .. autoclass:: RarCreateError
 .. autoclass:: RarNoFilesError
 .. autoclass:: RarUserBreak
+.. autoclass:: RarWrongPassword
 .. autoclass:: RarUnknownError
 .. autoclass:: RarSignalExit
+.. autoclass:: RarCannotExec
 
 
