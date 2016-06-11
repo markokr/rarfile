@@ -4,6 +4,42 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 3.0 (unreleased)
+------------------------
+
+New features:
+
+* Support RAR5 archive format.  It is actually completely different
+  archive format from RAR3 one, only is uses same file extension
+  and tools are old one.
+
+  Except incompatibilies noted below, most of code should notice no change,
+  existing :class:`RarInfo` fields will continue using RAR3-compatible
+  values (eg. :attr:`RarInfo.host_os`).  RAR5-specific values will use
+  new fields.
+
+Incompatibilities:
+
+* Default :data:`PATH_SEP` is now '/' instead '\\'.
+
+* Removed :data:`NEED_COMMENTS` option, comments are always extracted.
+
+* Removed :data:`UNICODE_COMMENTS` option, they are always decoded.
+
+* Removed :data:`USE_DATETIME` option, :attr:`RarInfo.date_time` is always tuple,
+  :attr:`RarInfo.mtime`, :attr:`RarInfo.atime`, :attr:`RarInfo.ctime` and
+  :attr:`RarInfo.arctime` are always :class:`datetime.datetime` objects.
+
+Cleanups:
+
+* Code refactor to allow 2 different file format parsers.
+
+* Code cleanups to pass modern linters.
+
+* New testing and linting setup based on Tox_.
+
+.. _Tox: https://tox.readthedocs.io/en/latest/
+
 Version 2.8 (2016-06-07)
 ------------------------
 
