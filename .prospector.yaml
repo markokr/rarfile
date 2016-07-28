@@ -5,7 +5,7 @@ max-line-length: 120
 
 member-warnings: true
 
-doc-warnings: false
+doc-warnings: true
 
 test-warnings: true
 
@@ -33,6 +33,16 @@ pep8:
     - E203
     - E221
     - E302
+
+pep257:
+  disable:
+    - D200
+    - D202
+    - D203
+    - D204
+
+pyroma:
+  run: true
 
 mccabe:
   run: false
