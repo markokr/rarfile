@@ -81,6 +81,11 @@ from hashlib import sha1, sha256
 from hmac import HMAC
 from datetime import datetime, timedelta, tzinfo
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
+
 # fixed offset timezone, for UTC
 try:
     from datetime import timezone
@@ -213,6 +218,9 @@ ALT_CHECK_ARGS = ('--help',)
 
 #: whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
+
+#: whether or not to extrace ntfs streams
+EXTRACT_NTFS_STREAMS = 0
 
 #: limit the filesize for tmp archive usage
 HACK_SIZE_LIMIT = 20 * 1024 * 1024
@@ -1192,6 +1200,10 @@ class Rar3Info(RarInfo):
     data_offset = None
     _md_class = None
     _md_expect = None
+    _stream_name = None
+    _orig_stream_name = None
+    _orig_stream_data = None
+    _stream_data = None
 
     # make sure some rar5 fields are always present
     file_redir = None
@@ -1331,6 +1343,15 @@ class RAR3Parser(CommonParser):
             h.add_size = h.compress_size
 
         name, pos = load_bytes(hdata, name_size, pos)
+
+        # decode NTFS stream filename
+        if (name == b'STM') and (h.type == RAR_BLOCK_SUB):
+            stream_name, pos = load_bytes(hdata, h.header_size - pos, pos)
+            stream_name = stream_name[::2]
+            h._orig_stream_name = stream_name
+            h._stream_name = self._decode(stream_name)
+
+        # decode filename
         if h.flags & RAR_FILE_UNICODE:
             nul = name.find(ZERO)
             h.orig_filename = name[:nul]
@@ -1347,6 +1368,8 @@ class RAR3Parser(CommonParser):
         # change separator, if requested
         if PATH_SEP != '\\':
             h.filename = h.filename.replace('\\', PATH_SEP)
+            if h._stream_name:
+                h._stream_name = h._stream_name.replace('\\', PATH_SEP)
 
         if h.flags & RAR_FILE_SALT:
             h.salt, pos = load_bytes(hdata, 8, pos)
@@ -1408,6 +1431,26 @@ class RAR3Parser(CommonParser):
 
         return self._decode_comment(cmt)
 
+    def _read_stream_v3(self, inf, psw=None):
+
+        # read data
+        with XFile(inf.volume_file) as rf:
+            rf.seek(inf.data_offset)
+            data = rf.read(inf.compress_size)
+
+        # decompress
+        stream = rar3_decompress(inf.extract_version, inf.compress_type, data,
+                              inf.file_size, inf.flags, inf.CRC, psw, inf.salt)
+
+        # check crc
+        if self._crc_check:
+            crc = rar_crc32(stream)
+            if crc != inf.CRC:
+                return None
+
+        inf._orig_stream_data = stream
+        return self._decode_stream(stream)
+
     def _decode(self, val):
         for c in TRY_ENCODINGS:
             try:
@@ -1417,6 +1460,9 @@ class RAR3Parser(CommonParser):
         return val.decode(self._charset, 'replace')
 
     def _decode_comment(self, val):
+        return self._decode(val)
+
+    def _decode_stream(self, val):
         return self._decode(val)
 
     def process_entry(self, fd, item):
@@ -1447,6 +1493,24 @@ class RAR3Parser(CommonParser):
                 cmt = self._read_comment_v3(item, self._password)
                 self.comment = cmt
 
+        # parse windows additional data stream (NTFS streams)
+        if item.type == RAR_BLOCK_SUB and item.filename == "STM":
+            if not EXTRACT_NTFS_STREAMS:
+                print("Info: NTFS stream found in rar file, but not parsing")
+            else:
+                # stream of previous full file
+                prev_file_ind = -1
+                while self._info_list[prev_file_ind]._stream_name is not None:
+                    prev_file_ind -= 1
+                prev_file = self._info_list[prev_file_ind]
+                item.filename = prev_file.filename + item._stream_name
+
+                self._info_map[item.filename] = item
+                self._info_list.append(item)
+
+                # file NTFS stream
+                item._stream_data = self._read_stream_v3(item, self._password)
+
         if item.type == RAR_BLOCK_MAIN:
             if item.flags & RAR_MAIN_COMMENT:
                 self.comment = item.comment
@@ -1459,6 +1523,14 @@ class RAR3Parser(CommonParser):
         # create main header: crc, type, flags, size, res1, res2
         prefix = RAR_ID + S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + ZERO * (2 + 4)
         return self._open_hack_core(inf, psw, prefix, EMPTY)
+
+    def open(self, inf, psw):
+        """Return stream object for file data."""
+        if inf._orig_stream_data:
+            return StringIO(inf._orig_stream_data)
+
+        return CommonParser.open(self, inf, psw)
+
 
 #
 # RAR5 format
