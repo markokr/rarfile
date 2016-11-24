@@ -935,9 +935,14 @@ class CommonParser(object):
         """
         return self._info_list
 
-    def getinfo(self, fname):
+    def getinfo(self, member):
         """Return RarInfo for filename
         """
+        if isinstance(member, RarInfo):
+            fname = member.filename
+        else:
+            fname = member
+
         # accept both ways here
         if PATH_SEP == '/':
             fname2 = fname.replace("\\", "/")
