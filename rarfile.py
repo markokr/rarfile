@@ -140,8 +140,12 @@ except ImportError:
     _have_crypto = 0
 
 try:
-    from pyblake2 import blake2s
-    _have_blake2 = True
+    try:
+        from hashlib import blake2s
+        _have_blake2 = True
+    except ImportError:
+        from pyblake2 import blake2s
+        _have_blake2 = True
 except ImportError:
     _have_blake2 = False
 
