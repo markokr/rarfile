@@ -2672,7 +2672,7 @@ def _parse_xtime(flag, data, pos, basetime=None):
 def is_filelike(obj):
     """Filename or file object?
     """
-    if isinstance(obj, str) or isinstance(obj, unicode):
+    if isinstance(obj, (bytes, unicode)):
         return False
     res = True
     for a in ('read', 'tell', 'seek'):
