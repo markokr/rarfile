@@ -4,6 +4,24 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 3.1 (...)
+-----------------
+
+Fixes:
+
+* Accept `bytes` filenames in Python 3
+  (Nate Bogdanowicz)
+
+* Use bug-compatible SHA1 for longer passwords (> 28 chars)
+  in RAR3 encrypted headers.
+  (Marko Kreen)
+
+* Return true/false from _check_unrar_tool
+  (miigotu)
+
+* Include all test files in archive
+  (Benedikt Morbach)
+
 Version 3.0 (2016-12-27)
 ------------------------
 
