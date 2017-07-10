@@ -2550,6 +2550,7 @@ class Rar3Sha1(object):
         self.update(data)
 
     def copy(self):
+        """Return new instance with same state."""
         s = Rar3Sha1()
         s._nbytes = self._nbytes
         s._state[:] = self._state
@@ -2557,6 +2558,7 @@ class Rar3Sha1(object):
         return s
 
     def update(self, data):
+        """Process more data."""
         if not data:
             return
 
@@ -2587,6 +2589,7 @@ class Rar3Sha1(object):
         self._nbytes += len(data)
 
     def digest(self):
+        """Return final state."""
         bufpos = self._nbytes & 63
         pad_len = self.block_size - 8 - bufpos
         if pad_len <= 0:
@@ -2596,9 +2599,11 @@ class Rar3Sha1(object):
         return self._STATE.pack(*s._state)
 
     def hexdigest(self):
+        """Return final state as hex string."""
         return tohex(self.digest())
 
     def _transform(self, data):
+        """SHA1 core."""
         ws = self._workspace
         ws[:16] = self._BLK.unpack(data)
         a, b, c, d, e = self._state

@@ -1,7 +1,7 @@
 
 strictness: high
 
-max-line-length: 120
+max-line-length: 140
 
 member-warnings: true
 
@@ -25,6 +25,10 @@ pylint:
     - too-many-lines
     - too-many-locals
     - too-many-statements
+    - trailing-newlines
+    - ungrouped-imports
+    - len-as-condition
+    - no-else-return
 
 pep8:
   run: true
@@ -33,6 +37,7 @@ pep8:
     - E203
     - E221
     - E302
+    - E702
 
 pep257:
   disable:
@@ -40,6 +45,11 @@ pep257:
     - D202
     - D203
     - D204
+    - D213
+    - D406
+    - D413
+    - D407
+    - D412
 
 pyroma:
   run: true

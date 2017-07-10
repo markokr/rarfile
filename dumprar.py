@@ -308,7 +308,7 @@ def show_item_v5(h):
             xprint("  arctime=%s", fmt_time(h.arctime))
         if h.flags & rf.RAR_FILE_PASSWORD:
             enc_algo, enc_flags, kdf_count, salt, iv, checkval = h.file_encryption
-            algo_name = enc_algo == rf.RAR5_XENC_CIPHER_AES256 and 'AES256' or 'UnknownAlgo'
+            algo_name = 'AES256' if enc_algo == rf.RAR5_XENC_CIPHER_AES256 else 'UnknownAlgo'
             xprint('  algo=%d:%s enc_flags=%04x:%s kdf_lg=%d kdf_count=%d salt=%s iv=%s checkval=%s',
                    enc_algo, algo_name, enc_flags, render_flags(enc_flags, r5_file_enc_flags),
                    kdf_count, 1 << kdf_count, rf.tohex(salt), rf.tohex(iv),
@@ -331,7 +331,7 @@ def show_item_v5(h):
     elif h.block_type == rf.RAR5_BLOCK_ENDARC:
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.endarc_flags, r5_endarc_flags))
     elif h.block_type == rf.RAR5_BLOCK_ENCRYPTION:
-        algo_name = h.encryption_algo == rf.RAR5_XENC_CIPHER_AES256 and 'AES256' or 'UnknownAlgo'
+        algo_name = 'AES256' if h.encryption_algo == rf.RAR5_XENC_CIPHER_AES256 else 'UnknownAlgo'
         xprint("  algo=%d:%s flags=0x%04x:%s", h.encryption_algo, algo_name, h.flags,
                render_flags(h.encryption_flags, r5_enc_flags))
         xprint("  kdf_lg=%d kdf_count=%d", h.encryption_kdf_count, 1 << h.encryption_kdf_count)
