@@ -73,6 +73,20 @@ def test_rar3_sha1():
         h2 = Rar3Sha1(data).hexdigest()
         eq_(h1, h2)
 
+    data = bytearray([(i & 255) for i in range(2000)])
+    x1 = hashlib.sha1()
+    x2 = Rar3Sha1()
+    for step in (3, 17, 67, 128, 157):
+        pos = 0
+        while pos < len(data):
+            pos2 = pos + step
+            if pos2 > len(data):
+                pos2 = len(data)
+            x1.update(data[pos:pos2])
+            x2.update(data[pos:pos2])
+            eq_(x1.hexdigest(), x2.hexdigest())
+            pos = pos2
+
 def test_rar3_s2k():
     exp = ('a160cb31cb262e9231c0b6fc984fbb0d', 'aa54a659fb0c359b30f353a6343fb11d')
     key, iv = rarfile.rar3_s2k(b'password', unhexlify('00FF00'))
