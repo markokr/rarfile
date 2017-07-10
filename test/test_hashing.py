@@ -3,13 +3,15 @@
 
 from __future__ import division, print_function
 
+import hashlib
+
 from binascii import unhexlify
 
 from nose.tools import *
 
 import rarfile
 
-from rarfile import Blake2SP, CRC32Context, NoHashContext, tohex
+from rarfile import Blake2SP, CRC32Context, NoHashContext, tohex, Rar3Sha1
 
 def test_nohash():
     eq_(NoHashContext('').hexdigest(), None)
@@ -64,11 +66,25 @@ if rarfile._have_blake2:
 def test_hmac_sha256():
     eq_(tohex(rarfile.hmac_sha256(b'key', b'data')), '5031fe3d989c6d1537a013fa6e739da23463fdaec3b70137d828e36ace221bd0')
 
+def test_rar3_sha1():
+    for n in range(0, 200):
+        data = bytearray([i for i in range(n)])
+        h1 = hashlib.sha1(data).hexdigest()
+        h2 = Rar3Sha1(data).hexdigest()
+        eq_(h1, h2)
+
 def test_rar3_s2k():
     exp = ('a160cb31cb262e9231c0b6fc984fbb0d', 'aa54a659fb0c359b30f353a6343fb11d')
     key, iv = rarfile.rar3_s2k(b'password', unhexlify('00FF00'))
     eq_((tohex(key), tohex(iv)), exp)
     key, iv = rarfile.rar3_s2k(u'password', unhexlify('00FF00'))
+    eq_((tohex(key), tohex(iv)), exp)
+
+    exp = ('ffff33ffaf31987c899ccc2f965a8927', 'bdff6873721b247afa4f978448a5aeef')
+    key, iv = rarfile.rar3_s2k(u'p'*28, unhexlify('1122334455667788'))
+    eq_((tohex(key), tohex(iv)), exp)
+    exp = ('306cafde28f1ea78c9427c3ec642c0db', '173ecdf574c0bfe9e7c23bdfd96fa435')
+    key, iv = rarfile.rar3_s2k(u'p'*29, unhexlify('1122334455667788'))
     eq_((tohex(key), tohex(iv)), exp)
 
 if rarfile._have_crypto:

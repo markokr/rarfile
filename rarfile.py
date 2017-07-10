@@ -2525,6 +2525,123 @@ class Blake2SP(object):
         """Hexadecimal digest."""
         return tohex(self.digest())
 
+
+class Rar3Sha1(object):
+    """Bug-compat for SHA1
+    """
+    digest_size = 20
+    block_size = 64
+
+    _BLK = struct.Struct(b'>16L')
+    _BLKx = struct.Struct(b'<16L')
+    _STATE = struct.Struct(b'>5L')
+    _BITS = struct.Struct(b'>Q')
+    _PAD = b'\x80' + (b'\x00' * (block_size - 1))
+    _ZEROS = b'\x00' * block_size
+
+    __slots__ = ('_nbytes', '_state', '_buf', '_rarbug', '_workspace')
+
+    def __init__(self, data=None, rarbug=False):
+        self._nbytes = 0
+        self._state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0]
+        self._buf = bytearray(self._ZEROS)
+        self._rarbug = rarbug
+        self._workspace = [0] * 80
+        self.update(data)
+
+    def copy(self):
+        s = Rar3Sha1()
+        s._nbytes = self._nbytes
+        s._state[:] = self._state
+        s._buf[:] = self._buf
+        return s
+
+    def update(self, data):
+        if not data:
+            return
+
+        mdata = memoryview(data)
+
+        dpos = 0
+        bufpos = self._nbytes & 63
+
+        # first block must always go via buf to skip bug
+        n = 64 - bufpos
+        if n > len(data):
+            self._buf[bufpos : bufpos + len(data)] = data
+            self._nbytes += len(data)
+            return
+        self._buf[bufpos : 64] = mdata[:n]
+        self._transform(self._buf)
+        dpos = n
+
+        while dpos + self.block_size <= len(data):
+            workbuf = self._transform(mdata[dpos:dpos + self.block_size])
+            if self._rarbug:
+                self._BLKx.pack_into(data, dpos, *workbuf[-16:])
+            dpos += self.block_size
+
+        if dpos < len(data):
+            self._buf[:len(data) - dpos] = mdata[dpos:]
+
+        self._nbytes += len(data)
+
+    def digest(self):
+        bufpos = self._nbytes & 63
+        pad_len = self.block_size - 8 - bufpos
+        if pad_len <= 0:
+            pad_len += self.block_size
+        s = self.copy()
+        s.update(self._PAD[:pad_len] + self._BITS.pack(self._nbytes * 8))
+        return self._STATE.pack(*s._state)
+
+    def hexdigest(self):
+        return tohex(self.digest())
+
+    def _transform(self, data):
+        ws = self._workspace
+        ws[:16] = self._BLK.unpack(data)
+        a, b, c, d, e = self._state
+        t = 0
+
+        while t < 20:
+            if t >= 16:
+                tmp = ws[t - 3] ^ ws[t - 8] ^ ws[t - 14] ^ ws[t - 16]
+                ws[t] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
+            tmp = ((((a << 5) | (a >> (32 - 5))) & 0xFFFFFFFF) + (d ^ (b & (c ^ d))) + e + ws[t] + 0x5a827999) & 0xFFFFFFFF
+            e = d; d = c; c = ((b << 30) | (b >> (32 - 30))) & 0xFFFFFFFF; b = a; a = tmp
+            t += 1
+
+        while t < 40:
+            tmp = ws[t - 3] ^ ws[t - 8] ^ ws[t - 14] ^ ws[t - 16]
+            ws[t] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
+            tmp = ((((a << 5) | (a >> (32 - 5))) & 0xFFFFFFFF) + (b ^ c ^ d) + e + ws[t] + 0x6ed9eba1) & 0xFFFFFFFF
+            e = d; d = c; c = ((b << 30) | (b >> (32 - 30))) & 0xFFFFFFFF; b = a; a = tmp
+            t += 1
+
+        while t < 60:
+            tmp = ws[t - 3] ^ ws[t - 8] ^ ws[t - 14] ^ ws[t - 16]
+            ws[t] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
+            tmp = ((((a << 5) | (a >> (32 - 5))) & 0xFFFFFFFF) + ((b & c) | (b & d) | (c & d)) + e + ws[t] + 0x8f1bbcdc) & 0xFFFFFFFF
+            e = d; d = c; c = ((b << 30) | (b >> (32 - 30))) & 0xFFFFFFFF; b = a; a = tmp
+            t += 1
+
+        while t < 80:
+            tmp = ws[t - 3] ^ ws[t - 8] ^ ws[t - 14] ^ ws[t - 16]
+            ws[t] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
+            tmp = ((((a << 5) | (a >> (32 - 5))) & 0xFFFFFFFF) + (b ^ c ^ d) + e + ws[t] + 0xca62c1d6) & 0xFFFFFFFF
+            e = d; d = c; c = ((b << 30) | (b >> (32 - 30))) & 0xFFFFFFFF; b = a; a = tmp
+            t += 1
+
+        self._state[0] = (self._state[0] + a) & 0xFFFFFFFF
+        self._state[1] = (self._state[1] + b) & 0xFFFFFFFF
+        self._state[2] = (self._state[2] + c) & 0xFFFFFFFF
+        self._state[3] = (self._state[3] + d) & 0xFFFFFFFF
+        self._state[4] = (self._state[4] + e) & 0xFFFFFFFF
+
+        return ws
+
+
 ##
 ## Utility functions
 ##
@@ -2686,13 +2803,18 @@ def rar3_s2k(psw, salt):
     """
     if not isinstance(psw, unicode):
         psw = psw.decode('utf8')
-    seed = psw.encode('utf-16le') + salt
+    seed = bytearray(psw.encode('utf-16le') + salt)
+    if len(seed) > 64:
+        # rar-sha1 needs to corrupt input data
+        h = Rar3Sha1(None, True)
+    else:
+        h = sha1()
     iv = EMPTY
-    h = sha1()
     for i in range(16):
         for j in range(0x4000):
             cnt = S_LONG.pack(i * 0x4000 + j)
-            h.update(seed + cnt[:3])
+            h.update(seed)
+            h.update(cnt[:3])
             if j == 0:
                 iv += h.digest()[19:20]
     key_be = h.digest()[:16]
