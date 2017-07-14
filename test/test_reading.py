@@ -144,6 +144,7 @@ def test_reading_missed():
     problems = []
     missed = []
     for fn in glob('test/files/*.rar'):
+        fn = fn.replace('\\', '/')
         if fn not in _done_reading:
             missed.append(fn)
     eq_(missed, problems)
