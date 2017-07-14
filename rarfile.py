@@ -2537,36 +2537,24 @@ class Rar3Sha1(object):
 
     __slots__ = ('_nbytes', '_md', '_rarbug', '_workspace')
 
-    def __init__(self, data=None, rarbug=False):
+    def __init__(self, data=b'', rarbug=False):
         self._md = sha1()
         self._nbytes = 0
         self._rarbug = rarbug
         self._workspace = [0] * 16
         self.update(data)
 
-    def copy(self):
-        """Return new instance with same state."""
-        s = Rar3Sha1()
-        s._md = self._md.copy()
-        s._nbytes = self._nbytes
-        return s
-
     def update(self, data):
         """Process more data."""
-        if not data:
-            return
-
         self._md.update(data)
-
         bufpos = self._nbytes & 63
         self._nbytes += len(data)
 
-        # first block must not trigger bug
-        dpos = self.block_size - bufpos
-        while dpos + self.block_size <= len(data):
-            if self._rarbug:
+        if self._rarbug and len(data) > 64:
+            dpos = self.block_size - bufpos
+            while dpos + self.block_size <= len(data):
                 self._corrupt(data, dpos)
-            dpos += self.block_size
+                dpos += self.block_size
 
     def digest(self):
         """Return final state."""
@@ -2580,11 +2568,9 @@ class Rar3Sha1(object):
         """Corruption from SHA1 core."""
         ws = self._workspace
         ws[:] = self._BLK.unpack_from(data, dpos)
-        t = 16
-        while t < 80:
+        for t in range(16, 80):
             tmp = ws[(t - 3) & 15] ^ ws[(t - 8) & 15] ^ ws[(t - 14) & 15] ^ ws[(t - 16) & 15]
             ws[t & 15] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
-            t += 1
         self._BLKx.pack_into(data, dpos, *ws)
 
 
@@ -2750,11 +2736,7 @@ def rar3_s2k(psw, salt):
     if not isinstance(psw, unicode):
         psw = psw.decode('utf8')
     seed = bytearray(psw.encode('utf-16le') + salt)
-    if len(seed) > 64:
-        # rar-sha1 needs to corrupt input data
-        h = Rar3Sha1(None, True)
-    else:
-        h = sha1()
+    h = Rar3Sha1(rarbug=True)
     iv = EMPTY
     for i in range(16):
         for j in range(0x4000):
