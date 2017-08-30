@@ -215,6 +215,12 @@ ALT_EXTRACT_ARGS = ('-x', '-f')
 ALT_TEST_ARGS = ('-t', '-f')
 ALT_CHECK_ARGS = ('--help',)
 
+#ALT_TOOL = 'unar'
+#ALT_OPEN_ARGS = ('-o', '-')
+#ALT_EXTRACT_ARGS = ()
+#ALT_TEST_ARGS = ('-test',) # does not work
+#ALT_CHECK_ARGS = ('-v',)
+
 #: whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
 
