@@ -29,6 +29,7 @@ pylint:
     - ungrouped-imports
     - len-as-condition
     - no-else-return
+    - wrong-import-order
 
 pep8:
   run: true
