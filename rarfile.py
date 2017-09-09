@@ -2532,16 +2532,15 @@ class Rar3Sha1(object):
     digest_size = 20
     block_size = 64
 
-    _BLK = struct.Struct(b'>16L')
-    _BLKx = struct.Struct(b'<16L')
+    _BLK_BE = struct.Struct(b'>16L')
+    _BLK_LE = struct.Struct(b'<16L')
 
-    __slots__ = ('_nbytes', '_md', '_rarbug', '_workspace')
+    __slots__ = ('_nbytes', '_md', '_rarbug')
 
     def __init__(self, data=b'', rarbug=False):
         self._md = sha1()
         self._nbytes = 0
         self._rarbug = rarbug
-        self._workspace = [0] * 16
         self.update(data)
 
     def update(self, data):
@@ -2566,12 +2565,11 @@ class Rar3Sha1(object):
 
     def _corrupt(self, data, dpos):
         """Corruption from SHA1 core."""
-        ws = self._workspace
-        ws[:] = self._BLK.unpack_from(data, dpos)
+        ws = list(self._BLK_BE.unpack_from(data, dpos))
         for t in range(16, 80):
             tmp = ws[(t - 3) & 15] ^ ws[(t - 8) & 15] ^ ws[(t - 14) & 15] ^ ws[(t - 16) & 15]
             ws[t & 15] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
-        self._BLKx.pack_into(data, dpos, *ws)
+        self._BLK_LE.pack_into(data, dpos, *ws)
 
 
 ##
