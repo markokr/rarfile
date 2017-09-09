@@ -2868,6 +2868,8 @@ def custom_popen(cmd):
     except OSError as ex:
         if ex.errno == errno.ENOENT:
             raise RarCannotExec("Unrar not installed? (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
+        if ex.errno == errno.EACCES or ex.errno == errno.EPERM:
+            raise RarCannotExec("Cannot execute unrar (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
         raise
     return p
 
