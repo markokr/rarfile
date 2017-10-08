@@ -172,7 +172,7 @@ else:  # pragma: no cover
 
 # don't break 2.6 completely
 if sys.hexversion < 0x2070000:
-    memoryview = lambda x: x
+    memoryview = lambda x: x  # noqa
 
 __version__ = '3.0'
 
