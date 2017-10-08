@@ -1628,7 +1628,10 @@ class RAR5Parser(CommonParser):
             return None
         data_offset = fd.tell()
 
-        calc_crc = rar_crc32(memoryview(hdata)[4:])
+        if sys.version_info < (2, 7, 0):
+            calc_crc = rar_crc32(hdata[4:])
+        else:
+            calc_crc = rar_crc32(memoryview(hdata)[4:])
         if header_crc != calc_crc:
             # header parsing failed.
             self._set_error('Header CRC error: exp=%x got=%x (xlen = %d)',
