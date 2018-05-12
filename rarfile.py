@@ -174,6 +174,12 @@ else:  # pragma: no cover
 if sys.hexversion < 0x2070000:
     memoryview = lambda x: x  # noqa
 
+try:
+    from pathlib import Path
+    _have_pathlib = True
+except ImportError:
+    _have_pathlib = False
+
 __version__ = '3.0'
 
 # export only interesting items
@@ -655,7 +661,11 @@ class RarFile(object):
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
         """
-        self._rarfile = rarfile
+        if _have_pathlib and isinstance(rarfile, Path):
+            self._rarfile = str(rarfile)
+        else:
+            self._rarfile = rarfile
+
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
         self._crc_check = crc_check
