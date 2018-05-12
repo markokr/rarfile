@@ -64,6 +64,15 @@ def test_open_psw_late():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
     rf.read('stest1.txt', 'password222')
 
+def test_open_pathlib_path():
+    try:
+        from pathlib import Path
+        # Make sure we can open both relative and absolute Paths
+        rarfile.RarFile(Path('test/files/rar5-psw.rar'))
+        rarfile.RarFile(Path('test/files/rar5-psw.rar').resolve())
+    except ImportError:
+        pass
+    
 def test_detection():
     eq_(rarfile.is_rarfile('test/files/ctime4.rar.exp'), False)
     eq_(rarfile.is_rarfile('test/files/ctime4.rar'), True)
