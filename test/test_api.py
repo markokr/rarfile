@@ -1,6 +1,5 @@
 """API tests.
 """
-
 import sys
 import io
 import os
@@ -8,6 +7,9 @@ import os
 from nose.tools import *
 
 import rarfile
+
+if rarfile._have_pathlib:
+    from pathlib import Path
 
 #
 # test start
@@ -49,6 +51,11 @@ def test_open_psw_late_rar5():
     rf.open('stest1.txt', 'r', 'password').read()
     rf.open('stest1.txt', 'r', u'password').read()
 
+if rarfile._have_pathlib:
+    def test_open_pathlib_path():
+        rf = rarfile.RarFile('test/files/rar5-psw.rar')
+        rf.open(Path('stest1.txt'), 'r', 'password').read()
+
 def test_read_psw_late_rar3():
     rf = rarfile.RarFile('test/files/rar3-comment-psw.rar')
     rf.read('file1.txt', 'password')
@@ -64,19 +71,20 @@ def test_open_psw_late():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
     rf.read('stest1.txt', 'password222')
 
-def test_open_pathlib_path():
-    try:
-        from pathlib import Path
+if rarfile._have_pathlib:
+    def test_create_from_pathlib_path():
         # Make sure we can open both relative and absolute Paths
         rarfile.RarFile(Path('test/files/rar5-psw.rar'))
         rarfile.RarFile(Path('test/files/rar5-psw.rar').resolve())
-    except ImportError:
-        pass
     
 def test_detection():
     eq_(rarfile.is_rarfile('test/files/ctime4.rar.exp'), False)
     eq_(rarfile.is_rarfile('test/files/ctime4.rar'), True)
     eq_(rarfile.is_rarfile('test/files/rar5-crc.rar'), True)
+
+    if rarfile._have_pathlib:
+        eq_(rarfile.is_rarfile(Path('test/files/rar5-crc.rar')), True)
+
 
 @raises(rarfile.BadRarFile)
 def test_signature_error():
@@ -177,6 +185,12 @@ def test_extract():
 
     rf.extractall('tmp/extract3', [rf.getinfo('stest2.txt')])
     assert_true(os.path.isfile('tmp/extract3/stest2.txt'))
+
+    if rarfile._have_pathlib:
+        os.makedirs('tmp/extract1_pathlib')
+        rf.extractall(Path('tmp/extract1'))
+        assert_true(os.path.isfile('tmp/extract1/stest1.txt'))
+        assert_true(os.path.isfile('tmp/extract1/stest2.txt'))
 
 @with_setup(clean_extract_dirs, clean_extract_dirs)
 def test_extract_mem():
