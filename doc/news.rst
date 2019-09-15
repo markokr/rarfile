@@ -7,10 +7,15 @@ rarfile history
 Version 3.1 (...)
 -----------------
 
-Fixes:
+New feature:
+
+* Accept pathlib objects as filenames.
+  (Aleksey Popov)
 
 * Accept `bytes` filenames in Python 3
   (Nate Bogdanowicz)
+
+Fixes:
 
 * Use bug-compatible SHA1 for longer passwords (> 28 chars)
   in RAR3 encrypted headers.
@@ -21,6 +26,10 @@ Fixes:
 
 * Include all test files in archive
   (Benedikt Morbach)
+
+Cleanups:
+
+* Convert tests to pytest.
 
 Version 3.0 (2016-12-27)
 ------------------------
