@@ -174,6 +174,12 @@ else:  # pragma: no cover
 if sys.hexversion < 0x2070000:
     memoryview = lambda x: x  # noqa
 
+try:
+    from pathlib import Path
+    _have_pathlib = True
+except ImportError:
+    _have_pathlib = False
+
 __version__ = '3.0'
 
 # export only interesting items
@@ -655,7 +661,11 @@ class RarFile(object):
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
         """
-        self._rarfile = rarfile
+        if _have_pathlib and isinstance(rarfile, Path):
+            self._rarfile = str(rarfile)
+        else:
+            self._rarfile = rarfile
+
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
         self._crc_check = crc_check
@@ -803,6 +813,8 @@ class RarFile(object):
         """
         if isinstance(member, RarInfo):
             fname = member.filename
+        elif _have_pathlib and isinstance(member, Path):
+            fname = str(member)
         else:
             fname = member
         self._extract([fname], path, pwd)
@@ -888,6 +900,8 @@ class RarFile(object):
 
             # destination path
             if path is not None:
+                if _have_pathlib and isinstance(path, Path):
+                    path = str(path)
                 cmd.append(path + os.sep)
 
             # call
@@ -957,6 +971,8 @@ class CommonParser(object):
         """
         if isinstance(member, RarInfo):
             fname = member.filename
+        elif _have_pathlib and isinstance(member, Path):
+            fname = str(member)
         else:
             fname = member
 
@@ -2728,7 +2744,12 @@ def _parse_xtime(flag, data, pos, basetime=None):
 def is_filelike(obj):
     """Filename or file object?
     """
-    if isinstance(obj, (bytes, unicode)):
+    if _have_pathlib:
+        filename_types = (bytes, unicode, Path)
+    else:
+        filename_types = (bytes, unicode)
+
+    if isinstance(obj, filename_types):
         return False
     res = True
     for a in ('read', 'tell', 'seek'):
