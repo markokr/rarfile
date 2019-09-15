@@ -4,8 +4,10 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Version 3.1 (...)
------------------
+Version 3.1 (2019-09-15)
+------------------------
+
+**This will be last version with support for Python 2.x**
 
 New feature:
 
@@ -26,6 +28,8 @@ Fixes:
 
 * Include all test files in archive
   (Benedikt Morbach)
+
+* Include volume number in NeedFirstVolume exception if available (rar5).
 
 Cleanups:
 
