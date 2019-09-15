@@ -1,13 +1,8 @@
 """Format details.
 """
 
-import sys
-import io
-import os
-
 from datetime import datetime
-from nose.tools import *
-
+import pytest
 import rarfile
 
 def render_date(dt):
@@ -63,41 +58,37 @@ def diffs(a, b):
     return '; '.join(problems)
 
 def cmp_struct(a, b):
-    eq_(a, b, diffs(a, b))
+    assert a == b, diffs(a, b)
 
 #
 # test start
 #
 
+@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_rar3_header_encryption():
     r = rarfile.RarFile('test/files/rar3-comment-hpsw.rar', 'r')
-    eq_(r.needs_password(), True)
-    eq_(r.comment, None)
-    eq_(r.namelist(), [])
+    assert r.needs_password() is True
+    assert r.comment is None
+    assert r.namelist() == []
 
-    try:
-        r.setpassword('password')
-        assert_true(r.needs_password())
-        eq_(r.namelist(), [u'file1.txt', u'file2.txt'])
-        assert_not_equal(r.comment, None)
-        eq_(r.comment, 'RARcomment\n')
-    except rarfile.NoCrypto:
-        pass
+    r.setpassword('password')
+    assert r.needs_password() is True
+    assert r.namelist() == [u'file1.txt', u'file2.txt']
+    assert r.comment is not  None
+    assert r.comment == 'RARcomment\n'
 
+@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_rar5_header_encryption():
     r = rarfile.RarFile('test/files/rar5-hpsw.rar')
-    eq_(r.needs_password(), True)
-    eq_(r.comment, None)
-    eq_(r.namelist(), [])
+    assert r.needs_password() is True
+    assert r.comment is None
+    assert r.namelist() == []
 
-    try:
-        r.setpassword('password')
-        assert_true(r.needs_password())
-        eq_(r.namelist(), [u'stest1.txt', u'stest2.txt'])
-        assert_not_equal(r.comment, None)
-        eq_(r.comment, 'RAR5 archive - hdr-password\n')
-    except rarfile.NoCrypto:
-        pass
+    r.setpassword('password')
+    assert r.needs_password() is True
+    assert r.namelist() == [u'stest1.txt', u'stest2.txt']
+    assert r.comment is not None
+    assert r.comment == 'RAR5 archive - hdr-password\n'
     r.close()
 
 def get_vol_info(extver=20, tz='', hr='11'):
@@ -125,36 +116,36 @@ def get_vol_info(extver=20, tz='', hr='11'):
 
 def test_rar3_vols():
     r = rarfile.RarFile('test/files/rar3-vols.part1.rar')
-    eq_(r.needs_password(), False)
-    eq_(r.comment, None)
-    eq_(r.strerror(), None)
+    assert r.needs_password() is False
+    assert r.comment is None
+    assert r.strerror() is None
     cmp_struct(dumparc(r), get_vol_info())
-    eq_(r.volumelist(), [
+    assert r.volumelist() == [
         'test/files/rar3-vols.part1.rar',
         'test/files/rar3-vols.part2.rar',
-        'test/files/rar3-vols.part3.rar'])
+        'test/files/rar3-vols.part3.rar']
 
 def test_rar3_oldvols():
     r = rarfile.RarFile('test/files/rar3-old.rar')
-    eq_(r.needs_password(), False)
-    eq_(r.comment, None)
-    eq_(r.strerror(), None)
+    assert r.needs_password() is False
+    assert r.comment is None
+    assert r.strerror() is None
     cmp_struct(dumparc(r), get_vol_info())
-    eq_(r.volumelist(), [
+    assert r.volumelist() == [
         'test/files/rar3-old.rar',
         'test/files/rar3-old.r00',
-        'test/files/rar3-old.r01'])
+        'test/files/rar3-old.r01']
 
 def test_rar5_vols():
     r = rarfile.RarFile('test/files/rar5-vols.part1.rar')
-    eq_(r.needs_password(), False)
-    eq_(r.comment, None)
-    eq_(r.strerror(), None)
+    assert r.needs_password() is False
+    assert r.comment is None
+    assert r.strerror() is None
     cmp_struct(dumparc(r), get_vol_info(50, '+00:00', '08'))
-    eq_(r.volumelist(), [
+    assert r.volumelist() == [
         'test/files/rar5-vols.part1.rar',
         'test/files/rar5-vols.part2.rar',
-        'test/files/rar5-vols.part3.rar'])
+        'test/files/rar5-vols.part3.rar']
 
 def expect_ctime(mtime, ctime):
     return [mkitem(
@@ -207,17 +198,17 @@ def test_rar5_times():
         )])
 
 def test_oldvols():
-    eq_(rarfile._next_oldvol('qq00.part0.rar'), 'qq00.part0.r00')
-    eq_(rarfile._next_oldvol('qq00.part0.r00'), 'qq00.part0.r01')
-    eq_(rarfile._next_oldvol('qq00.part0.r29'), 'qq00.part0.r30')
-    eq_(rarfile._next_oldvol('qq00.part0.r99'), 'qq00.part0.s00')
+    assert rarfile._next_oldvol('qq00.part0.rar') == 'qq00.part0.r00'
+    assert rarfile._next_oldvol('qq00.part0.r00') == 'qq00.part0.r01'
+    assert rarfile._next_oldvol('qq00.part0.r29') == 'qq00.part0.r30'
+    assert rarfile._next_oldvol('qq00.part0.r99') == 'qq00.part0.s00'
 
 def test_newvols():
-    eq_(rarfile._next_newvol('qq00.part0.rar'), 'qq00.part1.rar')
-    eq_(rarfile._next_newvol('qq00.part09.rar'), 'qq00.part10.rar')
-    eq_(rarfile._next_newvol('qq00.part99.rar'), 'qq00.paru00.rar')
+    assert rarfile._next_newvol('qq00.part0.rar') == 'qq00.part1.rar'
+    assert rarfile._next_newvol('qq00.part09.rar') == 'qq00.part10.rar'
+    assert rarfile._next_newvol('qq00.part99.rar') == 'qq00.paru00.rar'
 
-@raises(rarfile.BadRarName)
 def test_newvols_err():
-    rarfile._next_newvol('xx.rar')
+    with pytest.raises(rarfile.BadRarName):
+        rarfile._next_newvol('xx.rar')
 

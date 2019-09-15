@@ -16,3 +16,4 @@ build
 tmp
 doc/_build
 doc/html
+cover

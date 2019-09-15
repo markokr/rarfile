@@ -1,10 +1,10 @@
 """API tests.
 """
-import sys
+
 import io
 import os
 
-from nose.tools import *
+import pytest
 
 import rarfile
 
@@ -15,36 +15,37 @@ if rarfile._have_pathlib:
 # test start
 #
 
-@raises(NotImplementedError)
 def test_bad_arc_mode_w():
-    rarfile.RarFile('test/files/rar3-comment-plain.rar', 'w')
+    with pytest.raises(NotImplementedError):
+        rarfile.RarFile('test/files/rar3-comment-plain.rar', 'w')
 
-@raises(NotImplementedError)
 def test_bad_arc_mode_rb():
-    rarfile.RarFile('test/files/rar3-comment-plain.rar', 'rb')
+    with pytest.raises(NotImplementedError):
+        rarfile.RarFile('test/files/rar3-comment-plain.rar', 'rb')
 
-@raises(ValueError)
 def test_bad_errs():
-    rarfile.RarFile('test/files/rar3-comment-plain.rar', 'r', errors='foo')
+    with pytest.raises(ValueError):
+        rarfile.RarFile('test/files/rar3-comment-plain.rar', 'r', errors='foo')
 
-@raises(NotImplementedError)
 def test_bad_open_mode_w():
     rf = rarfile.RarFile('test/files/rar3-comment-plain.rar')
-    rf.open('qwe', 'w')
+    with pytest.raises(NotImplementedError):
+        rf.open('qwe', 'w')
 
-@raises(rarfile.PasswordRequired)
 def test_bad_open_psw():
     rf = rarfile.RarFile('test/files/rar3-comment-psw.rar')
-    rf.open('file1.txt')
+    with pytest.raises(rarfile.PasswordRequired):
+        rf.open('file1.txt')
 
-@raises(ValueError)
 def test_bad_filelike():
-    rarfile.is_rarfile(bytearray(10))
+    with pytest.raises(ValueError):
+        rarfile.is_rarfile(bytearray(10))
 
 def test_open_psw_late_rar3():
     rf = rarfile.RarFile('test/files/rar3-comment-psw.rar')
-    rf.open('file1.txt', 'r', 'password').read()
-    rf.open('file1.txt', 'r', u'password').read()
+    d1 = rf.open('file1.txt', 'r', 'password').read()
+    d2 = rf.open('file1.txt', 'r', u'password').read()
+    assert d1 == d2
 
 def test_open_psw_late_rar5():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
@@ -66,42 +67,46 @@ def test_read_psw_late_rar5():
     rf.read('stest1.txt', 'password')
     rf.read('stest1.txt', u'password')
 
-@raises(rarfile.BadRarFile) # needs better error
 def test_open_psw_late():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
-    rf.read('stest1.txt', 'password222')
+    with pytest.raises(rarfile.BadRarFile):
+        rf.read('stest1.txt', 'password222')
 
 if rarfile._have_pathlib:
     def test_create_from_pathlib_path():
         # Make sure we can open both relative and absolute Paths
         rarfile.RarFile(Path('test/files/rar5-psw.rar'))
         rarfile.RarFile(Path('test/files/rar5-psw.rar').resolve())
-    
+
 def test_detection():
-    eq_(rarfile.is_rarfile('test/files/ctime4.rar.exp'), False)
-    eq_(rarfile.is_rarfile('test/files/ctime4.rar'), True)
-    eq_(rarfile.is_rarfile('test/files/rar5-crc.rar'), True)
+    assert rarfile.is_rarfile('test/files/ctime4.rar.exp') is False
+    assert rarfile.is_rarfile('test/files/ctime4.rar') is True
+    assert rarfile.is_rarfile('test/files/rar5-crc.rar') is True
 
     if rarfile._have_pathlib:
-        eq_(rarfile.is_rarfile(Path('test/files/rar5-crc.rar')), True)
+        assert rarfile.is_rarfile(Path('test/files/rar5-crc.rar')) is True
 
 
-@raises(rarfile.BadRarFile)
 def test_signature_error():
-    rarfile.RarFile('test/files/ctime4.rar.exp')
+    with pytest.raises(rarfile.BadRarFile):
+        rarfile.RarFile('test/files/ctime4.rar.exp')
 
-@raises(rarfile.BadRarFile)
 def test_signature_error_mem():
     data = io.BytesIO(b'x'*40)
-    rarfile.RarFile(data)
+    with pytest.raises(rarfile.BadRarFile):
+        rarfile.RarFile(data)
 
 def test_with():
     with rarfile.RarFile('test/files/rar5-crc.rar') as rf:
+        data = rf.read('stest1.txt')
         with rf.open('stest1.txt') as f:
+            dst = io.BytesIO()
             while 1:
                 buf = f.read(7)
                 if not buf:
                     break
+                dst.write(buf)
+            assert dst.getvalue() == data
 
 def test_readline():
     def load_readline(rf, fn):
@@ -118,26 +123,14 @@ def test_readline():
     rf = rarfile.RarFile('test/files/seektest.rar')
     v1 = load_readline(rf, 'stest1.txt')
     v2 = load_readline(rf, 'stest2.txt')
-    eq_(len(v1), 512)
-    eq_(v1, v2)
+    assert len(v1) == 512
+    assert v1 == v2
 
-_old_stdout = None
-_buf_stdout = None
-
-def install_buf():
-    global _old_stdout, _buf_stdout
-    _buf_stdout = io.StringIO()
-    _old_stdout = sys.stdout
-    sys.stdout = _buf_stdout
-
-def uninstall_buf():
-    sys.stdout = _old_stdout
-
-@with_setup(install_buf, uninstall_buf)
-def test_printdir():
+def test_printdir(capsys):
     rf = rarfile.RarFile('test/files/seektest.rar')
     rf.printdir()
-    eq_(_buf_stdout.getvalue(), u'stest1.txt\nstest2.txt\n')
+    res = capsys.readouterr()
+    assert res.out == u'stest1.txt\nstest2.txt\n'
 
 def test_testrar():
     rf = rarfile.RarFile('test/files/seektest.rar')
@@ -148,70 +141,63 @@ def test_testrar_mem():
     rf = rarfile.RarFile(io.BytesIO(arc))
     rf.testrar()
 
-def clean_extract_dirs():
-    for dn in ['tmp/extract1', 'tmp/extract2', 'tmp/extract3']:
-        for fn in ['stest1.txt', 'stest2.txt']:
-            try:
-                os.unlink(os.path.join(dn, fn))
-            except OSError:
-                pass
-        try:
-            os.rmdir(dn)
-        except OSError:
-            pass
-
-@with_setup(clean_extract_dirs, clean_extract_dirs)
-def test_extract():
-    os.makedirs('tmp/extract1')
-    os.makedirs('tmp/extract2')
-    os.makedirs('tmp/extract3')
+def test_extract(tmp_path):
+    ex1 = tmp_path / "extract1"
+    ex2 = tmp_path / "extract2"
+    ex3 = tmp_path / "extract3"
+    os.makedirs(str(ex1))
+    os.makedirs(str(ex2))
+    os.makedirs(str(ex3))
     rf = rarfile.RarFile('test/files/seektest.rar')
 
-    rf.extractall('tmp/extract1')
-    assert_true(os.path.isfile('tmp/extract1/stest1.txt'))
-    assert_true(os.path.isfile('tmp/extract1/stest2.txt'))
+    rf.extractall(str(ex1))
+    assert os.path.isfile(str(ex1 / 'stest1.txt')) is True
+    assert os.path.isfile(str(ex1 / 'stest2.txt')) is True
 
-    rf.extract('stest1.txt', 'tmp/extract2')
-    assert_true(os.path.isfile('tmp/extract2/stest1.txt'))
-    assert_false(os.path.isfile('tmp/extract2/stest2.txt'))
+    rf.extract('stest1.txt', str(ex2))
+    assert os.path.isfile(str(ex2 / 'stest1.txt')) is True
+    assert os.path.isfile(str(ex2 / 'stest2.txt')) is False
 
     inf = rf.getinfo('stest2.txt')
-    rf.extract(inf, 'tmp/extract3')
-    assert_false(os.path.isfile('tmp/extract3/stest1.txt'))
-    assert_true(os.path.isfile('tmp/extract3/stest2.txt'))
+    rf.extract(inf, str(ex3))
+    assert os.path.isfile(str(ex3 / 'stest1.txt')) is False
+    assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
 
-    rf.extractall('tmp/extract2', ['stest1.txt'])
-    assert_true(os.path.isfile('tmp/extract2/stest1.txt'))
+    rf.extractall(str(ex2), ['stest1.txt'])
+    assert os.path.isfile(str(ex2 / 'stest1.txt')) is True
 
-    rf.extractall('tmp/extract3', [rf.getinfo('stest2.txt')])
-    assert_true(os.path.isfile('tmp/extract3/stest2.txt'))
+    rf.extractall(str(ex3), [rf.getinfo('stest2.txt')])
+    assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
 
     if rarfile._have_pathlib:
-        os.makedirs('tmp/extract1_pathlib')
-        rf.extractall(Path('tmp/extract1'))
-        assert_true(os.path.isfile('tmp/extract1/stest1.txt'))
-        assert_true(os.path.isfile('tmp/extract1/stest2.txt'))
+        ex4 = tmp_path / "extract4"
+        os.makedirs(str(ex4))
+        rf.extractall(ex4)
+        assert os.path.isfile(str(ex4 / 'stest1.txt')) is True
+        assert os.path.isfile(str(ex4 / 'stest2.txt')) is True
 
-@with_setup(clean_extract_dirs, clean_extract_dirs)
-def test_extract_mem():
-    os.makedirs('tmp/extract1')
-    os.makedirs('tmp/extract2')
-    os.makedirs('tmp/extract3')
+def test_extract_mem(tmp_path):
+    ex1 = tmp_path / "extract11"
+    ex2 = tmp_path / "extract22"
+    ex3 = tmp_path / "extract33"
+    os.makedirs(str(ex1))
+    os.makedirs(str(ex2))
+    os.makedirs(str(ex3))
     arc = open('test/files/seektest.rar', 'rb').read()
     rf = rarfile.RarFile(io.BytesIO(arc))
 
-    rf.extractall('tmp/extract1')
-    assert_true(os.path.isfile('tmp/extract1/stest1.txt'))
-    assert_true(os.path.isfile('tmp/extract1/stest2.txt'))
+    rf.extractall(str(ex1))
+    assert os.path.isfile(str(ex1 / 'stest1.txt')) is True
+    assert os.path.isfile(str(ex1 / 'stest2.txt')) is True
 
-    rf.extract('stest1.txt', 'tmp/extract2')
-    assert_true(os.path.isfile('tmp/extract2/stest1.txt'))
-    assert_false(os.path.isfile('tmp/extract2/stest2.txt'))
+    rf.extract('stest1.txt', str(ex2))
+    assert os.path.isfile(str(ex2 / 'stest1.txt')) is True
+    assert os.path.isfile(str(ex2 / 'stest2.txt')) is False
 
     inf = rf.getinfo('stest2.txt')
-    rf.extract(inf, 'tmp/extract3')
-    assert_false(os.path.isfile('tmp/extract3/stest1.txt'))
-    assert_true(os.path.isfile('tmp/extract3/stest2.txt'))
+    rf.extract(inf, str(ex3))
+    assert os.path.isfile(str(ex3 / 'stest1.txt')) is False
+    assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
 
 def test_infocb():
     infos = []
@@ -219,22 +205,22 @@ def test_infocb():
         infos.append( (info.type, info.needs_password(), info.isdir(), info._must_disable_hack()) )
 
     rf = rarfile.RarFile('test/files/seektest.rar', info_callback=info_cb)
-    eq_(infos, [
+    assert infos == [
         (rarfile.RAR_BLOCK_MAIN, False, False, False),
         (rarfile.RAR_BLOCK_FILE, False, False, False),
         (rarfile.RAR_BLOCK_FILE, False, False, False),
-        (rarfile.RAR_BLOCK_ENDARC, False, False, False)])
+        (rarfile.RAR_BLOCK_ENDARC, False, False, False)]
 
     infos = []
     rf = rarfile.RarFile('test/files/rar5-solid-qo.rar', info_callback=info_cb)
-    eq_(infos, [
+    assert infos == [
         (rarfile.RAR_BLOCK_MAIN, False, False, True),
         (rarfile.RAR_BLOCK_FILE, False, False, False),
         (rarfile.RAR_BLOCK_FILE, False, False, True),
         (rarfile.RAR_BLOCK_FILE, False, False, True),
         (rarfile.RAR_BLOCK_FILE, False, False, True),
         (rarfile.RAR_BLOCK_SUB, False, False, False),
-        (rarfile.RAR_BLOCK_ENDARC, False, False, False)])
+        (rarfile.RAR_BLOCK_ENDARC, False, False, False)]
 
 def install_alt_tool():
     rarfile.ORIG_UNRAR_TOOL = 'x_unrar_missing'
@@ -249,7 +235,7 @@ def test_read_rar3():
         for fn in rf.namelist():
             rf.read(fn)
 
-@with_setup(install_alt_tool, uninstall_alt_tool)
+#@with_setup(install_alt_tool, uninstall_alt_tool)
 def test_alt_tool():
     #test_read_rar3()
     pass

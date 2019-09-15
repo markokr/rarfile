@@ -4,8 +4,6 @@
 import io
 import rarfile
 
-from nose.tools import *
-
 ARC = 'test/files/seektest.rar'
 
 def do_seek(f, pos, lim):
@@ -23,7 +21,7 @@ def do_seek(f, pos, lim):
 
     got = f.tell()
 
-    eq_(got, exp)
+    assert got == exp
     ln = f.read(4)
     if got == fsize and ln:
         raise Exception('unexpected read')
@@ -31,7 +29,7 @@ def do_seek(f, pos, lim):
         raise Exception('unexpected read failure')
     if ln:
         spos = int(ln)
-        eq_(spos*4, got)
+        assert spos*4 == got
 
 def run_seek(rf, fn):
     inf = rf.getinfo(fn)

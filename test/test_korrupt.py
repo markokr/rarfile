@@ -1,9 +1,9 @@
 """test corrupt file parsing.
 """
 
-import rarfile
 import glob
 import io
+import rarfile
 
 def try_read(tmpfn):
     try:

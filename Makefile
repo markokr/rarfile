@@ -1,15 +1,19 @@
 
+VER := $(shell python3 setup.py --version)
+TGZ = dist/rarfile-$(VER).tar.gz
+
 prefix = /usr/local
 
 all:
 	pyflakes3 rarfile.py
-	tox
+	tox -e lint
+	tox -e py36-cryptography
+	tox -e py37
 
 install:
 	python setup.py install --prefix=$(prefix)
 
-tgz: clean
-	python setup.py sdist
+tgz: clean $(TGZ)
 
 clean:
 	rm -rf __pycache__ build dist
@@ -25,8 +29,11 @@ toxclean: clean
 rbuild:
 	curl -X POST https://readthedocs.org/build/6715
 
-upload:
-	python setup.py sdist upload
+$(TGZ):
+	python3 setup.py sdist
+
+upload: $(TGZ)
+	twine upload $(TGZ)
 
 ack:
 	for fn in test/files/*.py27; do \

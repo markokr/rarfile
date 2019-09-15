@@ -2,12 +2,9 @@
 """
 
 import io
-
 from glob import glob
-
+import pytest
 import rarfile
-
-from nose.tools import *
 
 _done_reading = set()
 
@@ -18,8 +15,8 @@ def run_reading_normal(fn, comment):
         return
     if rf.needs_password():
         rf.setpassword('password')
-    eq_(rf.strerror(), None)
-    eq_(rf.comment, comment)
+    assert rf.strerror() is None
+    assert rf.comment == comment
     for ifn in rf.namelist():
 
         # full read
@@ -35,7 +32,7 @@ def run_reading_normal(fn, comment):
                 break
             total += len(buf)
         f.close()
-        eq_(total, item.file_size)
+        assert total == item.file_size
 
         # read from stream with readinto
         bbuf = bytearray(1024)
@@ -84,12 +81,13 @@ def test_reading_rar2_psw():
 def test_reading_rar3_psw():
     run_reading('test/files/rar3-comment-psw.rar', u'RARcomment\n')
 
-if rarfile._have_crypto:
-    def test_reading_rar3_hpsw():
-        run_reading('test/files/rar3-comment-hpsw.rar', u'RARcomment\n')
-else:
-    @raises(rarfile.NoCrypto)
-    def test_reading_rar3_hpsw_nocrypto():
+@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
+def test_reading_rar3_hpsw():
+    run_reading('test/files/rar3-comment-hpsw.rar', u'RARcomment\n')
+
+@pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
+def test_reading_rar3_hpsw_nocrypto():
+    with pytest.raises(rarfile.NoCrypto):
         run_reading('test/files/rar3-comment-hpsw.rar', u'RARcomment\n')
 
 def test_reading_rar3_vols():
@@ -126,12 +124,13 @@ def test_reading_rar5_vols():
     run_reading('test/files/rar5-vols.part2.rar')
     run_reading('test/files/rar5-vols.part3.rar')
 
-if rarfile._have_crypto:
-    def test_reading_rar5_hpsw():
-        run_reading('test/files/rar5-hpsw.rar', u'RAR5 archive - hdr-password\n')
-else:
-    @raises(rarfile.NoCrypto)
-    def test_reading_rar5_hpsw():
+@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
+def test_reading_rar5_hpsw():
+    run_reading('test/files/rar5-hpsw.rar', u'RAR5 archive - hdr-password\n')
+
+@pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
+def test_reading_rar5_hpsw_nocrypto():
+    with pytest.raises(rarfile.NoCrypto):
         run_reading('test/files/rar5-hpsw.rar', u'RAR5 archive - hdr-password\n')
 
 def test_reading_rar5_psw_blake():
@@ -147,5 +146,5 @@ def test_reading_missed():
         fn = fn.replace('\\', '/')
         if fn not in _done_reading:
             missed.append(fn)
-    eq_(missed, problems)
+    assert missed == problems
 
