@@ -30,7 +30,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.napole
 
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
-autodoc_default_flags = ['show-inheritance']
+autodoc_default_options = {'show-inheritance': True}
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
