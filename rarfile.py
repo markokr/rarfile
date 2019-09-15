@@ -1049,6 +1049,12 @@ class CommonParser(object):
                     # RAR 2.x does not set FIRSTVOLUME,
                     # so check it only if NEWNUMBERING is used
                     if (h.flags & RAR_MAIN_FIRSTVOLUME) == 0:
+                        if getattr(h, 'main_volume_number', None) is not None:
+                            # rar5 may have more info
+                            raise NeedFirstVolume(
+                                "Need to start from first volume (current: %r)"
+                                % (h.main_volume_number,)
+                            )
                         raise NeedFirstVolume("Need to start from first volume")
                 if h.flags & RAR_MAIN_PASSWORD:
                     self._needs_password = True
@@ -1698,7 +1704,7 @@ class RAR5Parser(CommonParser):
     def _parse_main_block(self, h, hdata, pos):
         h.main_flags, pos = load_vint(hdata, pos)
         if h.main_flags & RAR5_MAIN_FLAG_HAS_VOLNR:
-            h.main_volume_number = load_vint(hdata, pos)
+            h.main_volume_number, pos = load_vint(hdata, pos)
 
         h.flags |= RAR_MAIN_NEWNUMBERING
         if h.main_flags & RAR5_MAIN_FLAG_SOLID:

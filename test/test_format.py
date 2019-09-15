@@ -124,6 +124,8 @@ def test_rar3_vols():
         'test/files/rar3-vols.part1.rar',
         'test/files/rar3-vols.part2.rar',
         'test/files/rar3-vols.part3.rar']
+    with pytest.raises(rarfile.NeedFirstVolume):
+        rarfile.RarFile('test/files/rar3-vols.part2.rar')
 
 def test_rar3_oldvols():
     r = rarfile.RarFile('test/files/rar3-old.rar')
@@ -135,6 +137,8 @@ def test_rar3_oldvols():
         'test/files/rar3-old.rar',
         'test/files/rar3-old.r00',
         'test/files/rar3-old.r01']
+    with pytest.raises(rarfile.NeedFirstVolume):
+        rarfile.RarFile('test/files/rar3-old.r00')
 
 def test_rar5_vols():
     r = rarfile.RarFile('test/files/rar5-vols.part1.rar')
@@ -146,6 +150,8 @@ def test_rar5_vols():
         'test/files/rar5-vols.part1.rar',
         'test/files/rar5-vols.part2.rar',
         'test/files/rar5-vols.part3.rar']
+    with pytest.raises(rarfile.NeedFirstVolume):
+        rarfile.RarFile('test/files/rar5-vols.part2.rar')
 
 def expect_ctime(mtime, ctime):
     return [mkitem(
