@@ -1097,7 +1097,7 @@ class CommonParser(object):
             # handle encrypted headers
             if (self._main and self._main.flags & RAR_MAIN_PASSWORD) or self._hdrenc_main:
                 if not self._password:
-                    return
+                    return None
                 fd = self._decrypt_header(fd)
 
             # now read actual header
@@ -1899,6 +1899,7 @@ class RAR5Parser(CommonParser):
         # rar bug? - appends zero to comment
         cmt = cmt.split(ZERO, 1)[0]
         self.comment = cmt.decode('utf8')
+        return None
 
     def _open_hack(self, inf, psw):
         # len, type, blk_flags, flags
@@ -2058,6 +2059,7 @@ class RarExtFile(RawIOBase):
 
     def _read(self, cnt):
         """Actual read that gets sanitized cnt."""
+        raise NotImplementedError("_read")
 
     def close(self):
         """Close open resources."""
