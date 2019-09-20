@@ -7,6 +7,12 @@ rarfile history
 master
 ------
 
+New feature:
+
+* Add :data:`HACK_TMP_DIR` option, to force temp files into
+  specific directory.
+  [`#43 <https://github.com/markokr/rarfile/issues/43>`_]
+
 Cleanups:
 
 * Drop support for Python 2 and 3.5 and earlier.  Python 2 is dead

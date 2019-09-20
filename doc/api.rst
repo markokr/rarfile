@@ -44,6 +44,7 @@ Module Configuration
 .. autodata:: PATH_SEP
 .. autodata:: USE_EXTRACT_HACK
 .. autodata:: HACK_SIZE_LIMIT
+.. autodata:: HACK_TMP_DIR
 
 Constants
 ---------

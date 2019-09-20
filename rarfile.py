@@ -178,6 +178,9 @@ USE_EXTRACT_HACK = 1
 #: limit the filesize for tmp archive usage
 HACK_SIZE_LIMIT = 20 * 1024 * 1024
 
+#: set specific directory for mkstemp() used by hack dir usage
+HACK_TMP_DIR = None
+
 #: Separator for path name components.  RAR internally uses '\\'.
 #: Use '/' to be similar with zipfile.
 PATH_SEP = '/'
@@ -1116,7 +1119,7 @@ class CommonParser(object):
         rf = XFile(inf.volume_file, 0)
         rf.seek(inf.header_offset)
 
-        tmpfd, tmpname = mkstemp(suffix='.rar')
+        tmpfd, tmpname = mkstemp(suffix='.rar', dir=HACK_TMP_DIR)
         tmpf = os.fdopen(tmpfd, "wb")
 
         try:
@@ -2759,7 +2762,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=N
     mh = S_BLK_HDR.pack(0x90CF, RAR_BLOCK_MAIN, 0, 13) + ZERO * (2 + 4)
 
     # decompress via temp rar
-    tmpfd, tmpname = mkstemp(suffix='.rar')
+    tmpfd, tmpname = mkstemp(suffix='.rar', dir=HACK_TMP_DIR)
     tmpf = os.fdopen(tmpfd, "wb")
     try:
         tmpf.write(RAR_ID + mh + hdr + data)
@@ -2904,7 +2907,7 @@ def membuf_tempfile(memfile):
     """Write in-memory file object to real file."""
     memfile.seek(0, 0)
 
-    tmpfd, tmpname = mkstemp(suffix='.rar')
+    tmpfd, tmpname = mkstemp(suffix='.rar', dir=HACK_TMP_DIR)
     tmpf = os.fdopen(tmpfd, "wb")
 
     try:
