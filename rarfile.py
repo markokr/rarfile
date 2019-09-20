@@ -2694,7 +2694,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=N
 
     # file header
     fname = b'data'
-    date = 0
+    date = ((2010 - 1980) << 25) + (12 << 21) + (31 << 16)
     mode = 0x20
     fhdr = S_FILE_HDR.pack(len(data), declen, RAR_OS_MSDOS, crc,
                            date, vers, meth, len(fname), mode)
