@@ -73,7 +73,7 @@ def test_rar3_header_encryption():
 
     r.setpassword('password')
     assert r.needs_password() is True
-    assert r.namelist() == [u'file1.txt', u'file2.txt']
+    assert r.namelist() == ['file1.txt', 'file2.txt']
     assert r.comment is not  None
     assert r.comment == 'RARcomment\n'
 
@@ -86,7 +86,7 @@ def test_rar5_header_encryption():
 
     r.setpassword('password')
     assert r.needs_password() is True
-    assert r.namelist() == [u'stest1.txt', u'stest2.txt']
+    assert r.namelist() == ['stest1.txt', 'stest2.txt']
     assert r.comment is not None
     assert r.comment == 'RAR5 archive - hdr-password\n'
     r.close()
@@ -102,7 +102,7 @@ def get_vol_info(extver=20, tz='', hr='11'):
                file_size=205000,
                mode=33204,
                host_os=3,
-               fn=u'vols/bigfile.txt'),
+               fn='vols/bigfile.txt'),
         mkitem(CRC=3498712966,
                date_time='2016-05-24 %s:42:43%s' % (hr, ''),
                mtime='2016-05-24T%s:42:43%s' % (hr, tz),
@@ -112,7 +112,7 @@ def get_vol_info(extver=20, tz='', hr='11'):
                file_size=2050,
                mode=33204,
                host_os=3,
-               fn=u'vols/smallfile.txt')]
+               fn='vols/smallfile.txt')]
 
 def test_rar3_vols():
     r = rarfile.RarFile('test/files/rar3-vols.part1.rar')
@@ -161,7 +161,7 @@ def expect_ctime(mtime, ctime):
         compress_size=0,
         file_size=0,
         CRC=0,
-        fn=u'afile.txt',
+        fn='afile.txt',
         extract_version=29,
         compress_type=48,
         mode=32,
@@ -190,7 +190,7 @@ def test_rar3_ctime4():
 def test_rar5_times():
     r = rarfile.RarFile('test/files/rar5-times.rar')
     cmp_struct(dumparc(r), [mkitem(
-            fn=u'stest1.txt',
+            fn='stest1.txt',
             file_size=2048,
             compress_size=55,
             compress_type=rarfile.RAR_M3,

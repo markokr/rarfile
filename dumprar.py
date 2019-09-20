@@ -2,8 +2,6 @@
 
 """Dump archive contents, test extraction."""
 
-from __future__ import division, absolute_import, print_function
-
 import io
 import sys
 import getopt
@@ -539,10 +537,6 @@ def main():
 
     if not args:
         xprint(usage)
-
-    # pypy .readinto()+memoryview() is buggy
-    #if cf_test_read > 1 and hasattr(sys, 'pypy_version_info'):
-    #    cf_test_read = 1
 
     for fn in args:
         test(fn, psw)

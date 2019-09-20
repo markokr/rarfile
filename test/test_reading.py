@@ -65,30 +65,30 @@ def test_reading_rar3_ctime():
     run_reading('test/files/ctime4.rar')
 
 def test_reading_rar2():
-    run_reading('test/files/rar15-comment-lock.rar', u'RARcomment -----')
-    run_reading('test/files/rar15-comment.rar', u'RARcomment -----')
-    run_reading('test/files/rar202-comment-nopsw.rar', u'RARcomment')
+    run_reading('test/files/rar15-comment-lock.rar', 'RARcomment -----')
+    run_reading('test/files/rar15-comment.rar', 'RARcomment -----')
+    run_reading('test/files/rar202-comment-nopsw.rar', 'RARcomment')
 
 def test_reading_rar3():
-    run_reading('test/files/rar3-comment-plain.rar', u'RARcomment\n')
+    run_reading('test/files/rar3-comment-plain.rar', 'RARcomment\n')
     run_reading('test/files/seektest.rar')
     run_reading('test/files/unicode.rar')
     run_reading('test/files/unicode2.rar')
 
 def test_reading_rar2_psw():
-    run_reading('test/files/rar202-comment-psw.rar', u'RARcomment')
+    run_reading('test/files/rar202-comment-psw.rar', 'RARcomment')
 
 def test_reading_rar3_psw():
-    run_reading('test/files/rar3-comment-psw.rar', u'RARcomment\n')
+    run_reading('test/files/rar3-comment-psw.rar', 'RARcomment\n')
 
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_reading_rar3_hpsw():
-    run_reading('test/files/rar3-comment-hpsw.rar', u'RARcomment\n')
+    run_reading('test/files/rar3-comment-hpsw.rar', 'RARcomment\n')
 
 @pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
 def test_reading_rar3_hpsw_nocrypto():
     with pytest.raises(rarfile.NoCrypto):
-        run_reading('test/files/rar3-comment-hpsw.rar', u'RARcomment\n')
+        run_reading('test/files/rar3-comment-hpsw.rar', 'RARcomment\n')
 
 def test_reading_rar3_vols():
     run_reading('test/files/rar3-old.rar')
@@ -97,10 +97,10 @@ def test_reading_rar3_vols():
     run_reading('test/files/rar3-vols.part3.rar')
 
 def test_reading_rar5_blake():
-    run_reading('test/files/rar5-blake.rar', u'RAR5 archive - blake\n')
+    run_reading('test/files/rar5-blake.rar', 'RAR5 archive - blake\n')
 
 def test_reading_rar5_crc():
-    run_reading('test/files/rar5-crc.rar', u'RAR5 archive - crc\n')
+    run_reading('test/files/rar5-crc.rar', 'RAR5 archive - crc\n')
 
 def test_reading_rar5_links():
     run_reading('test/files/rar5-dups.rar')
@@ -126,18 +126,18 @@ def test_reading_rar5_vols():
 
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_reading_rar5_hpsw():
-    run_reading('test/files/rar5-hpsw.rar', u'RAR5 archive - hdr-password\n')
+    run_reading('test/files/rar5-hpsw.rar', 'RAR5 archive - hdr-password\n')
 
 @pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
 def test_reading_rar5_hpsw_nocrypto():
     with pytest.raises(rarfile.NoCrypto):
-        run_reading('test/files/rar5-hpsw.rar', u'RAR5 archive - hdr-password\n')
+        run_reading('test/files/rar5-hpsw.rar', 'RAR5 archive - hdr-password\n')
 
 def test_reading_rar5_psw_blake():
-    run_reading('test/files/rar5-psw-blake.rar', u'RAR5 archive - nohdr-password-blake\n')
+    run_reading('test/files/rar5-psw-blake.rar', 'RAR5 archive - nohdr-password-blake\n')
 
 def test_reading_rar5_psw():
-    run_reading('test/files/rar5-psw.rar', u'RAR5 archive - nohdr-password\n')
+    run_reading('test/files/rar5-psw.rar', 'RAR5 archive - nohdr-password\n')
 
 def test_reading_missed():
     problems = []

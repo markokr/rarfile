@@ -61,10 +61,8 @@ For more details, refer to source.
 
 """
 
-from __future__ import division, print_function
-
 ##
-## Imports and compat - support both Python 2.x and 3.x
+## Imports and compat - support various crypto options
 ##
 
 import sys
@@ -73,35 +71,14 @@ import errno
 import struct
 
 from struct import pack, unpack, Struct
-from binascii import crc32, hexlify
+from binascii import crc32 as rar_crc32, hexlify
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
 from io import RawIOBase
-from hashlib import sha1, sha256
+from hashlib import sha1, sha256, blake2s
 from hmac import HMAC
-from datetime import datetime, timedelta, tzinfo
-
-# fixed offset timezone, for UTC
-try:
-    from datetime import timezone
-except ImportError:
-    class timezone(tzinfo):
-        """Compat timezone."""
-        __slots__ = ('_ofs', '_name')
-        _DST = timedelta(0)
-
-        def __init__(self, offset, name):
-            super(timezone, self).__init__()
-            self._ofs, self._name = offset, name
-
-        def utcoffset(self, dt):
-            return self._ofs
-
-        def tzname(self, dt):
-            return self._name
-
-        def dst(self, dt):
-            return self._DST
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 # only needed for encryped headers
 try:
@@ -139,46 +116,11 @@ try:
 except ImportError:
     _have_crypto = 0
 
-try:
-    try:
-        from hashlib import blake2s
-        _have_blake2 = True
-    except ImportError:
-        from pyblake2 import blake2s
-        _have_blake2 = True
-except ImportError:
-    _have_blake2 = False
 
-# compat with 2.x
-if sys.hexversion < 0x3000000:
-    def rar_crc32(data, prev=0):
-        """CRC32 with unsigned values.
-        """
-        if (prev > 0) and (prev & 0x80000000):
-            prev -= (1 << 32)
-        res = crc32(data, prev)
-        if res < 0:
-            res += (1 << 32)
-        return res
-    tohex = hexlify
-    _byte_code = ord
-else:  # pragma: no cover
-    def tohex(data):
-        """Return hex string."""
-        return hexlify(data).decode('ascii')
-    rar_crc32 = crc32
-    unicode = str
-    _byte_code = int   # noqa
+def tohex(data):
+    """Return hex string."""
+    return hexlify(data).decode('ascii')
 
-# don't break 2.6 completely
-if sys.hexversion < 0x2070000:
-    memoryview = lambda x: x  # noqa
-
-try:
-    from pathlib import Path
-    _have_pathlib = True
-except ImportError:
-    _have_pathlib = False
 
 __version__ = '3.1'
 
@@ -661,7 +603,7 @@ class RarFile(object):
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
         """
-        if _have_pathlib and isinstance(rarfile, Path):
+        if isinstance(rarfile, Path):
             self._rarfile = str(rarfile)
         else:
             self._rarfile = rarfile
@@ -813,7 +755,7 @@ class RarFile(object):
         """
         if isinstance(member, RarInfo):
             fname = member.filename
-        elif _have_pathlib and isinstance(member, Path):
+        elif isinstance(member, Path):
             fname = str(member)
         else:
             fname = member
@@ -900,7 +842,7 @@ class RarFile(object):
 
             # destination path
             if path is not None:
-                if _have_pathlib and isinstance(path, Path):
+                if isinstance(path, Path):
                     path = str(path)
                 cmd.append(path + os.sep)
 
@@ -971,7 +913,7 @@ class CommonParser(object):
         """
         if isinstance(member, RarInfo):
             fname = member.filename
-        elif _have_pathlib and isinstance(member, Path):
+        elif isinstance(member, Path):
             fname = str(member)
         else:
             fname = member
@@ -1006,7 +948,7 @@ class CommonParser(object):
         self._fd = fd
         sig = fd.read(len(self._expect_sig))
         if sig != self._expect_sig:
-            if isinstance(self._rarfile, (str, unicode)):
+            if isinstance(self._rarfile, str):
                 raise NotRarFile("Not a Rar archive: {}".format(self._rarfile))
             raise NotRarFile("Not a Rar archive")
 
@@ -1617,7 +1559,7 @@ class RAR5Parser(CommonParser):
         if kdf_count > 24:
             raise BadRarFile('Too large kdf_count')
         psw = self._password
-        if isinstance(psw, unicode):
+        if isinstance(psw, str):
             psw = psw.encode('utf8')
         key = pbkdf2_sha256(psw, salt, 1 << kdf_count)
         self._last_aes256_key = (kdf_count, salt, key)
@@ -1836,7 +1778,7 @@ class RAR5Parser(CommonParser):
         hash_type, pos = load_vint(xdata, pos)
         if hash_type == RAR5_XHASH_BLAKE2SP:
             h.blake2sp_hash, pos = load_bytes(xdata, 32, pos)
-            if _have_blake2 and (h.file_encryption[1] & RAR5_XENC_TWEAKED) == 0:
+            if (h.file_encryption[1] & RAR5_XENC_TWEAKED) == 0:
                 h._md_class = Blake2SP
                 h._md_expect = h.blake2sp_hash
 
@@ -2622,7 +2564,7 @@ def load_vint(buf, pos):
     limit = min(pos + 11, len(buf))
     res = ofs = 0
     while pos < limit:
-        b = _byte_code(buf[pos])
+        b = buf[pos]
         res += ((b & 0x7F) << ofs)
         pos += 1
         ofs += 7
@@ -2752,10 +2694,7 @@ def _parse_xtime(flag, data, pos, basetime=None):
 def is_filelike(obj):
     """Filename or file object?
     """
-    if _have_pathlib:
-        filename_types = (bytes, unicode, Path)
-    else:
-        filename_types = (bytes, unicode)
+    filename_types = (bytes, str, Path)
 
     if isinstance(obj, filename_types):
         return False
@@ -2769,7 +2708,7 @@ def is_filelike(obj):
 def rar3_s2k(psw, salt):
     """String-to-key hash for RAR3.
     """
-    if not isinstance(psw, unicode):
+    if not isinstance(psw, str):
         psw = psw.decode('utf8')
     seed = bytearray(psw.encode('utf-16le') + salt)
     h = Rar3Sha1(rarbug=True)
@@ -2920,6 +2859,8 @@ def add_password_arg(cmd, psw, ___required=False):
     if UNRAR_TOOL == ALT_TOOL:
         return
     if psw is not None:
+        if not isinstance(psw, str):
+            psw = psw.decode('utf8')
         cmd.append('-p' + psw)
     else:
         cmd.append('-p-')

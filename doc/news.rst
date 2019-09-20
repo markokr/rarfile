@@ -4,6 +4,15 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+master
+------
+
+Cleanups:
+
+* Drop support for Python 2 and 3.5 and earlier.  Python 2 is dead
+  and requiring Python 3.6 gives blake2s, stdlib that supports pathlib,
+  and ordered dicts without compat hacks.
+
 Version 3.1 (2019-09-15)
 ------------------------
 

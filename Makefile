@@ -7,8 +7,9 @@ prefix = /usr/local
 all:
 	pyflakes3 rarfile.py
 	tox -e lint
+	tox -e py38
+	tox -e py37-pycrypto
 	tox -e py36-cryptography
-	tox -e py37
 
 install:
 	python setup.py install --prefix=$(prefix)

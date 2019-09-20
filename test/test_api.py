@@ -3,13 +3,10 @@
 
 import io
 import os
+from pathlib import Path
 
 import pytest
-
 import rarfile
-
-if rarfile._have_pathlib:
-    from pathlib import Path
 
 #
 # test start
@@ -44,47 +41,44 @@ def test_bad_filelike():
 def test_open_psw_late_rar3():
     rf = rarfile.RarFile('test/files/rar3-comment-psw.rar')
     d1 = rf.open('file1.txt', 'r', 'password').read()
-    d2 = rf.open('file1.txt', 'r', u'password').read()
+    d2 = rf.open('file1.txt', 'r', b'password').read()
     assert d1 == d2
 
 def test_open_psw_late_rar5():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
     rf.open('stest1.txt', 'r', 'password').read()
-    rf.open('stest1.txt', 'r', u'password').read()
+    rf.open('stest1.txt', 'r', b'password').read()
 
-if rarfile._have_pathlib:
-    def test_open_pathlib_path():
-        rf = rarfile.RarFile('test/files/rar5-psw.rar')
-        rf.open(Path('stest1.txt'), 'r', 'password').read()
+def test_open_pathlib_path():
+    rf = rarfile.RarFile('test/files/rar5-psw.rar')
+    rf.open(Path('stest1.txt'), 'r', 'password').read()
 
 def test_read_psw_late_rar3():
     rf = rarfile.RarFile('test/files/rar3-comment-psw.rar')
     rf.read('file1.txt', 'password')
-    rf.read('file1.txt', u'password')
+    rf.read('file1.txt', b'password')
 
 def test_read_psw_late_rar5():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
     rf.read('stest1.txt', 'password')
-    rf.read('stest1.txt', u'password')
+    rf.read('stest1.txt', b'password')
 
 def test_open_psw_late():
     rf = rarfile.RarFile('test/files/rar5-psw.rar')
     with pytest.raises(rarfile.BadRarFile):
         rf.read('stest1.txt', 'password222')
 
-if rarfile._have_pathlib:
-    def test_create_from_pathlib_path():
-        # Make sure we can open both relative and absolute Paths
-        rarfile.RarFile(Path('test/files/rar5-psw.rar'))
-        rarfile.RarFile(Path('test/files/rar5-psw.rar').resolve())
+def test_create_from_pathlib_path():
+    # Make sure we can open both relative and absolute Paths
+    rarfile.RarFile(Path('test/files/rar5-psw.rar'))
+    rarfile.RarFile(Path('test/files/rar5-psw.rar').resolve())
 
 def test_detection():
     assert rarfile.is_rarfile('test/files/ctime4.rar.exp') is False
     assert rarfile.is_rarfile('test/files/ctime4.rar') is True
     assert rarfile.is_rarfile('test/files/rar5-crc.rar') is True
 
-    if rarfile._have_pathlib:
-        assert rarfile.is_rarfile(Path('test/files/rar5-crc.rar')) is True
+    assert rarfile.is_rarfile(Path('test/files/rar5-crc.rar')) is True
 
 
 def test_signature_error():
@@ -130,7 +124,7 @@ def test_printdir(capsys):
     rf = rarfile.RarFile('test/files/seektest.rar')
     rf.printdir()
     res = capsys.readouterr()
-    assert res.out == u'stest1.txt\nstest2.txt\n'
+    assert res.out == 'stest1.txt\nstest2.txt\n'
 
 def test_testrar():
     rf = rarfile.RarFile('test/files/seektest.rar')
@@ -169,12 +163,11 @@ def test_extract(tmp_path):
     rf.extractall(str(ex3), [rf.getinfo('stest2.txt')])
     assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
 
-    if rarfile._have_pathlib:
-        ex4 = tmp_path / "extract4"
-        os.makedirs(str(ex4))
-        rf.extractall(ex4)
-        assert os.path.isfile(str(ex4 / 'stest1.txt')) is True
-        assert os.path.isfile(str(ex4 / 'stest2.txt')) is True
+    ex4 = tmp_path / "extract4"
+    os.makedirs(str(ex4))
+    rf.extractall(ex4)
+    assert os.path.isfile(str(ex4 / 'stest1.txt')) is True
+    assert os.path.isfile(str(ex4 / 'stest2.txt')) is True
 
 def test_extract_mem(tmp_path):
     ex1 = tmp_path / "extract11"

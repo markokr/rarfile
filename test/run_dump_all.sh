@@ -3,7 +3,7 @@
 JAVA_OPTIONS="-Dpython.path=`pwd`/.."
 export JAVA_OPTIONS
 
-plist="python2.7 python3.2 python3.3 python3.4 python3.5 python3.6 pypy jython jython2.7"
+plist="python3.6 python3.7 python3.8 pypy jython"
 
 result=0
 for py in $plist; do

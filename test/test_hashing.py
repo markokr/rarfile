@@ -1,8 +1,6 @@
 """Hashing tests.
 """
 
-from __future__ import division, print_function
-
 import hashlib
 from binascii import unhexlify
 
@@ -44,20 +42,19 @@ def xblake2sp_slow(xdata):
     return md.hexdigest()
 
 
-if rarfile._have_blake2:
-    def test_blake2sp():
-        assert Blake2SP(b'').hexdigest() == 'dd0e891776933f43c7d032b08a917e25741f8aa9a12c12e1cac8801500f2ca4f'
-        assert Blake2SP(b'Hello').hexdigest() == '0d6bae0db99f99183d060f7994bb94b45c6490b2a0a628b8b1346ebea8ec1d66'
+def test_blake2sp():
+    assert Blake2SP(b'').hexdigest() == 'dd0e891776933f43c7d032b08a917e25741f8aa9a12c12e1cac8801500f2ca4f'
+    assert Blake2SP(b'Hello').hexdigest() == '0d6bae0db99f99183d060f7994bb94b45c6490b2a0a628b8b1346ebea8ec1d66'
 
-        assert xblake2sp('') == 'dd0e891776933f43c7d032b08a917e25741f8aa9a12c12e1cac8801500f2ca4f'
-        assert xblake2sp('00') == 'a6b9eecc25227ad788c99d3f236debc8da408849e9a5178978727a81457f7239'
+    assert xblake2sp('') == 'dd0e891776933f43c7d032b08a917e25741f8aa9a12c12e1cac8801500f2ca4f'
+    assert xblake2sp('00') == 'a6b9eecc25227ad788c99d3f236debc8da408849e9a5178978727a81457f7239'
 
-        long1 = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031'
-        assert xblake2sp(long1) == '270affa6426f1a515c9b76dfc27d181fc2fd57d082a3ba2c1eef071533a6dfb7'
+    long1 = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031'
+    assert xblake2sp(long1) == '270affa6426f1a515c9b76dfc27d181fc2fd57d082a3ba2c1eef071533a6dfb7'
 
-        long2 = long1 * 20
-        assert xblake2sp(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
-        assert xblake2sp_slow(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
+    long2 = long1 * 20
+    assert xblake2sp(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
+    assert xblake2sp_slow(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
 
 def test_hmac_sha256():
     assert tohex(rarfile.hmac_sha256(b'key', b'data')) == '5031fe3d989c6d1537a013fa6e739da23463fdaec3b70137d828e36ace221bd0'
@@ -87,14 +84,14 @@ def test_rar3_s2k():
     exp = ('a160cb31cb262e9231c0b6fc984fbb0d', 'aa54a659fb0c359b30f353a6343fb11d')
     key, iv = rarfile.rar3_s2k(b'password', unhexlify('00FF00'))
     assert (tohex(key), tohex(iv)) == exp
-    key, iv = rarfile.rar3_s2k(u'password', unhexlify('00FF00'))
+    key, iv = rarfile.rar3_s2k('password', unhexlify('00FF00'))
     assert (tohex(key), tohex(iv)) == exp
 
     exp = ('ffff33ffaf31987c899ccc2f965a8927', 'bdff6873721b247afa4f978448a5aeef')
-    key, iv = rarfile.rar3_s2k(u'p'*28, unhexlify('1122334455667788'))
+    key, iv = rarfile.rar3_s2k('p'*28, unhexlify('1122334455667788'))
     assert (tohex(key), tohex(iv)) == exp
     exp = ('306cafde28f1ea78c9427c3ec642c0db', '173ecdf574c0bfe9e7c23bdfd96fa435')
-    key, iv = rarfile.rar3_s2k(u'p'*29, unhexlify('1122334455667788'))
+    key, iv = rarfile.rar3_s2k('p'*29, unhexlify('1122334455667788'))
     assert (tohex(key), tohex(iv)) == exp
 
 if rarfile._have_crypto:
