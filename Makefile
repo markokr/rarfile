@@ -17,7 +17,7 @@ install:
 tgz: clean $(TGZ)
 
 clean:
-	rm -rf __pycache__ build dist
+	rm -rf __pycache__ build dist .tox
 	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class
 	rm -rf doc/_build doc/_static doc/_templates doc/html
 	rm -rf .coverage cover*
