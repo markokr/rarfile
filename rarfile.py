@@ -32,7 +32,7 @@ Example::
 
     rf = rarfile.RarFile('myarchive.rar')
     for f in rf.infolist():
-        print f.filename, f.file_size
+        print(f.filename, f.file_size)
         if f.filename == 'README':
             print(rf.read(f))
 
@@ -46,18 +46,7 @@ by :meth:`RarFile.open`::
             for ln in f:
                 print(ln.strip())
 
-There are few module-level parameters to tune behaviour,
-here they are with defaults, and reason to change it::
-
-    import rarfile
-
-    # Set to full path of unrar.exe if it is not in PATH
-    rarfile.UNRAR_TOOL = "unrar"
-
-    # Set to '\\' to be more compatible with old rarfile
-    rarfile.PATH_SEP = '/'
-
-For more details, refer to source.
+For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 
 """
 
@@ -2970,8 +2959,8 @@ UNRAR_CONFIG = {
 }
 
 # Problems with libarchive RAR backend:
-# - Does not support RAR2 locked files.
-# - Does not support RAR5 Blake2 hash.
+# - Does not support RAR2 locked files [fails to read]
+# - Does not support RAR5 Blake2 hash [reads fine]
 UNAR_CONFIG = {
     'open_cmd': ('UNAR_TOOL', '-q', '-o', '-'),
     'extract_cmd': ('UNAR_TOOL', '-q', '-f', '-D', '-o', 'DSTDIR'),

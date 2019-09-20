@@ -11,12 +11,14 @@ It depends on ``unrar`` command-line utility to do the actual decompression.
 Note that by default it expect it to be in ``PATH``.  If unrar
 launching fails, you need to fix this.
 
-Alternatively, :mod:`rarfile` can use bsdtar_ from libarchive_ as
-decompression backend, but that is a bit problematic as bsdtar_ does not support
-all RAR features.
+Alternatively, :mod:`rarfile` can also use either unar_ from TheUnarchiver_
+or bsdtar_ from libarchive_ as decompression backend.  From those
+``unar`` is preferred as ``bsdtar`` has very limited support for RAR archives.
 
+.. _unar: https://theunarchiver.com/command-line
+.. _TheUnarchiver: https://theunarchiver.com/
 .. _bsdtar: https://github.com/libarchive/libarchive/wiki/ManPageBsdtar1
-.. _libarchive: http://www.libarchive.org/
+.. _libarchive: https://www.libarchive.org/
 
 It depends on cryptography_ or PyCrypto_ modules to process
 archives with password-protected headers.
@@ -44,17 +46,29 @@ How can I get it work on Windows?
 ---------------------------------
 
 On Windows the ``unrar.exe`` is not in ``PATH`` so simple ``Popen("unrar ..")`` does not work.
-It can be solved several ways:
+Solutions:
 
 1. Add location of ``unrar.exe`` to PATH.
-2. Set :data:`rarfile.UNRAR_TOOL` to full path of ``unrar.exe``.
-3. Copy ``unrar.exe`` to your program directory.
-4. Copy ``unrar.exe`` to system directory that is in PATH, eg. ``C:\Windows``.
+2. Copy ``unrar.exe`` to system directory that is in PATH, eg. ``C:\Windows``.
+
+It can be tested by simply opening command-line console and running ``unrar``.
+
+How can I get it work on Linux/MacOS?
+-------------------------------------
+
+It fails because ``unrar`` is not installed or not in PATH.
+
+1. Install ``unrar``.
+2. Make sure the location is in PATH.
+
+It can be tested by simply opening command-line console and running ``unrar``.
+
+Instead ``unrar`` it might be preferable to install ``unar``.
 
 How to avoid the need for user to manually install rarfile/unrar?
 -----------------------------------------------------------------
 
-Include ``rarfile.py`` and/or ``unrar`` with your application.
+Include ``rarfile.py`` and/or ``unrar`` (or ``unar``) with your application.
 
 Will it support creating RAR archives?
 --------------------------------------

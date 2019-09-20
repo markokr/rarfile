@@ -35,17 +35,6 @@ Functions
 
 .. autofunction:: is_rarfile
 
-Module Configuration
---------------------
-
-.. autodata:: UNRAR_TOOL
-.. autodata:: DEFAULT_CHARSET
-.. autodata:: TRY_ENCODINGS
-.. autodata:: PATH_SEP
-.. autodata:: USE_EXTRACT_HACK
-.. autodata:: HACK_SIZE_LIMIT
-.. autodata:: HACK_TMP_DIR
-
 Constants
 ---------
 
