@@ -65,9 +65,9 @@ def test_reading_rar3_ctime():
     run_reading('test/files/ctime4.rar')
 
 def test_reading_rar2():
-    run_reading('test/files/rar15-comment-lock.rar', 'RARcomment -----')
-    run_reading('test/files/rar15-comment.rar', 'RARcomment -----')
     run_reading('test/files/rar202-comment-nopsw.rar', 'RARcomment')
+    run_reading('test/files/rar15-comment.rar', 'RARcomment -----')
+    run_reading('test/files/rar15-comment-lock.rar', 'RARcomment -----')
 
 def test_reading_rar3():
     run_reading('test/files/rar3-comment-plain.rar', 'RARcomment\n')

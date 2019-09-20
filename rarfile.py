@@ -131,46 +131,22 @@ __all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
 ## Module configuration.  Can be tuned after importing.
 ##
 
+
+#: executable for unrar tool
+UNRAR_TOOL = 'unrar'
+
+#: executable for unar tool
+UNAR_TOOL = 'unar'
+LSAR_TOOL = 'lsar'
+
+#: executable for bsdtar tool
+BSDTAR_TOOL = 'bsdtar'
+
 #: default fallback charset
 DEFAULT_CHARSET = "windows-1252"
 
 #: list of encodings to try, with fallback to DEFAULT_CHARSET if none succeed
 TRY_ENCODINGS = ('utf8', 'utf-16le')
-
-#: 'unrar', 'rar' or full path to either one
-UNRAR_TOOL = "unrar"
-
-#: Command line args to use for opening file for reading.
-OPEN_ARGS = ('p', '-inul')
-
-#: Command line args to use for extracting file to disk.
-EXTRACT_ARGS = ('x', '-y', '-idq')
-
-#: args for testrar()
-TEST_ARGS = ('t', '-idq')
-
-#
-# Allow use of tool that is not compatible with unrar.
-#
-# By default use 'bsdtar' which is 'tar' program that
-# sits on top of libarchive.
-#
-# Problems with libarchive RAR backend:
-# - Does not support solid archives.
-# - Does not support password-protected archives.
-#
-
-ALT_TOOL = 'bsdtar'
-ALT_OPEN_ARGS = ('-x', '--to-stdout', '-f')
-ALT_EXTRACT_ARGS = ('-x', '-f')
-ALT_TEST_ARGS = ('-t', '-f')
-ALT_CHECK_ARGS = ('--help',)
-
-#ALT_TOOL = 'unar'
-#ALT_OPEN_ARGS = ('-o', '-')
-#ALT_EXTRACT_ARGS = ()
-#ALT_TEST_ARGS = ('-test',) # does not work
-#ALT_CHECK_ARGS = ('-v',)
 
 #: whether to speed up decompression by using tmp archive
 USE_EXTRACT_HACK = 1
@@ -788,11 +764,9 @@ class RarFile(object):
     def testrar(self):
         """Let 'unrar' test the archive.
         """
-        cmd = [UNRAR_TOOL] + list(TEST_ARGS)
-        add_password_arg(cmd, self._password)
-        cmd.append('--')
+        setup = tool_setup()
         with XTempFile(self._rarfile) as rarfile:
-            cmd.append(rarfile)
+            cmd = setup.test_cmdline(self._password, rarfile)
             p = custom_popen(cmd)
             output = p.communicate()[0]
             check_returncode(p, output)
@@ -826,28 +800,19 @@ class RarFile(object):
 
     # call unrar to extract a file
     def _extract(self, fnlist, path=None, psw=None):
-        cmd = [UNRAR_TOOL] + list(EXTRACT_ARGS)
+        setup = tool_setup()
 
-        # pasoword
+        if os.sep != PATH_SEP:
+            fnlist = [fn.replace(PATH_SEP, os.sep) for fn in fnlist]
+
+        if path and isinstance(path, Path):
+            path = str(path)
+
         psw = psw or self._password
-        add_password_arg(cmd, psw)
-        cmd.append('--')
 
         # rar file
         with XTempFile(self._rarfile) as rarfn:
-            cmd.append(rarfn)
-
-            # file list
-            for fn in fnlist:
-                if os.sep != PATH_SEP:
-                    fn = fn.replace(PATH_SEP, os.sep)
-                cmd.append(fn)
-
-            # destination path
-            if path is not None:
-                if isinstance(path, Path):
-                    path = str(path)
-                cmd.append(path + os.sep)
+            cmd = setup.extract_cmdline(psw, rarfn, fnlist, path)
 
             # call
             p = custom_popen(cmd)
@@ -1151,19 +1116,17 @@ class CommonParser(object):
 
     # extract using unrar
     def _open_unrar(self, rarfile, inf, psw=None, tmpfile=None, force_file=False):
-        cmd = [UNRAR_TOOL] + list(OPEN_ARGS)
-        add_password_arg(cmd, psw)
-        cmd.append("--")
-        cmd.append(rarfile)
+        setup = tool_setup()
 
         # not giving filename avoids encoding related problems
+        fn = None
         if not tmpfile or force_file:
             fn = inf.filename
             if PATH_SEP != os.sep:
                 fn = fn.replace(PATH_SEP, os.sep)
-            cmd.append(fn)
 
         # read from unrar pipe
+        cmd = setup.open_cmdline(psw, rarfile, fn)
         return PipeReader(self, inf, cmd, tmpfile)
 
 #
@@ -2762,16 +2725,15 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=N
     mh = S_BLK_HDR.pack(0x90CF, RAR_BLOCK_MAIN, 0, 13) + ZERO * (2 + 4)
 
     # decompress via temp rar
+    setup = tool_setup()
     tmpfd, tmpname = mkstemp(suffix='.rar', dir=HACK_TMP_DIR)
     tmpf = os.fdopen(tmpfd, "wb")
     try:
         tmpf.write(RAR_ID + mh + hdr + data)
         tmpf.close()
 
-        cmd = [UNRAR_TOOL] + list(OPEN_ARGS)
-        add_password_arg(cmd, psw, (flags & RAR_FILE_PASSWORD))
-        cmd.append(tmpname)
-
+        curpsw = (flags & RAR_FILE_PASSWORD) and psw or None
+        cmd = setup.open_cmdline(curpsw, tmpname)
         p = custom_popen(cmd)
         return p.communicate()[0]
     finally:
@@ -2841,32 +2803,11 @@ def custom_popen(cmd):
                   creationflags=creationflags)
     except OSError as ex:
         if ex.errno == errno.ENOENT:
-            raise RarCannotExec("Unrar not installed? (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
+            raise RarCannotExec("Unrar not installed?")
         if ex.errno == errno.EACCES or ex.errno == errno.EPERM:
-            raise RarCannotExec("Cannot execute unrar (rarfile.UNRAR_TOOL=%r)" % UNRAR_TOOL)
+            raise RarCannotExec("Cannot execute unrar")
         raise
     return p
-
-def custom_check(cmd, ignore_retcode=False):
-    """Run command, collect output, raise error if needed.
-    """
-    p = custom_popen(cmd)
-    out, _ = p.communicate()
-    if p.returncode and not ignore_retcode:
-        raise RarExecError("Check-run failed")
-    return out
-
-def add_password_arg(cmd, psw, ___required=False):
-    """Append password switch to commandline.
-    """
-    if UNRAR_TOOL == ALT_TOOL:
-        return
-    if psw is not None:
-        if not isinstance(psw, str):
-            psw = psw.decode('utf8')
-        cmd.append('-p' + psw)
-    else:
-        cmd.append('-p-')
 
 def check_returncode(p, out):
     """Raise exception according to unrar exit code.
@@ -2875,13 +2816,7 @@ def check_returncode(p, out):
     if code == 0:
         return
 
-    # map return code to exception class, codes from rar.txt
-    errmap = [None,
-              RarWarning, RarFatalError, RarCRCError, RarLockedArchiveError,    # 1..4
-              RarWriteError, RarOpenError, RarUserError, RarMemoryError,        # 5..8
-              RarCreateError, RarNoFilesError, RarWrongPassword]                # 9..11
-    if UNRAR_TOOL == ALT_TOOL:
-        errmap = [None]
+    errmap = tool_setup().get_errmap()
     if code > 0 and code < len(errmap):
         exc = errmap[code]
     elif code == 255:
@@ -2951,34 +2886,140 @@ class XTempFile(object):
 # Check if unrar works
 #
 
-ORIG_UNRAR_TOOL = UNRAR_TOOL
-ORIG_OPEN_ARGS = OPEN_ARGS
-ORIG_EXTRACT_ARGS = EXTRACT_ARGS
-ORIG_TEST_ARGS = TEST_ARGS
+class ToolSetup:
+    def __init__(self, setup):
+        self.setup = setup
 
-def _check_unrar_tool():
-    global UNRAR_TOOL, OPEN_ARGS, EXTRACT_ARGS, TEST_ARGS
-    try:
-        # does UNRAR_TOOL work?
-        custom_check([ORIG_UNRAR_TOOL], True)
-
-        UNRAR_TOOL = ORIG_UNRAR_TOOL
-        OPEN_ARGS = ORIG_OPEN_ARGS
-        EXTRACT_ARGS = ORIG_EXTRACT_ARGS
-        TEST_ARGS = ORIG_TEST_ARGS
-    except RarCannotExec:
+    def check(self):
+        cmdline = self.get_cmdline('check_cmd', None)
         try:
-            # does ALT_TOOL work?
-            custom_check([ALT_TOOL] + list(ALT_CHECK_ARGS), True)
-            # replace config
-            UNRAR_TOOL = ALT_TOOL
-            OPEN_ARGS = ALT_OPEN_ARGS
-            EXTRACT_ARGS = ALT_EXTRACT_ARGS
-            TEST_ARGS = ALT_TEST_ARGS
+            p = custom_popen(cmdline)
+            out, _ = p.communicate()
+            return p.returncode == 0
         except RarCannotExec:
-            # no usable tool, only uncompressed archives work
             return False
-    return True
 
-_check_unrar_tool()
+    def open_cmdline(self, psw, rarfn, filefn=None):
+        cmdline = self.get_cmdline('open_cmd', psw)
+        cmdline.append(rarfn)
+        if filefn:
+            cmdline.append(filefn)
+        return cmdline
+
+    def test_cmdline(self, psw, rarfn):
+        cmdline = self.get_cmdline('test_cmd', psw)
+        cmdline.append(rarfn)
+        return cmdline
+
+    def extract_cmdline(self, psw, rarfn, fnlist, path):
+        cmdline = self.get_cmdline('extract_cmd', psw, nodash=True)
+        dstdir = 'DSTDIR' in cmdline
+        if dstdir:
+            if not path:
+                path = '.'
+            cmdline[cmdline.index('DSTDIR', 1)] = path
+
+        cmdline.append('--')
+
+        cmdline.append(rarfn)
+        for fn in fnlist:
+            cmdline.append(fn)
+
+        if path and not dstdir:
+            cmdline.append(path + os.sep)
+        return cmdline
+
+    def get_errmap(self):
+        return self.setup['errmap']
+
+    def get_cmdline(self, key, psw, nodash=False):
+        cmdline = list(self.setup[key])
+        cmdline[0] = globals()[cmdline[0]]
+        self.add_password_arg(cmdline, psw)
+        if not nodash:
+            cmdline.append('--')
+        return cmdline
+
+    def add_password_arg(self, cmdline, psw):
+        """Append password switch to commandline.
+        """
+        if psw is not None:
+            if not isinstance(psw, str):
+                psw = psw.decode('utf8')
+            args = self.setup['password']
+            if isinstance(args, str):
+                cmdline.append(args + psw)
+            else:
+                cmdline.extend(args)
+                cmdline.append(psw)
+        else:
+            cmdline.extend(self.setup['no_password'])
+
+UNRAR_CONFIG = {
+    'open_cmd': ('UNRAR_TOOL', 'p', '-inul'),
+    'extract_cmd': ('UNRAR_TOOL', 'x', '-y', '-idq'),
+    'test_cmd': ('UNRAR_TOOL', 't', '-idq'),
+    'check_cmd': ('UNRAR_TOOL', '-inul'),
+    'password': '-p',
+    'no_password': ('-p-',),
+    # map return code to exception class, codes from rar.txt
+    'errmap': [None,
+               RarWarning, RarFatalError, RarCRCError, RarLockedArchiveError,    # 1..4
+               RarWriteError, RarOpenError, RarUserError, RarMemoryError,        # 5..8
+               RarCreateError, RarNoFilesError, RarWrongPassword]                # 9..11
+}
+
+# Problems with libarchive RAR backend:
+# - Does not support RAR2 locked files.
+# - Does not support RAR5 Blake2 hash.
+UNAR_CONFIG = {
+    'open_cmd': ('UNAR_TOOL', '-q', '-o', '-'),
+    'extract_cmd': ('UNAR_TOOL', '-q', '-f', '-D', '-o', 'DSTDIR'),
+    'test_cmd': ('LSAR_TOOL', '-test'),
+    'check_cmd': ('UNAR_TOOL', '-version'),
+    'password': ('-p',),
+    'no_password': ('-p', ''),
+    'errmap': [None],
+}
+
+# Problems with libarchive RAR backend:
+# - Does not support solid archives.
+# - Does not support password-protected archives.
+# - Does not support some compression opcodes.
+BSDTAR_CONFIG = {
+    'open_cmd': ('BSDTAR_TOOL', '-x', '--to-stdout', '-f'),
+    'extract_cmd': ('BSDTAR_TOOL', '-x', '-C', 'DSTDIR', '-f'),
+    'test_cmd': ('BSDTAR_TOOL', '-t', '-f'),
+    'check_cmd': ('BSDTAR_TOOL', '--version'),
+    'password': None,
+    'no_password': (),
+    'errmap': [None],
+}
+
+CURRENT_SETUP = None
+
+def tool_setup(unrar=True, unar=True, bsdtar=True, force=False):
+    """Pick a tool, return cached ToolSetup.
+    """
+    global CURRENT_SETUP
+    if force:
+        CURRENT_SETUP = None
+    if CURRENT_SETUP is not None:
+        return CURRENT_SETUP
+    lst = []
+    if unrar:
+        lst.append(UNRAR_CONFIG)
+    if unar:
+        lst.append(UNAR_CONFIG)
+    if bsdtar:
+        lst.append(BSDTAR_CONFIG)
+
+    for conf in lst:
+        setup = ToolSetup(conf)
+        if setup.check():
+            CURRENT_SETUP = setup
+            break
+    if CURRENT_SETUP is None:
+        raise RarCannotExec("Cannot find working tool")
+    return CURRENT_SETUP
 

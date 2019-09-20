@@ -215,21 +215,3 @@ def test_infocb():
         (rarfile.RAR_BLOCK_SUB, False, False, False),
         (rarfile.RAR_BLOCK_ENDARC, False, False, False)]
 
-def install_alt_tool():
-    rarfile.ORIG_UNRAR_TOOL = 'x_unrar_missing'
-    rarfile._check_unrar_tool()
-
-def uninstall_alt_tool():
-    rarfile.ORIG_UNRAR_TOOL = 'unrar'
-    rarfile._check_unrar_tool()
-
-def test_read_rar3():
-    with rarfile.RarFile('test/files/seektest.rar') as rf:
-        for fn in rf.namelist():
-            rf.read(fn)
-
-#@with_setup(install_alt_tool, uninstall_alt_tool)
-def test_alt_tool():
-    #test_read_rar3()
-    pass
-
