@@ -75,6 +75,12 @@ def test_reading_rar3():
     run_reading('test/files/unicode.rar')
     run_reading('test/files/unicode2.rar')
 
+def test_reading_rar3_sfx():
+    assert rarfile.is_rarfile('test/files/rar3-seektest.sfx') is False
+    assert rarfile.is_rarfile_sfx('test/files/rar3-seektest.sfx') is True
+    run_reading('test/files/rar3-seektest.sfx')
+    run_reading('test/files/rar3-seektest.sfx')
+
 def test_reading_rar2_psw():
     run_reading('test/files/rar202-comment-psw.rar', 'RARcomment')
 
@@ -101,6 +107,11 @@ def test_reading_rar5_blake():
 
 def test_reading_rar5_crc():
     run_reading('test/files/rar5-crc.rar', 'RAR5 archive - crc\n')
+
+def test_reading_rar5_crc_sfx():
+    assert rarfile.is_rarfile('test/files/rar5-crc.sfx') is False
+    assert rarfile.is_rarfile_sfx('test/files/rar5-crc.sfx') is True
+    run_reading('test/files/rar5-crc.sfx', 'RAR5 archive - crc\n')
 
 def test_reading_rar5_links():
     run_reading('test/files/rar5-dups.rar')

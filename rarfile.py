@@ -63,7 +63,7 @@ from struct import pack, unpack, Struct
 from binascii import crc32 as rar_crc32, hexlify
 from tempfile import mkstemp
 from subprocess import Popen, PIPE, STDOUT
-from io import RawIOBase
+from io import RawIOBase, BytesIO
 from hashlib import sha1, sha256, blake2s
 from hmac import HMAC
 from datetime import datetime, timedelta, timezone
@@ -114,7 +114,7 @@ def tohex(data):
 __version__ = '3.1'
 
 # export only interesting items
-__all__ = ['is_rarfile', 'RarInfo', 'RarFile', 'RarExtFile']
+__all__ = ['is_rarfile', 'is_rarfile_sfx', 'RarInfo', 'RarFile', 'RarExtFile']
 
 ##
 ## Module configuration.  Can be tuned after importing.
@@ -308,16 +308,44 @@ EMPTY = b''
 UTC = timezone(timedelta(0), 'UTC')
 BSIZE = 32 * 1024
 
+SFX_MAX_SIZE = 2 * 1024 * 1024
+RAR_V3 = 3
+RAR_V5 = 5
+
 def _get_rar_version(xfile):
     """Check quickly whether file is rar archive.
     """
     with XFile(xfile) as fd:
         buf = fd.read(len(RAR5_ID))
     if buf.startswith(RAR_ID):
-        return 3
+        return RAR_V3
     elif buf.startswith(RAR5_ID):
-        return 5
+        return RAR_V5
     return 0
+
+def _find_sfx_header(xfile):
+    sig = RAR_ID[:-1]
+    buf = BytesIO()
+    steps = (64, SFX_MAX_SIZE)
+
+    with XFile(xfile) as fd:
+        for step in steps:
+            data = fd.read(step)
+            if not data:
+                break
+            buf.write(data)
+            curdata = buf.getvalue()
+            findpos = 0
+            while True:
+                pos = curdata.find(sig, findpos)
+                if pos < 0:
+                    break
+                if curdata[pos:pos+len(RAR_ID)] == RAR_ID:
+                    return RAR_V3, pos
+                if curdata[pos:pos+len(RAR5_ID)] == RAR5_ID:
+                    return RAR_V5, pos
+                findpos = pos + len(sig)
+    return 0, 0
 
 ##
 ## Public interface
@@ -327,6 +355,13 @@ def is_rarfile(xfile):
     """Check quickly whether file is rar archive.
     """
     return _get_rar_version(xfile) > 0
+
+def is_rarfile_sfx(xfile):
+    """Check whether file is rar archive with support for SFX.
+
+    It will read 2M from file.
+    """
+    return _find_sfx_header(xfile)[0] > 0
 
 class Error(Exception):
     """Base class for rarfile errors."""
@@ -772,14 +807,16 @@ class RarFile(object):
     ##
 
     def _parse(self):
-        ver = _get_rar_version(self._rarfile)
-        if ver == 3:
+        ver, sfx_ofs = _find_sfx_header(self._rarfile)
+        if ver == RAR_V3:
             p3 = RAR3Parser(self._rarfile, self._password, self._crc_check,
-                            self._charset, self._strict, self._info_callback)
+                            self._charset, self._strict, self._info_callback,
+                            sfx_ofs)
             self._file_parser = p3  # noqa
-        elif ver == 5:
+        elif ver == RAR_V5:
             p5 = RAR5Parser(self._rarfile, self._password, self._crc_check,
-                            self._charset, self._strict, self._info_callback)
+                            self._charset, self._strict, self._info_callback,
+                            sfx_ofs)
             self._file_parser = p5  # noqa
         else:
             raise BadRarFile("Not a RAR file")
@@ -823,7 +860,7 @@ class CommonParser(object):
     _password = None
     comment = None
 
-    def __init__(self, rarfile, password, crc_check, charset, strict, info_cb):
+    def __init__(self, rarfile, password, crc_check, charset, strict, info_cb, sfx_offset):
         self._rarfile = rarfile
         self._password = password
         self._crc_check = crc_check
@@ -833,6 +870,7 @@ class CommonParser(object):
         self._info_list = []
         self._info_map = {}
         self._vol_list = []
+        self._sfx_offset = sfx_offset
 
     def has_header_encryption(self):
         """Returns True if headers are encrypted
@@ -903,6 +941,7 @@ class CommonParser(object):
     def _parse_real(self):
         fd = XFile(self._rarfile)
         self._fd = fd
+        fd.seek(self._sfx_offset, 0)
         sig = fd.read(len(self._expect_sig))
         if sig != self._expect_sig:
             if isinstance(self._rarfile, str):

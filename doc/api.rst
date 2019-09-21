@@ -34,6 +34,7 @@ Functions
 ---------
 
 .. autofunction:: is_rarfile
+.. autofunction:: is_rarfile_sfx
 
 Constants
 ---------

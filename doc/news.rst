@@ -9,6 +9,10 @@ master
 
 New feature:
 
+* Support SFX archives - archive header is searched in first
+  2MB of the file.
+  [`#48 <https://github.com/markokr/rarfile/issues/48>`_]
+
 * Add :data:`HACK_TMP_DIR` option, to force temp files into
   specific directory.
   [`#43 <https://github.com/markokr/rarfile/issues/43>`_]
