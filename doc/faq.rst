@@ -79,7 +79,7 @@ and specifically discourages writing RAR creation software.
 In the meantime use either Zip_ (better compatibility) or 7z_ (better compression)
 format for your own archives.
 
-.. _RARLAB: http://www.rarlab.com/
+.. _RARLAB: https://www.rarlab.com/
 .. _Zip: https://en.wikipedia.org/wiki/ZIP_%28file_format%29
 .. _7z:  https://en.wikipedia.org/wiki/7z
 

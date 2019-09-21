@@ -15,8 +15,9 @@ Features:
 - Supports archive and file comments.
 - Archive parsing and non-compressed files are handled in pure Python code.
 - Compressed files are extracted by executing external tool: either ``unrar``
-  from RARLAB_ or ``bsdtar`` from libarchive_.
-- Works with both Python 2.7 and 3.x.
+  from RARLAB_ or ``unar`` from TheUnarchiver_.
+- Works with Python 3.6+.
+
 
 Documentation:
 
@@ -35,8 +36,9 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. _RAR: http://en.wikipedia.org/wiki/RAR
-.. _zipfile: http://docs.python.org/library/zipfile.html
-.. _ISC: http://en.wikipedia.org/wiki/ISC_license
-.. _libarchive: https://github.com/libarchive/libarchive
-.. _RARLAB: http://www.rarlab.com/
+.. _RAR: https://en.wikipedia.org/wiki/RAR_(file_format)
+.. _zipfile: https://docs.python.org/3/library/zipfile.html
+.. _ISC: https://en.wikipedia.org/wiki/ISC_license
+.. _RARLAB: https://www.rarlab.com/
+.. _TheUnarchiver: https://theunarchiver.com/command-line
+

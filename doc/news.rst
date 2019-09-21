@@ -4,10 +4,14 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-master
-------
+unreleased
+----------
 
-New feature:
+New features:
+
+* Support ``unar`` as decompression backend.  It has much better
+  support for RAR features than ``bsdtar``.
+  [`#36 <https://github.com/markokr/rarfile/issues/36>`_]
 
 * Support SFX archives - archive header is searched in first
   2MB of the file.
@@ -19,9 +23,15 @@ New feature:
 
 Cleanups:
 
+* Drop module-level options from docs, they create confusion.
+  [`#47 <https://github.com/markokr/rarfile/issues/47>`_]
+
 * Drop support for Python 2 and 3.5 and earlier.  Python 2 is dead
   and requiring Python 3.6 gives blake2s, stdlib that supports pathlib,
   and ordered dicts without compat hacks.
+
+* Replace PyCrypto with PyCryptodome in tests.
+
 
 Version 3.1 (2019-09-15)
 ------------------------
@@ -127,8 +137,8 @@ Version 2.8 (2016-06-07)
 
 * Cleanup: remove compat code for Python 2.4/2.5/2.6.
 
-.. _cryptography: https://pypi.python.org/pypi/cryptography
-.. _PyCrypto: https://pypi.python.org/pypi/pycrypto
+.. _cryptography: https://pypi.org/project/cryptography/
+.. _PyCrypto: https://pypi.org/project/pycrypto/
 
 Version 2.7 (2014-11-23)
 ------------------------
@@ -148,7 +158,7 @@ Version 2.7 (2014-11-23)
   stays with ``unrar`` which will then appear in error messages.
 
 .. _bsdtar: https://github.com/libarchive/libarchive/wiki/ManPageBsdtar1
-.. _libarchive: http://www.libarchive.org/
+.. _libarchive: https://www.libarchive.org/
 
 * Both :class:`RarFile` and :func:`is_rarfile` now accept file-like
   object.  Eg. :class:`io.BytesIO`.  Only requirement is that the object

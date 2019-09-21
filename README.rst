@@ -25,11 +25,11 @@ Links:
 - `Git`_ repo
 
 .. _Git: https://github.com/markokr/rarfile
-.. _Downloads: https://pypi.python.org/pypi/rarfile
+.. _Downloads: https://pypi.org/project/rarfile/
 .. _Documentation: https://rarfile.readthedocs.io/
 .. _RAR: https://en.wikipedia.org/wiki/RAR_%28file_format%29
-.. _zipfile: https://docs.python.org/2/library/zipfile.html
+.. _zipfile: https://docs.python.org/3/library/zipfile.html
 .. _ISC: https://en.wikipedia.org/wiki/ISC_license
 .. _libarchive: https://github.com/libarchive/libarchive
-.. _RARLAB: http://www.rarlab.com/
+.. _RARLAB: https://www.rarlab.com/
 .. _TheUnarchiver: https://theunarchiver.com/command-line
