@@ -20,11 +20,11 @@ or bsdtar_ from libarchive_ as decompression backend.  From those
 .. _bsdtar: https://github.com/libarchive/libarchive/wiki/ManPageBsdtar1
 .. _libarchive: https://www.libarchive.org/
 
-It depends on cryptography_ or PyCrypto_ modules to process
+It depends on cryptography_ or PyCryptodome_ modules to process
 archives with password-protected headers.
 
-.. _cryptography: https://pypi.python.org/pypi/cryptography
-.. _PyCrypto: https://pypi.python.org/pypi/pycrypto
+.. _cryptography: https://pypi.org/project/cryptography/
+.. _PyCryptodome: https://pypi.org/project/pycryptodome/
 
 Does it parse ``unrar`` output to get archive contents?
 -------------------------------------------------------
