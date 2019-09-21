@@ -2997,9 +2997,9 @@ UNRAR_CONFIG = {
                RarCreateError, RarNoFilesError, RarWrongPassword]                # 9..11
 }
 
-# Problems with libarchive RAR backend:
+# Problems with unar RAR backend:
 # - Does not support RAR2 locked files [fails to read]
-# - Does not support RAR5 Blake2 hash [reads fine]
+# - Does not support RAR5 Blake2sp hash [reading works]
 UNAR_CONFIG = {
     "open_cmd": ("UNAR_TOOL", "-q", "-o", "-"),
     "extract_cmd": ("UNAR_TOOL", "-q", "-f", "-D", "-o", "DSTDIR"),
@@ -3013,7 +3013,7 @@ UNAR_CONFIG = {
 # Problems with libarchive RAR backend:
 # - Does not support solid archives.
 # - Does not support password-protected archives.
-# - Does not support some compression opcodes.
+# - Does not support RARVM-based compression filters.
 BSDTAR_CONFIG = {
     "open_cmd": ("BSDTAR_TOOL", "-x", "--to-stdout", "-f"),
     "extract_cmd": ("BSDTAR_TOOL", "-x", "-C", "DSTDIR", "-f"),
