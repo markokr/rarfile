@@ -69,7 +69,7 @@ from hmac import HMAC
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# only needed for encryped headers
+# only needed for encrypted headers
 try:
     try:
         from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
