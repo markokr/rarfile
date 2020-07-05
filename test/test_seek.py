@@ -59,23 +59,6 @@ def run_arc(arc, desc):
 def test_seek_filename():
     run_arc(ARC, "fn")
 
-def test_seek_stringio():
-    data = open(ARC, 'rb').read()
-
-    # filelike: cStringIO
-    try:
-        import cStringIO
-        run_arc(cStringIO.StringIO(data), "cStringIO")
-    except ImportError:
-        pass
-
-    # filelike: StringIO
-    try:
-        import StringIO
-        run_arc(StringIO.StringIO(data), "StringIO")
-    except ImportError:
-        pass
-
 def test_seek_bytesio():
     # filelike: io.BytesIO, io.open()
     data = open(ARC, 'rb').read()
