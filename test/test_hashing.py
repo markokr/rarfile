@@ -61,7 +61,7 @@ def test_hmac_sha256():
 
 def test_rar3_sha1():
     for n in range(0, 200):
-        data = bytearray([i for i in range(n)])
+        data = bytearray(range(n))
         h1 = hashlib.sha1(data).hexdigest()
         h2 = Rar3Sha1(data).hexdigest()
         assert h1 == h2
