@@ -30,15 +30,16 @@ for f in test/files/*.rar; do
     rm -f "$f.$tag"
   else
     $vecho "FAIL"
+    errmsg="FAILED"
+    case "$f" in
+        *-hpsw.rar) errmsg="failed-nocrypto";;
+        *) result=1;;
+    esac
     if test -n "$quiet"; then
-      printf "[%s] %-30s .. FAILED\n" "$tag" "$f"
+      printf "[%s] %-30s .. ${errmsg}\n" "$tag" "$f"
     fi
     echo "#### $py ####" >> "$diffs"
     diff -uw "$f.exp" "$f.$tag" >> "$diffs"
-    case "$f" in
-        *-hpsw.rar) ;;
-        *) result=1;;
-    esac
   fi
 done
 
