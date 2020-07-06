@@ -3,6 +3,8 @@
 
 import io
 from glob import glob
+import sys
+
 import pytest
 import rarfile
 
@@ -73,7 +75,11 @@ def test_reading_rar2():
 def test_reading_rar3():
     run_reading('test/files/rar3-comment-plain.rar', 'RARcomment\n')
     run_reading('test/files/seektest.rar')
+
+def test_reading_rar3_unicode1():
     run_reading('test/files/unicode.rar')
+
+def test_reading_rar3_unicode2():
     run_reading('test/files/unicode2.rar')
 
 def test_reading_rar3_sfx():
