@@ -5,6 +5,9 @@ tag="$2"
 
 test -n "$tag" || { echo "usage: $0 PY TAG"; exit 1; }
 
+PYTHONIOENCODING=utf8; export PYTHONIOENCODING
+#PYTHONUTF8=1; export PYTHONUTF8
+
 mkdir -p tmp
 diffs="tmp/output.$tag.diffs"
 rm -f "$diffs"
