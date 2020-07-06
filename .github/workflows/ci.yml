@@ -1,0 +1,185 @@
+#
+# https://docs.github.com/en/actions
+# https://github.com/actions
+#
+
+name: CI
+
+on:
+  pull_request: {}
+  push: {}
+
+jobs:
+
+  lint:
+    name: "Check - Linux / Python ${{matrix.pick.PY}}"
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        pick:
+          - {PY: "3.8", TOXENV: "lint,docs"}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+
+      - name: "Setup Python ${{matrix.pick.PY}}"
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.pick.PY}}
+
+      - name: "Install tox"
+        run: |
+          python -m pip install tox wheel
+
+      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+        env:
+          TOXENV: ${{matrix.pick.TOXENV}}
+        run: |
+          python -m tox -r -- --color=yes
+
+  linux:
+    name: "Test - Linux / Python ${{matrix.pick.PY}}"
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        pick:
+          - {PY: "3.6", TOXENV: "py36-pycryptodome"}
+          - {PY: "3.7", TOXENV: "py37-cryptography"}
+          - {PY: "3.8", TOXENV: "py38,py38-cryptography"}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+
+      - name: "Setup Python ${{matrix.pick.PY}}"
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.pick.PY}}
+
+      - name: "Install archivers"
+        run: sudo -nH apt-get -qqy install unrar unar bsdtar
+
+      - name: "Install tox"
+        run: |
+          python -m pip install tox wheel
+
+      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+        env:
+          TOXENV: ${{matrix.pick.TOXENV}}
+        run: |
+          python -m tox -r -- --color=yes
+
+  macos:
+    name: "Test - MacOS / Python ${{matrix.pick.PY}}"
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        pick:
+          - {PY: "3.8", TOXENV: "py38-cryptography", DL_UNRAR: false, DL_UNAR: false}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+
+      - name: "Setup Python ${{matrix.pick.PY}}"
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.pick.PY}}
+
+      - name: "Install archivers"
+        run: |
+          brew install unrar unar libarchive
+          mkdir -p bin
+          echo "::add-path::${GITHUB_WORKSPACE}/bin"
+
+      - name: "Download unrar"
+        if: matrix.pick.DL_UNRAR
+        run: |
+          curl -sS -o "rarosx.tgz" "https://www.rarlab.com/rar/rarosx-5.9.1.tar.gz"
+          tar xvf "rarosx.tgz" "rar/unrar"
+
+      - name: "Download unar"
+        if: matrix.pick.DL_UNAR
+        run: |
+          curl -sS -o "unarMac.zip" "https://cdn.theunarchiver.com/downloads/unarMac.zip"
+          unzip "unarMac.zip" "unar"
+          install -m 755 unar ./bin/
+          rm unar
+
+      - name: "Install tox"
+        run: |
+          python -m pip install tox wheel
+
+      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+        env:
+          TOXENV: ${{matrix.pick.TOXENV}}
+        run: |
+          python -m tox -r -- --color=yes
+
+  windows:
+    name: "Test - Windows / Python ${{matrix.pick.PY}}"
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        pick:
+          - {PY: "3.8", TOXENV: "py38-cryptography", DL_UNRAR: false, DL_UNAR: false}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+
+      - name: "Setup Python ${{matrix.pick.PY}}"
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{matrix.pick.PY}}
+
+      - name: "Setup MSYS"
+        shell: cmd
+        run: |
+          echo "temp add MSYS to PATH"
+          echo ::set-env name=OLDP::%PATH%
+          echo ::add-path::C:\msys64\usr\bin
+
+      - name: "Install unrar, bsdtar"
+        shell: bash
+        run: |
+          pacman -S --noconfirm --needed unrar bsdtar
+          mkdir bin
+          install -m 755 /c/msys64/usr/bin/unrar.exe bin/
+          install -m 755 /c/msys64/usr/bin/bsdtar.exe bin/
+          # reset PATH
+          echo "::add-path::${OLDP}"
+
+      - name: "Download unrar"
+        if: matrix.pick.DL_UNRAR
+        shell: bash
+        run: |
+          curl -sS -o "unrarw32.exe" "https://www.rarlab.com/rar/unrarw32.exe"
+          7z x "unrarw32.exe"
+          echo "::add-path::${GITHUB_WORKSPACE}\\rar"
+
+      # need at least unar >= 1.10
+      - name: "Download unar"
+        if: matrix.pick.DL_UNAR
+        shell: bash
+        run: |
+          curl -sS -o "unarWindows.zip" "https://cdn.theunarchiver.com/downloads/unarWindows.zip"
+          unzip -q -d unar "unarWindows.zip"
+          echo "::add-path::${GITHUB_WORKSPACE}\\unar"
+
+      - name: "Install tox"
+        shell: cmd
+        run: |
+          python -m pip install tox wheel
+
+      - name: "Test tools"
+        shell: cmd
+        run: |
+          unrar l test/files/seektest.rar
+          bsdtar tvf test/files/seektest.rar
+          unrar t test/files/rar5-solid-qo.rar
+
+      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+        shell: cmd
+        env:
+          TOXENV: ${{matrix.pick.TOXENV}}
+        run: |
+          python -m tox -r -- --color=yes
+
