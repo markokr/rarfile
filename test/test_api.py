@@ -131,7 +131,8 @@ def test_testrar():
     rf.testrar()
 
 def test_testrar_mem():
-    arc = open('test/files/seektest.rar', 'rb').read()
+    with open('test/files/seektest.rar', 'rb') as f:
+        arc = f.read()
     rf = rarfile.RarFile(io.BytesIO(arc))
     rf.testrar()
 
@@ -176,7 +177,9 @@ def test_extract_mem(tmp_path):
     os.makedirs(str(ex1))
     os.makedirs(str(ex2))
     os.makedirs(str(ex3))
-    arc = open('test/files/seektest.rar', 'rb').read()
+
+    with open('test/files/seektest.rar', 'rb') as f:
+        arc = f.read()
     rf = rarfile.RarFile(io.BytesIO(arc))
 
     rf.extractall(str(ex1))

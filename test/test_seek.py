@@ -61,14 +61,17 @@ def test_seek_filename():
 
 def test_seek_bytesio():
     # filelike: io.BytesIO, io.open()
-    data = open(ARC, 'rb').read()
+    with open(ARC, "rb") as f:
+        data = f.read()
     run_arc(io.BytesIO(data), "io.BytesIO")
 
 def test_seek_open():
     # filelike: file()
-    run_arc(open(ARC, 'rb'), "open")
+    with open(ARC, "rb") as f:
+        run_arc(f, "open")
 
 def test_seek_ioopen():
     # filelike: io.open()
-    run_arc(io.open(ARC, 'rb'), "io.open")
+    with io.open(ARC, "rb") as f:
+        run_arc(f, "io.open")
 

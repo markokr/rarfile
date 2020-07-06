@@ -19,7 +19,8 @@ def try_read(tmpfn):
             pass
 
 def process_rar(rarfn, quick=False):
-    data = open(rarfn, "rb").read()
+    with open(rarfn, "rb") as f:
+        data = f.read()
     for n in range(len(data)):
         bad = data[:n]
         try_read(io.BytesIO(bad))

@@ -49,7 +49,8 @@ def run_reading_inmem(fn, comment):
     if len(rf.volumelist()) > 1:
         return
 
-    buf = io.open(fn, 'rb').read()
+    with io.open(fn, 'rb') as f:
+        buf = f.read()
     run_reading_normal(io.BytesIO(buf), comment)
 
 def run_reading(fn, comment=None):
