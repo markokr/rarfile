@@ -2939,7 +2939,7 @@ class ToolSetup:
         cmdline = self.get_cmdline("open_cmd", psw)
         cmdline.append(rarfn)
         if filefn:
-            cmdline.append(filefn)
+            self.add_file_arg(cmdline, filefn)
         return cmdline
 
     def test_cmdline(self, psw, rarfn):
@@ -2959,7 +2959,7 @@ class ToolSetup:
 
         cmdline.append(rarfn)
         for fn in fnlist:
-            cmdline.append(fn)
+            self.add_file_arg(cmdline, fn)
 
         if path and not dstdir:
             cmdline.append(path + os.sep)
@@ -2976,6 +2976,10 @@ class ToolSetup:
             cmdline.append("--")
         return cmdline
 
+    def add_file_arg(self, cmdline, filename):
+        filename = filename.replace('\\', '/')
+        cmdline.append(filename)
+
     def add_password_arg(self, cmdline, psw):
         """Append password switch to commandline.
         """
@@ -2990,6 +2994,7 @@ class ToolSetup:
                 cmdline.append(psw)
         else:
             cmdline.extend(self.setup["no_password"])
+
 
 UNRAR_CONFIG = {
     "open_cmd": ("UNRAR_TOOL", "p", "-inul"),
