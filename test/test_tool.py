@@ -1,6 +1,10 @@
 """Alt tool tests
 """
 
+import sys
+
+import pytest
+
 import rarfile
 
 
@@ -23,6 +27,8 @@ def test_read_rar3_old():
         for fn in rf.namelist():
             rf.read(fn)
 
+
+@pytest.mark.skipif(sys.platform=="win32", reason="unar not available on Windows")
 def test_unar_tool():
     install_unar_tool()
     try:
