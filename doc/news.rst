@@ -21,6 +21,11 @@ New features:
   specific directory.
   [`#43 <https://github.com/markokr/rarfile/issues/43>`_]
 
+Fixes:
+
+* Always use "/" for path separator in command-line, gives better
+  results on Windows.
+
 Cleanups:
 
 * Drop module-level options from docs, they create confusion.
@@ -28,10 +33,11 @@ Cleanups:
 
 * Drop support for Python 2 and 3.5 and earlier.  Python 2 is dead
   and requiring Python 3.6 gives blake2s, stdlib that supports pathlib,
-  and ordered dicts without compat hacks.
+  and ordered dict without compat hacks.
 
 * Replace PyCrypto with PyCryptodome in tests.
 
+* Use Github Actions for CI.
 
 Version 3.1 (2019-09-15)
 ------------------------
