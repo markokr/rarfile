@@ -77,7 +77,7 @@ try:
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.kdf import pbkdf2
 
-        class AES_CBC_Decrypt(object):
+        class AES_CBC_Decrypt:
             """Decrypt API"""
             def __init__(self, key, iv):
                 ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
@@ -92,7 +92,7 @@ try:
         from Crypto.Cipher import AES
         from Crypto.Protocol import KDF
 
-        class AES_CBC_Decrypt(object):
+        class AES_CBC_Decrypt:
             """Decrypt API"""
             def __init__(self, key, iv):
                 self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
@@ -463,7 +463,7 @@ class RarCannotExec(RarExecError):
     """Executable not found."""
 
 
-class RarInfo(object):
+class RarInfo:
     r"""An entry in rar archive.
 
     RAR3 extended timestamps are :class:`datetime.datetime` objects without timezone.
@@ -606,7 +606,7 @@ class RarInfo(object):
         return False
 
 
-class RarFile(object):
+class RarFile:
     """Parse RAR structure, provide access to files in archive.
     """
 
@@ -880,7 +880,7 @@ class RarFile(object):
 # File format parsing
 #
 
-class CommonParser(object):
+class CommonParser:
     """Shared parser parts."""
     _main = None
     _hdrenc_main = None
@@ -1898,7 +1898,7 @@ class RAR5Parser(CommonParser):
 ## Utility classes
 ##
 
-class UnicodeFilename(object):
+class UnicodeFilename:
     """Handle RAR3 unicode filename decompression.
     """
     def __init__(self, name, encdata):
@@ -2361,7 +2361,7 @@ class DirectReader(RarExtFile):
         return got
 
 
-class HeaderDecrypt(object):
+class HeaderDecrypt:
     """File-like object that decrypts from another file"""
     def __init__(self, f, key, iv):
         self.f = f
@@ -2404,7 +2404,7 @@ class HeaderDecrypt(object):
         return res
 
 
-class XFile(object):
+class XFile:
     """Input may be filename or file object.
     """
     __slots__ = ("_fd", "_need_close")
@@ -2446,7 +2446,7 @@ class XFile(object):
         self.close()
 
 
-class NoHashContext(object):
+class NoHashContext:
     """No-op hash function."""
     def __init__(self, data=None):
         """Initialize"""
@@ -2458,7 +2458,7 @@ class NoHashContext(object):
         """Hexadecimal digest."""
 
 
-class CRC32Context(object):
+class CRC32Context:
     """Hash context that uses CRC32."""
     __slots__ = ["_crc"]
 
@@ -2480,7 +2480,7 @@ class CRC32Context(object):
         return "%08x" % self.digest()
 
 
-class Blake2SP(object):
+class Blake2SP:
     """Blake2sp hash context.
     """
     __slots__ = ["_thread", "_buf", "_cur", "_digest"]
@@ -2544,7 +2544,7 @@ class Blake2SP(object):
         return tohex(self.digest())
 
 
-class Rar3Sha1(object):
+class Rar3Sha1:
     """Emulate buggy SHA1 from RAR3.
     """
     digest_size = 20
@@ -2964,7 +2964,7 @@ def membuf_tempfile(memfile):
     return tmpname
 
 
-class XTempFile(object):
+class XTempFile:
     """Real file for archive.
     """
     __slots__ = ("_tmpfile", "_filename")
