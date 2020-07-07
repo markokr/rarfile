@@ -25,9 +25,6 @@ clean:
 toxclean: clean
 	rm -rf .tox
 
-rbuild:
-	curl -X POST https://readthedocs.org/build/6715
-
 $(TGZ):
 	python3 setup.py sdist
 
