@@ -7,12 +7,12 @@ prefix = /usr/local
 all:
 	pyflakes3 rarfile.py
 	tox -e lint
-	tox -e py36-cryptography
+	tox -e py38-cryptography
 
 install:
 	python setup.py install --prefix=$(prefix)
 
-tgz: clean $(TGZ)
+sdist: clean $(TGZ)
 
 clean:
 	rm -rf __pycache__ build dist .tox
@@ -26,6 +26,7 @@ toxclean: clean
 	rm -rf .tox
 
 $(TGZ):
+	rm -f dist/*
 	python3 setup.py sdist
 
 upload: $(TGZ)
