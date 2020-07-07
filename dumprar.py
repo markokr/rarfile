@@ -2,14 +2,12 @@
 
 """Dump archive contents, test extraction."""
 
+import getopt
 import io
 import sys
-import getopt
-
 from datetime import datetime
 
 import rarfile as rf
-
 
 usage = """
 dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
