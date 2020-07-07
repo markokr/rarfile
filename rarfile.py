@@ -120,7 +120,6 @@ __all__ = ["is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile"]
 ## Module configuration.  Can be tuned after importing.
 ##
 
-
 #: executable for unrar tool
 UNRAR_TOOL = "unrar"
 
@@ -349,10 +348,10 @@ def _find_sfx_header(xfile):
                 findpos = pos + len(sig)
     return 0, 0
 
+
 ##
 ## Public interface
 ##
-
 
 def is_rarfile(xfile):
     """Check quickly whether file is rar archive.
@@ -835,6 +834,8 @@ class RarFile(object):
     ##
 
     def _parse(self):
+        """Run parser for file type
+        """
         ver, sfx_ofs = _find_sfx_header(self._rarfile)
         if ver == RAR_V3:
             p3 = RAR3Parser(self._rarfile, self._password, self._crc_check,
@@ -852,8 +853,9 @@ class RarFile(object):
         self._file_parser.parse()
         self.comment = self._file_parser.comment
 
-    # call unrar to extract a file
     def _extract(self, fnlist, path=None, psw=None):
+        """Call unrar to extract a file
+        """
         setup = tool_setup()
 
         if os.sep != PATH_SEP:
@@ -873,10 +875,10 @@ class RarFile(object):
             output = p.communicate()[0]
             check_returncode(p, output)
 
+
 #
 # File format parsing
 #
-
 
 class CommonParser(object):
     """Shared parser parts."""
@@ -956,7 +958,6 @@ class CommonParser(object):
             except KeyError:
                 raise NoRarEntry("No such file: %s" % fname)
 
-    # read rar
     def parse(self):
         """Process file."""
         self._fd = None
@@ -968,6 +969,8 @@ class CommonParser(object):
                 self._fd = None
 
     def _parse_real(self):
+        """Actually read file.
+        """
         fd = XFile(self._rarfile)
         self._fd = fd
         fd.seek(self._sfx_offset, 0)
@@ -1065,8 +1068,9 @@ class CommonParser(object):
     def _open_hack(self, inf, psw):
         raise NotImplementedError("_open_hack")
 
-    # read single header
     def _parse_header(self, fd):
+        """Read single header
+        """
         try:
             # handle encrypted headers
             if (self._main and self._main.flags & RAR_MAIN_PASSWORD) or self._hdrenc_main:
@@ -1080,8 +1084,9 @@ class CommonParser(object):
             self._set_error("Broken header in RAR file")
             return None
 
-    # given current vol name, construct next one
     def _next_volname(self, volfile):
+        """Given current vol name, construct next one
+        """
         if is_filelike(volfile):
             raise IOError("Working on single FD")
         if self._main.flags & RAR_MAIN_NEWNUMBERING:
@@ -1167,13 +1172,15 @@ class CommonParser(object):
 
         return self._open_unrar(tmpname, inf, psw, tmpname)
 
-    # write in-memory archive to temp file - needed for solid archives
     def _open_unrar_membuf(self, memfile, inf, psw):
+        """Write in-memory archive to temp file, needed for solid archives.
+        """
         tmpname = membuf_tempfile(memfile)
         return self._open_unrar(tmpname, inf, psw, tmpname, force_file=True)
 
-    # extract using unrar
     def _open_unrar(self, rarfile, inf, psw=None, tmpfile=None, force_file=False):
+        """Extract using unrar
+        """
         setup = tool_setup()
 
         # not giving filename avoids encoding related problems
@@ -1187,10 +1194,10 @@ class CommonParser(object):
         cmd = setup.open_cmdline(psw, rarfile, fn)
         return PipeReader(self, inf, cmd, tmpfile)
 
+
 #
 # RAR3 format
 #
-
 
 class Rar3Info(RarInfo):
     """RAR3 specific fields."""
@@ -1237,8 +1244,9 @@ class RAR3Parser(CommonParser):
             self._last_aes_key = (salt, key, iv)
         return HeaderDecrypt(fd, key, iv)
 
-    # common header
     def _parse_block_header(self, fd):
+        """Parse common block header
+        """
         h = Rar3Info()
         h.header_offset = fd.tell()
 
@@ -1315,8 +1323,9 @@ class RAR3Parser(CommonParser):
         # instead panicing, send eof
         return None
 
-    # read file-specific header
     def _parse_file_header(self, h, hdata, pos):
+        """Read file-specific header
+        """
         fld = S_FILE_HDR.unpack_from(hdata, pos)
         pos += S_FILE_HDR.size
 
@@ -1372,8 +1381,9 @@ class RAR3Parser(CommonParser):
 
         return pos
 
-    # find old-style comment subblock
     def _parse_subblocks(self, h, hdata, pos):
+        """Find old-style comment subblock
+        """
         while pos < len(hdata):
             # ordinary block header
             t = S_BLK_HDR.unpack_from(hdata, pos)
@@ -1471,10 +1481,10 @@ class RAR3Parser(CommonParser):
         prefix = RAR_ID + S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + ZERO * (2 + 4)
         return self._open_hack_core(inf, psw, prefix, EMPTY)
 
+
 #
 # RAR5 format
 #
-
 
 class Rar5Info(RarInfo):
     """Shared fields for RAR5 records.
@@ -1599,8 +1609,9 @@ class RAR5Parser(CommonParser):
         iv = fd.read(16)
         return HeaderDecrypt(fd, key, iv)
 
-    # common header
     def _parse_block_header(self, fd):
+        """Parse common block header
+        """
         header_offset = fd.tell()
 
         preload = 4 + 3
@@ -1749,7 +1760,6 @@ class RAR5Parser(CommonParser):
         self._hdrenc_main = h
         return h
 
-    # file extra record
     def _process_file_extra(self, h, xdata):
         xtype, pos = load_vint(xdata, 0)
         if xtype == RAR5_XFILE_TIME:
@@ -1883,10 +1893,10 @@ class RAR5Parser(CommonParser):
         endarc_hdr = S_LONG.pack(rar_crc32(endarc_hdr)) + endarc_hdr
         return self._open_hack_core(inf, psw, RAR5_ID + main_hdr, endarc_hdr)
 
+
 ##
 ## Utility classes
 ##
-
 
 class UnicodeFilename(object):
     """Handle RAR3 unicode filename decompression.
@@ -2394,7 +2404,6 @@ class HeaderDecrypt(object):
         return res
 
 
-# handle (filename|filelike) object
 class XFile(object):
     """Input may be filename or file object.
     """
@@ -2536,7 +2545,7 @@ class Blake2SP(object):
 
 
 class Rar3Sha1(object):
-    """Bug-compat for SHA1
+    """Emulate buggy SHA1 from RAR3.
     """
     digest_size = 20
     block_size = 64
@@ -2595,7 +2604,7 @@ S_COMMENT_HDR = Struct("<HBBH")
 
 
 def load_vint(buf, pos):
-    """Load variable-size int."""
+    """Load RAR5 variable-size int."""
     limit = min(pos + 11, len(buf))
     res = ofs = 0
     while pos < limit:
@@ -2663,10 +2672,10 @@ def load_windowstime(buf, pos):
     dt = dt.replace(microsecond=n1secs // 10)
     return dt, pos
 
-# new-style next volume
-
 
 def _next_newvol(volfile):
+    """New-style next volume
+    """
     i = len(volfile) - 1
     while i >= 0:
         if volfile[i] >= "0" and volfile[i] <= "9":
@@ -2674,19 +2683,19 @@ def _next_newvol(volfile):
         i -= 1
     raise BadRarName("Cannot construct volume name: " + volfile)
 
-# old-style next volume
-
 
 def _next_oldvol(volfile):
+    """Old-style next volume
+    """
     # rar -> r00
     if volfile[-4:].lower() == ".rar":
         return volfile[:-2] + "00"
     return _inc_volname(volfile, len(volfile) - 1)
 
-# increase digits with carry, otherwise just increment char
-
 
 def _inc_volname(volfile, i):
+    """increase digits with carry, otherwise just increment char
+    """
     fn = list(volfile)
     while i >= 0:
         if fn[i] != "9":
@@ -2696,10 +2705,10 @@ def _inc_volname(volfile, i):
         i -= 1
     return "".join(fn)
 
-# rar3 extended time fields
-
 
 def _parse_ext_time(h, data, pos):
+    """Parse all RAR3 extended time fields
+    """
     # flags and rest of data can be missing
     flags = 0
     if pos + 2 <= len(data):
@@ -2715,10 +2724,10 @@ def _parse_ext_time(h, data, pos):
         h.date_time = mtime.timetuple()[:6]
     return pos
 
-# rar3 one extended time field
-
 
 def _parse_xtime(flag, data, pos, basetime=None):
+    """Parse one RAR3 extended time field
+    """
     res = None
     if flag & 8:
         if not basetime:
@@ -2934,7 +2943,8 @@ def hmac_sha256(key, data):
 
 
 def membuf_tempfile(memfile):
-    """Write in-memory file object to real file."""
+    """Write in-memory file object to real file.
+    """
     memfile.seek(0, 0)
 
     tmpfd, tmpname = mkstemp(suffix=".rar", dir=HACK_TMP_DIR)
@@ -2978,10 +2988,10 @@ class XTempFile(object):
                 pass
             self._tmpfile = None
 
+
 #
 # Find working command-line tool
 #
-
 
 class ToolSetup:
     def __init__(self, setup):
@@ -3088,6 +3098,7 @@ UNAR_CONFIG = {
 # - Does not support solid archives.
 # - Does not support password-protected archives.
 # - Does not support RARVM-based compression filters.
+# - Does not support RAR5 archives
 BSDTAR_CONFIG = {
     "open_cmd": ("BSDTAR_TOOL", "-x", "--to-stdout", "-f"),
     "extract_cmd": ("BSDTAR_TOOL", "-x", "-C", "DSTDIR", "-f"),
