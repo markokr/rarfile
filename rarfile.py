@@ -1970,13 +1970,20 @@ class RarExtFile(RawIOBase):
         if cnt == 0:
             return EMPTY
 
-        # actual read
-        data = self._read(cnt)
-        if data:
+        buf = []
+        orig = cnt
+        while cnt > 0:
+            # actual read
+            data = self._read(cnt)
+            if not data:
+                break
+            buf.append(data)
             self._md_context.update(data)
             self._remain -= len(data)
-        if len(data) != cnt:
-            raise BadRarFile("Failed the read enough data")
+            cnt -= len(data)
+        data = EMPTY.join(buf)
+        if cnt > 0:
+            raise BadRarFile("Failed the read enough data: req=%d got=%d" % (orig, len(data)))
 
         # done?
         if not data or self._remain == 0:
