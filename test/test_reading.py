@@ -2,7 +2,6 @@
 """
 
 import io
-import sys
 from glob import glob
 
 import pytest
