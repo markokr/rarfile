@@ -3098,7 +3098,6 @@ UNAR_CONFIG = {
 # - Does not support solid archives.
 # - Does not support password-protected archives.
 # - Does not support RARVM-based compression filters.
-# - Does not support RAR5 archives
 BSDTAR_CONFIG = {
     "open_cmd": ("BSDTAR_TOOL", "-x", "--to-stdout", "-f"),
     "extract_cmd": ("BSDTAR_TOOL", "-x", "-C", "DSTDIR", "-f"),
