@@ -2,8 +2,10 @@
 """
 
 from datetime import datetime
+
 import pytest
 import rarfile
+
 
 def render_date(dt):
     if isinstance(dt, datetime):
@@ -13,12 +15,14 @@ def render_date(dt):
     else:
         return dt
 
+
 def mkitem(**kwargs):
     res = {}
     for k in kwargs:
         if kwargs[k] is not None:
             res[k] = kwargs[k]
     return res
+
 
 def dumparc(rf):
     res = []
@@ -40,6 +44,7 @@ def dumparc(rf):
         res.append(info)
     return res
 
+
 def diffs(a, b):
     if len(a) != len(b):
         return 'Different lengths'
@@ -57,12 +62,14 @@ def diffs(a, b):
                 problems.append('ErrValue(%d,%s):got=%r/exp=%r' % (i, k, xa[k], xb[k]))
     return '; '.join(problems)
 
+
 def cmp_struct(a, b):
     assert a == b, diffs(a, b)
 
 #
 # test start
 #
+
 
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_rar3_header_encryption():
@@ -74,8 +81,9 @@ def test_rar3_header_encryption():
     r.setpassword('password')
     assert r.needs_password() is True
     assert r.namelist() == ['file1.txt', 'file2.txt']
-    assert r.comment is not  None
+    assert r.comment is not None
     assert r.comment == 'RARcomment\n'
+
 
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_rar5_header_encryption():
@@ -90,6 +98,7 @@ def test_rar5_header_encryption():
     assert r.comment is not None
     assert r.comment == 'RAR5 archive - hdr-password\n'
     r.close()
+
 
 def get_vol_info(extver=20, tz='', hr='11'):
     return [
@@ -114,6 +123,7 @@ def get_vol_info(extver=20, tz='', hr='11'):
                host_os=3,
                fn='vols/smallfile.txt')]
 
+
 def test_rar3_vols():
     r = rarfile.RarFile('test/files/rar3-vols.part1.rar')
     assert r.needs_password() is False
@@ -126,6 +136,7 @@ def test_rar3_vols():
         'test/files/rar3-vols.part3.rar']
     with pytest.raises(rarfile.NeedFirstVolume):
         rarfile.RarFile('test/files/rar3-vols.part2.rar')
+
 
 def test_rar3_oldvols():
     r = rarfile.RarFile('test/files/rar3-old.rar')
@@ -140,6 +151,7 @@ def test_rar3_oldvols():
     with pytest.raises(rarfile.NeedFirstVolume):
         rarfile.RarFile('test/files/rar3-old.r00')
 
+
 def test_rar5_vols():
     r = rarfile.RarFile('test/files/rar5-vols.part1.rar')
     assert r.needs_password() is False
@@ -152,6 +164,7 @@ def test_rar5_vols():
         'test/files/rar5-vols.part3.rar']
     with pytest.raises(rarfile.NeedFirstVolume):
         rarfile.RarFile('test/files/rar5-vols.part2.rar')
+
 
 def expect_ctime(mtime, ctime):
     return [mkitem(
@@ -167,41 +180,48 @@ def expect_ctime(mtime, ctime):
         mode=32,
         host_os=2)]
 
+
 def test_rar3_ctime0():
     r = rarfile.RarFile('test/files/ctime0.rar')
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', None))
+
 
 def test_rar3_ctime1():
     r = rarfile.RarFile('test/files/ctime1.rar')
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47'))
 
+
 def test_rar3_ctime2():
     r = rarfile.RarFile('test/files/ctime2.rar')
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.897843'))
+
 
 def test_rar3_ctime3():
     r = rarfile.RarFile('test/files/ctime3.rar')
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.899328'))
 
+
 def test_rar3_ctime4():
     r = rarfile.RarFile('test/files/ctime4.rar')
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.899345'))
 
+
 def test_rar5_times():
     r = rarfile.RarFile('test/files/rar5-times.rar')
     cmp_struct(dumparc(r), [mkitem(
-            fn='stest1.txt',
-            file_size=2048,
-            compress_size=55,
-            compress_type=rarfile.RAR_M3,
-            extract_version=50,
-            host_os=rarfile.RAR_OS_UNIX,
-            mode=33188,
-            date_time='2011-06-12 09:53:33',
-            mtime='2011-06-12T09:53:33+00:00',
-            atime='2016-05-22T09:12:36+00:00',
-            CRC=3317163682
-        )])
+        fn='stest1.txt',
+        file_size=2048,
+        compress_size=55,
+        compress_type=rarfile.RAR_M3,
+        extract_version=50,
+        host_os=rarfile.RAR_OS_UNIX,
+        mode=33188,
+        date_time='2011-06-12 09:53:33',
+        mtime='2011-06-12T09:53:33+00:00',
+        atime='2016-05-22T09:12:36+00:00',
+        CRC=3317163682
+    )])
+
 
 def test_oldvols():
     assert rarfile._next_oldvol('qq00.part0.rar') == 'qq00.part0.r00'
@@ -209,10 +229,12 @@ def test_oldvols():
     assert rarfile._next_oldvol('qq00.part0.r29') == 'qq00.part0.r30'
     assert rarfile._next_oldvol('qq00.part0.r99') == 'qq00.part0.s00'
 
+
 def test_newvols():
     assert rarfile._next_newvol('qq00.part0.rar') == 'qq00.part1.rar'
     assert rarfile._next_newvol('qq00.part09.rar') == 'qq00.part10.rar'
     assert rarfile._next_newvol('qq00.part99.rar') == 'qq00.paru00.rar'
+
 
 def test_newvols_err():
     with pytest.raises(rarfile.BadRarName):

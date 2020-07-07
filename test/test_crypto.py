@@ -6,7 +6,6 @@ from __future__ import division, print_function
 from binascii import unhexlify
 
 import pytest
-
 import rarfile
 
 try:
@@ -19,6 +18,7 @@ try:
 except ImportError:
     pass
 
+
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_aes128_cbc():
     data = b'0123456789abcdef' * 2
@@ -30,6 +30,7 @@ def test_aes128_cbc():
 
     ctx = rarfile.AES_CBC_Decrypt(key, iv)
     assert ctx.decrypt(encdata) == data
+
 
 @pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
 def test_aes256_cbc():

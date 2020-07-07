@@ -5,7 +5,8 @@ import hashlib
 from binascii import unhexlify
 
 import rarfile
-from rarfile import Blake2SP, CRC32Context, NoHashContext, tohex, Rar3Sha1
+from rarfile import Blake2SP, CRC32Context, NoHashContext, Rar3Sha1, tohex
+
 
 def test_nohash():
     assert NoHashContext('').hexdigest() is None
@@ -13,6 +14,7 @@ def test_nohash():
     md = NoHashContext()
     md.update('asd')
     assert md.digest() is None
+
 
 def test_crc32():
     assert CRC32Context(b'').hexdigest() == '00000000'
@@ -25,11 +27,13 @@ def test_crc32():
     md.update(b'o')
     assert md.hexdigest() == 'f7d18982'
 
+
 def xblake2sp(xdata):
     data = unhexlify(xdata)
     md = Blake2SP()
     md.update(data)
     return md.hexdigest()
+
 
 def xblake2sp_slow(xdata):
     data = unhexlify(xdata)
@@ -37,7 +41,7 @@ def xblake2sp_slow(xdata):
     buf = memoryview(data)
     pos = 0
     while pos < len(buf):
-        md.update(buf[pos : pos+3])
+        md.update(buf[pos: pos + 3])
         pos += 3
     return md.hexdigest()
 
@@ -56,8 +60,11 @@ def test_blake2sp():
     assert xblake2sp(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
     assert xblake2sp_slow(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
 
+
 def test_hmac_sha256():
-    assert tohex(rarfile.hmac_sha256(b'key', b'data')) == '5031fe3d989c6d1537a013fa6e739da23463fdaec3b70137d828e36ace221bd0'
+    assert tohex(rarfile.hmac_sha256(b'key', b'data')
+                 ) == '5031fe3d989c6d1537a013fa6e739da23463fdaec3b70137d828e36ace221bd0'
+
 
 def test_rar3_sha1():
     for n in range(0, 200):
@@ -80,6 +87,7 @@ def test_rar3_sha1():
             assert x1.hexdigest() == x2.hexdigest()
             pos = pos2
 
+
 def test_rar3_s2k():
     exp = ('a160cb31cb262e9231c0b6fc984fbb0d', 'aa54a659fb0c359b30f353a6343fb11d')
     key, iv = rarfile.rar3_s2k(b'password', unhexlify('00FF00'))
@@ -88,11 +96,12 @@ def test_rar3_s2k():
     assert (tohex(key), tohex(iv)) == exp
 
     exp = ('ffff33ffaf31987c899ccc2f965a8927', 'bdff6873721b247afa4f978448a5aeef')
-    key, iv = rarfile.rar3_s2k('p'*28, unhexlify('1122334455667788'))
+    key, iv = rarfile.rar3_s2k('p' * 28, unhexlify('1122334455667788'))
     assert (tohex(key), tohex(iv)) == exp
     exp = ('306cafde28f1ea78c9427c3ec642c0db', '173ecdf574c0bfe9e7c23bdfd96fa435')
-    key, iv = rarfile.rar3_s2k('p'*29, unhexlify('1122334455667788'))
+    key, iv = rarfile.rar3_s2k('p' * 29, unhexlify('1122334455667788'))
     assert (tohex(key), tohex(iv)) == exp
+
 
 if rarfile._have_crypto:
     def test_pbkdf2_hmac_sha256():
