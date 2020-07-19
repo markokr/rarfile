@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005-2019  Marko Kreen <markokr@gmail.com>
+# Copyright (c) 2005-2020  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -111,7 +111,7 @@ def tohex(data):
     return hexlify(data).decode("ascii")
 
 
-__version__ = "3.1"
+__version__ = "3.2a1"
 
 # export only interesting items
 __all__ = ["is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile"]

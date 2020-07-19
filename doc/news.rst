@@ -4,8 +4,8 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-unreleased
-----------
+Version 3.2a1 (2020-07-20)
+--------------------------
 
 New features:
 

@@ -1,0 +1,79 @@
+#
+# https://docs.github.com/en/actions/reference
+# https://github.com/actions
+#
+
+name: REL
+
+on:
+  push:
+    tags: ["v[0-9]*"]
+
+jobs:
+  release:
+    name: "Publish"
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: "Checkout code"
+        id: checkout
+        uses: actions/checkout@v2
+
+      - name: "Setup Python"
+        id: setup
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: "Build tarball"
+        id: build
+        run: |
+          python -m pip install setuptools wheel
+          echo "::group::sdist"
+          PACKAGE=$(python setup.py --name)
+          VERSION=$(python setup.py --version)
+          TGZ="${PACKAGE}-${VERSION}.tar.gz"
+          test "${{github.ref}}" = "refs/tags/v${VERSION}" || { echo "ERR: tag mismatch"; exit 1; }
+          python setup.py sdist
+          test -f "dist/${TGZ}" || { echo "ERR: sdist failed"; exit 1; }
+          echo "::set-env name=PACKAGE::${PACKAGE}"
+          echo "::set-env name=VERSION::${VERSION}"
+          echo "::set-env name=TGZ::${TGZ}"
+          echo "::endgroup::"
+
+      - name: "Install pandoc"
+        id: install-pandoc
+        run: |
+          sudo -nH apt-get -u -y install pandoc
+          pandoc --version
+
+      - name: "Prepare release notes"
+        id: prepare-notes
+        run: |
+          mkdir -p tmp
+          make -s shownote > tmp/note.md
+          cat tmp/note.md
+
+      - name: "Create release"
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{github.ref}}
+          release_name: ${{env.PACKAGE}} v${{env.VERSION}}
+          body_path: tmp/note.md
+          prerelease: ${{contains(env.VERSION, 'a') || contains(env.VERSION, 'b') || contains(env.VERSION, 'rc')}}
+          draft: true
+
+      - name: "Upload source"
+        id: upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{steps.release.outputs.upload_url}}
+          asset_path: dist/${{env.TGZ}}
+          asset_name: ${{env.TGZ}}
+          asset_content_type: application/x-gzip
+
