@@ -64,7 +64,7 @@ jobs:
           release_name: ${{env.PACKAGE}} v${{env.VERSION}}
           body_path: tmp/note.md
           prerelease: ${{contains(env.VERSION, 'a') || contains(env.VERSION, 'b') || contains(env.VERSION, 'rc')}}
-          draft: true
+          draft: false
 
       - name: "Upload source"
         id: upload
