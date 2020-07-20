@@ -56,6 +56,7 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 
 import errno
 import os
+import re
 import struct
 import sys
 from binascii import crc32 as rar_crc32
@@ -310,6 +311,9 @@ SFX_MAX_SIZE = 2 * 1024 * 1024
 RAR_V3 = 3
 RAR_V5 = 5
 
+_BAD_CHARS = r"""\x00-\x1F<>|"?*"""
+RC_BAD_CHARS_UNIX = re.compile("[%s]" % _BAD_CHARS)
+RC_BAD_CHARS_WIN32 = re.compile("[%s:]" % _BAD_CHARS)
 
 def _get_rar_version(xfile):
     """Check quickly whether file is rar archive.
@@ -788,13 +792,19 @@ class RarFile:
             pwd
                 optional password to use
         """
-        if isinstance(member, RarInfo):
-            fname = member.filename
-        elif isinstance(member, Path):
-            fname = str(member)
-        else:
-            fname = member
+        inf = self.getinfo(member)
+        fname = inf.filename.rstrip("/")
         self._extract([fname], path, pwd)
+
+        # return final name
+        fname = sanitize_filename(
+            fname, os.path.sep, sys.platform == "win32"
+        )
+        if path:
+            path = str(path).replace("/", os.path.sep)
+        else:
+            path = os.getcwd()
+        return os.path.join(path, fname)
 
     def extractall(self, path=None, members=None, pwd=None):
         """Extract all files into current directory.
@@ -2861,6 +2871,29 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=N
     finally:
         tmpf.close()
         os.unlink(tmpname)
+
+
+def sanitize_filename(fname, pathsep, is_win32):
+    """Simulate unrar sanitization.
+    """
+    if is_win32:
+        if len(fname) > 1 and fname[1] == ":":
+            fname = fname[2:]
+        # replace tailing dot and space
+        fname = "/".join([
+            (s[:-1] + "_") if s and s[-1] in (" ", ".") and s not in (".", "..")
+            else s for s in fname.split("/")
+        ])
+        rc = RC_BAD_CHARS_WIN32
+    else:
+        rc = RC_BAD_CHARS_UNIX
+    if rc.search(fname):
+        fname = rc.sub("_", fname)
+    fname = fname.replace("/../", "/")
+    fname = fname.lstrip("./")
+    fname = fname.replace("/", os.path.sep)
+    fname = os.path.normpath(fname)
+    return fname.replace(os.path.sep, pathsep)
 
 
 def to_datetime(t):
