@@ -394,7 +394,7 @@ class PasswordRequired(Error):
 class NeedFirstVolume(Error):
     """Need to start from first volume."""
     def __init__(self, msg, volnr):
-        super(NeedFirstVolume, self).__init__(msg)
+        super().__init__(msg)
         self.current_volnr = volnr
 
 
@@ -2007,7 +2007,7 @@ class RarExtFile(RawIOBase):
     def __init__(self, parser, inf):
         """Open archive entry.
         """
-        super(RarExtFile, self).__init__()
+        super().__init__()
 
         # standard io.* properties
         self.name = inf.filename
@@ -2086,7 +2086,7 @@ class RarExtFile(RawIOBase):
     def close(self):
         """Close open resources."""
 
-        super(RarExtFile, self).close()
+        super().close()
 
         if self._fd:
             self._fd.close()
@@ -2188,7 +2188,7 @@ class PipeReader(RarExtFile):
         self._cmd = cmd
         self._proc = None
         self._tempfile = tempfile
-        super(PipeReader, self).__init__(rf, inf)
+        super().__init__(rf, inf)
 
     def _close_proc(self):
         if not self._proc:
@@ -2204,7 +2204,7 @@ class PipeReader(RarExtFile):
         self._proc = None
 
     def _open(self):
-        super(PipeReader, self)._open()
+        super()._open()
 
         # stop old process
         self._close_proc()
@@ -2241,7 +2241,7 @@ class PipeReader(RarExtFile):
         """Close open resources."""
 
         self._close_proc()
-        super(PipeReader, self).close()
+        super().close()
 
         if self._tempfile:
             try:
@@ -2275,7 +2275,7 @@ class DirectReader(RarExtFile):
     _volfile = None
 
     def _open(self):
-        super(DirectReader, self)._open()
+        super()._open()
 
         self._volfile = self._inf.volume_file
         self._fd = XFile(self._volfile, 0)
