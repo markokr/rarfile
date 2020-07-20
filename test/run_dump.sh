@@ -46,5 +46,7 @@ for f in test/files/*.rar; do
   fi
 done
 
+test "$result" = "0" || echo "Diffs: ${diffs}"
+
 exit $result
 

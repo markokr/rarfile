@@ -393,6 +393,9 @@ class PasswordRequired(Error):
 
 class NeedFirstVolume(Error):
     """Need to start from first volume."""
+    def __init__(self, msg, volnr):
+        super(NeedFirstVolume, self).__init__(msg)
+        self.current_volnr = volnr
 
 
 class NoCrypto(Error):
@@ -990,12 +993,16 @@ class CommonParser:
         endarc = False
         volfile = self._rarfile
         self._vol_list = [self._rarfile]
+        raise_need_first_vol = False
         while True:
             if endarc:
                 h = None    # don"t read past ENDARC
             else:
                 h = self._parse_header(fd)
             if not h:
+                if raise_need_first_vol:
+                    # did not find ENDARC with VOLNR
+                    raise NeedFirstVolume("Need to start from first volume", None)
                 if more_vols:
                     volume += 1
                     fd.close()
@@ -1029,9 +1036,11 @@ class CommonParser:
                             # rar5 may have more info
                             raise NeedFirstVolume(
                                 "Need to start from first volume (current: %r)"
-                                % (h.main_volume_number,)
+                                % (h.main_volume_number,),
+                                h.main_volume_number
                             )
-                        raise NeedFirstVolume("Need to start from first volume")
+                        # delay raise until we have volnr from ENDARC
+                        raise_need_first_vol = True
                 if h.flags & RAR_MAIN_PASSWORD:
                     self._needs_password = True
                     if not self._password:
@@ -1039,13 +1048,19 @@ class CommonParser:
             elif h.type == RAR_BLOCK_ENDARC:
                 more_vols = (h.flags & RAR_ENDARC_NEXT_VOLUME) > 0
                 endarc = True
+                if raise_need_first_vol and (h.flags & RAR_ENDARC_VOLNR) > 0:
+                    raise NeedFirstVolume(
+                        "Need to start from first volume (current: %r)"
+                        % (h.endarc_volnr,),
+                        h.endarc_volnr
+                    )
             elif h.type == RAR_BLOCK_FILE:
                 # RAR 2.x does not write RAR_BLOCK_ENDARC
                 if h.flags & RAR_FILE_SPLIT_AFTER:
                     more_vols = True
                 # RAR 2.x does not set RAR_MAIN_FIRSTVOLUME
                 if volume == 0 and h.flags & RAR_FILE_SPLIT_BEFORE:
-                    raise NeedFirstVolume("Need to start from first volume")
+                    raise_need_first_vol = True
 
             if h.needs_password():
                 self._needs_password = True
@@ -1116,7 +1131,7 @@ class CommonParser:
                     raise BadRarFile("cannot find copied file")
 
         if inf.flags & RAR_FILE_SPLIT_BEFORE:
-            raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename)
+            raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename, None)
 
         # is temp write usable?
         use_hack = 1
@@ -1220,6 +1235,9 @@ class Rar3Info(RarInfo):
     file_redir = None
     blake2sp_hash = None
 
+    endarc_datacrc = None
+    endarc_volnr = None
+
     def _must_disable_hack(self):
         if self.type == RAR_BLOCK_FILE:
             if self.flags & RAR_FILE_PASSWORD:
@@ -1306,6 +1324,13 @@ class RAR3Parser(CommonParser):
         elif h.type == RAR_BLOCK_OLD_EXTRA:
             pos += 7
             crc_pos = pos
+        elif h.type == RAR_BLOCK_ENDARC:
+            if h.flags & RAR_ENDARC_DATACRC:
+                h.endarc_datacrc, pos = load_le32(hdata, pos)
+            if h.flags & RAR_ENDARC_VOLNR:
+                h.endarc_volnr = S_SHORT.unpack_from(hdata, pos)[0]
+                pos += 2
+            crc_pos = h.header_size
         else:
             crc_pos = h.header_size
 

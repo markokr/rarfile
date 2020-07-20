@@ -250,6 +250,10 @@ def show_item_v3(h):
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, main_bits))
     elif h.type == rf.RAR_BLOCK_ENDARC:
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, endarc_bits))
+        if h.flags & rf.RAR_ENDARC_DATACRC:
+            xprint("  datacrc=0x%08x", h.endarc_datacrc)
+        if h.flags & rf.RAR_ENDARC_DATACRC:
+            xprint("  volnr=%d", h.endarc_volnr)
     elif h.type == rf.RAR_BLOCK_MARK:
         xprint("  flags=0x%04x:", h.flags)
     else:
@@ -472,8 +476,8 @@ def test(fn, psw):
     """
     try:
         test_real(fn, psw)
-    except rf.NeedFirstVolume:
-        xprint(" --- %s is middle part of multi-vol archive ---", fn)
+    except rf.NeedFirstVolume as ex:
+        xprint(" --- %s is middle part of multi-vol archive (%s)---", fn, str(ex))
     except rf.Error:
         exc, msg, tb = sys.exc_info()
         xprint("\n *** %s: %s ***\n", exc.__name__, msg)
