@@ -20,6 +20,8 @@ def run_reading_normal(fn, comment):
     assert rf.strerror() is None
     assert rf.comment == comment
     for ifn in rf.namelist():
+        if ifn.endswith("/"):
+            continue
 
         # full read
         rf.read(ifn)
@@ -182,6 +184,14 @@ def test_reading_rar5_psw_blake():
 
 def test_reading_rar5_psw():
     run_reading('test/files/rar5-psw.rar', 'RAR5 archive - nohdr-password\n')
+
+
+def test_reading_rar3_subdirs():
+    run_reading('test/files/rar3-subdirs.rar')
+
+
+def test_reading_rar5_subdirs():
+    run_reading('test/files/rar5-subdirs.rar')
 
 
 def test_reading_missed():
