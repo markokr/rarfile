@@ -57,6 +57,7 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 import errno
 import os
 import re
+import shutil
 import struct
 import sys
 from binascii import crc32 as rar_crc32
@@ -793,18 +794,7 @@ class RarFile:
                 optional password to use
         """
         inf = self.getinfo(member)
-        fname = inf.filename.rstrip("/")
-        self._extract([fname], path, pwd)
-
-        # return final name
-        fname = sanitize_filename(
-            fname, os.path.sep, sys.platform == "win32"
-        )
-        if path:
-            path = str(path).replace("/", os.path.sep)
-        else:
-            path = os.getcwd()
-        return os.path.join(path, fname)
+        return self._extract_one(inf, path, pwd)
 
     def extractall(self, path=None, members=None, pwd=None):
         """Extract all files into current directory.
@@ -818,24 +808,22 @@ class RarFile:
             pwd
                 optional password to use
         """
-        fnlist = []
-        if members is not None:
-            for m in members:
-                if isinstance(m, RarInfo):
-                    fnlist.append(m.filename)
-                else:
-                    fnlist.append(m)
-        self._extract(fnlist, path, pwd)
+        if members is None:
+            members = self.namelist()
+        for m in members:
+            self.extract(m, path, pwd)
 
-    def testrar(self):
-        """Let "unrar" test the archive.
+    def testrar(self, pwd=None):
+        """Read all files and test CRC.
         """
-        setup = tool_setup()
-        with XTempFile(self._rarfile) as rarfile:
-            cmd = setup.test_cmdline(self._password, rarfile)
-            p = custom_popen(cmd)
-            output = p.communicate()[0]
-            check_returncode(p, output)
+        for member in self.infolist():
+            if member.isdir():
+                continue
+            with self.open(member, 'r', pwd) as f:
+                while True:
+                    blk = f.read(8192)
+                    if not blk:
+                        break
 
     def strerror(self):
         """Return error string if parsing failed or None if no problems.
@@ -868,26 +856,32 @@ class RarFile:
         self._file_parser.parse()
         self.comment = self._file_parser.comment
 
-    def _extract(self, fnlist, path=None, psw=None):
-        """Call unrar to extract a file
-        """
-        setup = tool_setup()
+    def _extract_one(self, info, path, pwd):
+        fname = info.filename.rstrip("/")
+        fname = sanitize_filename(
+            fname, os.path.sep, sys.platform == "win32"
+        )
 
-        fnlist = [fn.replace("\\", "/") for fn in fnlist]
+        if path is None:
+            path = os.getcwd()
+        else:
+            path = os.fspath(path)
 
-        if path and isinstance(path, Path):
-            path = str(path)
+        dstfn = os.path.join(path, fname)
 
-        psw = psw or self._password
+        dn = os.path.dirname(dstfn)
+        if dn and not os.path.isdir(dn):
+            os.makedirs(dn)
+        if info.isdir():
+            if not os.path.isdir(dstfn):
+                os.mkdir(dstfn)
+            return dstfn
 
-        # rar file
-        with XTempFile(self._rarfile) as rarfn:
-            cmd = setup.extract_cmdline(psw, rarfn, fnlist, path)
+        with self.open(info, "r", pwd) as src:
+            with open(dstfn, "wb") as dst:
+                shutil.copyfileobj(src, dst)
 
-            # call
-            p = custom_popen(cmd)
-            output = p.communicate()[0]
-            check_returncode(p, output)
+        return dstfn
 
 
 #
@@ -3070,29 +3064,6 @@ class ToolSetup:
             self.add_file_arg(cmdline, filefn)
         return cmdline
 
-    def test_cmdline(self, psw, rarfn):
-        cmdline = self.get_cmdline("test_cmd", psw)
-        cmdline.append(rarfn)
-        return cmdline
-
-    def extract_cmdline(self, psw, rarfn, fnlist, path):
-        cmdline = self.get_cmdline("extract_cmd", psw, nodash=True)
-        dstdir = "DSTDIR" in cmdline
-        if dstdir:
-            if not path:
-                path = "."
-            cmdline[cmdline.index("DSTDIR", 1)] = path
-
-        cmdline.append("--")
-
-        cmdline.append(rarfn)
-        for fn in fnlist:
-            self.add_file_arg(cmdline, fn)
-
-        if path and not dstdir:
-            cmdline.append(path + os.sep)
-        return cmdline
-
     def get_errmap(self):
         return self.setup["errmap"]
 
@@ -3126,8 +3097,6 @@ class ToolSetup:
 
 UNRAR_CONFIG = {
     "open_cmd": ("UNRAR_TOOL", "p", "-inul"),
-    "extract_cmd": ("UNRAR_TOOL", "x", "-y", "-idq"),
-    "test_cmd": ("UNRAR_TOOL", "t", "-idq"),
     "check_cmd": ("UNRAR_TOOL", "-inul"),
     "password": "-p",
     "no_password": ("-p-",),
@@ -3143,8 +3112,6 @@ UNRAR_CONFIG = {
 # - Does not support RAR5 Blake2sp hash [reading works]
 UNAR_CONFIG = {
     "open_cmd": ("UNAR_TOOL", "-q", "-o", "-"),
-    "extract_cmd": ("UNAR_TOOL", "-q", "-f", "-D", "-o", "DSTDIR"),
-    "test_cmd": ("LSAR_TOOL", "-test"),
     "check_cmd": ("UNAR_TOOL", "-version"),
     "password": ("-p",),
     "no_password": ("-p", ""),
@@ -3157,8 +3124,6 @@ UNAR_CONFIG = {
 # - Does not support RARVM-based compression filters.
 BSDTAR_CONFIG = {
     "open_cmd": ("BSDTAR_TOOL", "-x", "--to-stdout", "-f"),
-    "extract_cmd": ("BSDTAR_TOOL", "-x", "-C", "DSTDIR", "-f"),
-    "test_cmd": ("BSDTAR_TOOL", "-t", "-f"),
     "check_cmd": ("BSDTAR_TOOL", "--version"),
     "password": None,
     "no_password": (),
