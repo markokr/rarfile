@@ -145,8 +145,7 @@ HACK_SIZE_LIMIT = 20 * 1024 * 1024
 #: set specific directory for mkstemp() used by hack dir usage
 HACK_TMP_DIR = None
 
-#: Separator for path name components.  RAR internally uses "\\".
-#: Use "/" to be similar with zipfile.
+#: Separator for path name components.  Always "/".
 PATH_SEP = "/"
 
 ##
@@ -864,8 +863,7 @@ class RarFile:
         """
         setup = tool_setup()
 
-        if os.sep != PATH_SEP:
-            fnlist = [fn.replace(PATH_SEP, os.sep) for fn in fnlist]
+        fnlist = [fn.replace("\\", "/") for fn in fnlist]
 
         if path and isinstance(path, Path):
             path = str(path)
@@ -951,18 +949,15 @@ class CommonParser:
             fname = member
 
         # accept both ways here
-        if PATH_SEP == "/":
-            fname2 = fname.replace("\\", "/")
-        else:
-            fname2 = fname.replace("/", "\\")
+        if "\\" in fname:
+            fname = fname.replace("\\", "/")
+        if fname.endswith("/"):
+            fname = fname.rstrip("/")
 
         try:
             return self._info_map[fname]
         except KeyError:
-            try:
-                return self._info_map[fname2]
-            except KeyError:
-                raise NoRarEntry("No such file: %s" % fname)
+            raise NoRarEntry("No such file: %s" % fname)
 
     def parse(self):
         """Process file."""
@@ -1205,8 +1200,6 @@ class CommonParser:
         fn = None
         if not tmpfile or force_file:
             fn = inf.filename
-            if PATH_SEP != os.sep:
-                fn = fn.replace(PATH_SEP, os.sep)
 
         # read from unrar pipe
         cmd = setup.open_cmdline(psw, rarfile, fn)
@@ -1392,9 +1385,10 @@ class RAR3Parser(CommonParser):
             h.orig_filename = name
             h.filename = self._decode(name)
 
-        # change separator, if requested
-        if PATH_SEP != "\\":
-            h.filename = h.filename.replace("\\", PATH_SEP)
+        # change separator
+        h.filename = h.filename.replace("\\", "/")
+        if h.isdir():
+            h.filename = h.filename + "/"
 
         if h.flags & RAR_FILE_SALT:
             h.salt, pos = load_bytes(hdata, 8, pos)
@@ -1472,7 +1466,7 @@ class RAR3Parser(CommonParser):
         if item.type == RAR_BLOCK_FILE:
             # use only first part
             if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
-                self._info_map[item.filename] = item
+                self._info_map[item.filename.rstrip("/")] = item
                 self._info_list.append(item)
             elif len(self._info_list) > 0:
                 # final crc is in last block
@@ -1768,6 +1762,8 @@ class RAR5Parser(CommonParser):
         if h.file_compress_flags & RAR5_COMPR_SOLID:
             h.flags |= RAR_FILE_SOLID
 
+        if h.isdir():
+            h.filename = h.filename + "/"
         return h
 
     def _parse_endarc_block(self, h, hdata, pos):
@@ -1877,7 +1873,7 @@ class RAR5Parser(CommonParser):
         if item.block_type == RAR5_BLOCK_FILE:
             # use only first part
             if (item.block_flags & RAR5_BLOCK_FLAG_SPLIT_BEFORE) == 0:
-                self._info_map[item.filename] = item
+                self._info_map[item.filename.rstrip("/")] = item
                 self._info_list.append(item)
             elif len(self._info_list) > 0:
                 # final crc is in last block
