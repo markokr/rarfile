@@ -601,10 +601,8 @@ class RarInfo:
             return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
-    def is_dir(self):
-        """Returns True if entry is a directory.
-        """
-        return self.isdir()
+    # zipfile compat
+    is_dir = isdir
 
     def needs_password(self):
         """Returns True if data is stored password-protected.
