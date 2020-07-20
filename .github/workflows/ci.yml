@@ -115,7 +115,7 @@ jobs:
           python -m tox -r -- --color=yes
 
   windows:
-    name: "Test - Windows ${{OS}} / Python ${{matrix.pick.PY}}"
+    name: "Test - Windows ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
     runs-on: windows-${{matrix.pick.OS}}
     strategy:
       matrix:
