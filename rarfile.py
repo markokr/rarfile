@@ -863,9 +863,8 @@ class RarFile:
         self.comment = self._file_parser.comment
 
     def _extract_one(self, info, path, pwd):
-        fname = info.filename.rstrip("/")
         fname = sanitize_filename(
-            fname, os.path.sep, sys.platform == "win32"
+            info.filename, os.path.sep, sys.platform == "win32"
         )
 
         if path is None:
@@ -2879,21 +2878,20 @@ def sanitize_filename(fname, pathsep, is_win32):
     if is_win32:
         if len(fname) > 1 and fname[1] == ":":
             fname = fname[2:]
-        # replace tailing dot and space
-        fname = "/".join([
-            (s[:-1] + "_") if s and s[-1] in (" ", ".") and s not in (".", "..")
-            else s for s in fname.split("/")
-        ])
         rc = RC_BAD_CHARS_WIN32
     else:
         rc = RC_BAD_CHARS_UNIX
     if rc.search(fname):
         fname = rc.sub("_", fname)
-    fname = fname.replace("/../", "/")
-    fname = fname.lstrip("./")
-    fname = fname.replace("/", os.path.sep)
-    fname = os.path.normpath(fname)
-    return fname.replace(os.path.sep, pathsep)
+
+    parts = []
+    for seg in fname.split("/"):
+        if seg in ("", ".", ".."):
+            continue
+        if is_win32 and seg[-1] in (" ", "."):
+            seg = seg[:-1] + "_"
+        parts.append(seg)
+    return pathsep.join(parts)
 
 
 def to_datetime(t):
