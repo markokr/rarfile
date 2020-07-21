@@ -623,6 +623,9 @@ class RarFile:
     """Parse RAR structure, provide access to files in archive.
     """
 
+    #: File name, if available.  Unicode string or None.
+    filename = None
+
     #: Archive comment.  Unicode string or None.
     comment = None
 
@@ -646,10 +649,13 @@ class RarFile:
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
         """
-        if isinstance(file, Path):
-            self._rarfile = str(file)
+        if is_filelike(file):
+            self.filename = getattr(file, "name", None)
         else:
-            self._rarfile = file
+            if isinstance(file, Path):
+                file = str(file)
+            self.filename = file
+        self._rarfile = file
 
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
