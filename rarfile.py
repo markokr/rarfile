@@ -623,14 +623,14 @@ class RarFile:
     #: Archive comment.  Unicode string or None.
     comment = None
 
-    def __init__(self, rarfile, mode="r", charset=None, info_callback=None,
+    def __init__(self, file, mode="r", charset=None, info_callback=None,
                  crc_check=True, errors="stop"):
         """Open and parse a RAR archive.
 
         Parameters:
 
-            rarfile
-                archive file name
+            file
+                archive file name or file-like object.
             mode
                 only "r" is supported.
             charset
@@ -643,10 +643,10 @@ class RarFile:
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
         """
-        if isinstance(rarfile, Path):
-            self._rarfile = str(rarfile)
+        if isinstance(file, Path):
+            self._rarfile = str(file)
         else:
-            self._rarfile = rarfile
+            self._rarfile = file
 
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
@@ -674,10 +674,10 @@ class RarFile:
         """Exit context"""
         self.close()
 
-    def setpassword(self, password):
+    def setpassword(self, pwd):
         """Sets the password to use when extracting.
         """
-        self._password = password
+        self._password = pwd
         if self._file_parser:
             if self._file_parser.has_header_encryption():
                 self._file_parser = None
@@ -709,12 +709,12 @@ class RarFile:
         """
         return self._file_parser.volumelist()
 
-    def getinfo(self, fname):
+    def getinfo(self, name):
         """Return RarInfo for file.
         """
-        return self._file_parser.getinfo(fname)
+        return self._file_parser.getinfo(name)
 
-    def open(self, fname, mode="r", psw=None):
+    def open(self, name, mode="r", pwd=None):
         """Returns file-like object (:class:`RarExtFile`) from where the data can be read.
 
         The object implements :class:`io.RawIOBase` interface, so it can
@@ -730,11 +730,11 @@ class RarFile:
 
         Parameters:
 
-            fname
+            name
                 file name or RarInfo instance.
             mode
                 must be "r"
-            psw
+            pwd
                 password to use for extracting.
         """
 
@@ -742,44 +742,46 @@ class RarFile:
             raise NotImplementedError("RarFile.open() supports only mode=r")
 
         # entry lookup
-        inf = self.getinfo(fname)
+        inf = self.getinfo(name)
         if inf.isdir():
             raise TypeError("Directory does not have any data: " + inf.filename)
 
         # check password
         if inf.needs_password():
-            psw = psw or self._password
-            if psw is None:
+            pwd = pwd or self._password
+            if pwd is None:
                 raise PasswordRequired("File %s requires password" % inf.filename)
         else:
-            psw = None
+            pwd = None
 
-        return self._file_parser.open(inf, psw)
+        return self._file_parser.open(inf, pwd)
 
-    def read(self, fname, psw=None):
+    def read(self, name, pwd=None):
         """Return uncompressed data for archive entry.
 
         For longer files using :meth:`RarFile.open` may be better idea.
 
         Parameters:
 
-            fname
+            name
                 filename or RarInfo instance
-            psw
+            pwd
                 password to use for extracting.
         """
 
-        with self.open(fname, "r", psw) as f:
+        with self.open(name, "r", pwd) as f:
             return f.read()
 
     def close(self):
         """Release open resources."""
         pass
 
-    def printdir(self):
+    def printdir(self, file=None):
         """Print archive file list to stdout."""
+        if file is None:
+            file = sys.stdout
         for f in self.infolist():
-            print(f.filename)
+            print(f.filename, file=file)
 
     def extract(self, member, path=None, pwd=None):
         """Extract single file into current directory.
