@@ -74,9 +74,11 @@ from tempfile import mkstemp
 # only needed for encrypted headers
 try:
     try:
-        from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.ciphers import (
+            Cipher, algorithms, modes,
+        )
         from cryptography.hazmat.primitives.kdf import pbkdf2
 
         class AES_CBC_Decrypt:
@@ -315,6 +317,7 @@ RAR_V5 = 5
 _BAD_CHARS = r"""\x00-\x1F<>|"?*"""
 RC_BAD_CHARS_UNIX = re.compile("[%s]" % _BAD_CHARS)
 RC_BAD_CHARS_WIN32 = re.compile("[%s:]" % _BAD_CHARS)
+
 
 def _get_rar_version(xfile):
     """Check quickly whether file is rar archive.
@@ -671,7 +674,7 @@ class RarFile:
         return self
 
     def __exit__(self, typ, value, traceback):
-        """Exit context"""
+        """Exit context."""
         self.close()
 
     def setpassword(self, pwd):
@@ -777,7 +780,8 @@ class RarFile:
         pass
 
     def printdir(self, file=None):
-        """Print archive file list to stdout."""
+        """Print archive file list to stdout or given file.
+        """
         if file is None:
             file = sys.stdout
         for f in self.infolist():
@@ -923,9 +927,9 @@ class CommonParser:
                 return True
         return False
 
-    def setpassword(self, psw):
+    def setpassword(self, pwd):
         """Set cached password."""
-        self._password = psw
+        self._password = pwd
 
     def volumelist(self):
         """Volume files"""
@@ -1084,7 +1088,7 @@ class CommonParser:
     def _parse_block_header(self, fd):
         raise NotImplementedError("_parse_block_header")
 
-    def _open_hack(self, inf, psw):
+    def _open_hack(self, inf, pwd):
         raise NotImplementedError("_open_hack")
 
     def _parse_header(self, fd):
@@ -1119,7 +1123,7 @@ class CommonParser:
         if self._strict:
             raise BadRarFile(msg)
 
-    def open(self, inf, psw):
+    def open(self, inf, pwd):
         """Return stream object for file data."""
 
         if inf.file_redir:
@@ -1151,16 +1155,16 @@ class CommonParser:
         if inf.compress_type == RAR_M0 and (inf.flags & RAR_FILE_PASSWORD) == 0 and inf.file_redir is None:
             return self._open_clear(inf)
         elif use_hack:
-            return self._open_hack(inf, psw)
+            return self._open_hack(inf, pwd)
         elif is_filelike(self._rarfile):
-            return self._open_unrar_membuf(self._rarfile, inf, psw)
+            return self._open_unrar_membuf(self._rarfile, inf, pwd)
         else:
-            return self._open_unrar(self._rarfile, inf, psw)
+            return self._open_unrar(self._rarfile, inf, pwd)
 
     def _open_clear(self, inf):
         return DirectReader(self, inf)
 
-    def _open_hack_core(self, inf, psw, prefix, suffix):
+    def _open_hack_core(self, inf, pwd, prefix, suffix):
 
         size = inf.compress_size + inf.header_size
         rf = XFile(inf.volume_file, 0)
@@ -1189,15 +1193,15 @@ class CommonParser:
             os.unlink(tmpname)
             raise
 
-        return self._open_unrar(tmpname, inf, psw, tmpname)
+        return self._open_unrar(tmpname, inf, pwd, tmpname)
 
-    def _open_unrar_membuf(self, memfile, inf, psw):
+    def _open_unrar_membuf(self, memfile, inf, pwd):
         """Write in-memory archive to temp file, needed for solid archives.
         """
         tmpname = membuf_tempfile(memfile)
-        return self._open_unrar(tmpname, inf, psw, tmpname, force_file=True)
+        return self._open_unrar(tmpname, inf, pwd, tmpname, force_file=True)
 
-    def _open_unrar(self, rarfile, inf, psw=None, tmpfile=None, force_file=False):
+    def _open_unrar(self, rarfile, inf, pwd=None, tmpfile=None, force_file=False):
         """Extract using unrar
         """
         setup = tool_setup()
@@ -1208,7 +1212,7 @@ class CommonParser:
             fn = inf.filename
 
         # read from unrar pipe
-        cmd = setup.open_cmdline(psw, rarfile, fn)
+        cmd = setup.open_cmdline(pwd, rarfile, fn)
         return PipeReader(self, inf, cmd, tmpfile)
 
 
@@ -1438,7 +1442,7 @@ class RAR3Parser(CommonParser):
             pos = pos_next
         return pos
 
-    def _read_comment_v3(self, inf, psw=None):
+    def _read_comment_v3(self, inf, pwd=None):
 
         # read data
         with XFile(inf.volume_file) as rf:
@@ -1447,7 +1451,7 @@ class RAR3Parser(CommonParser):
 
         # decompress
         cmt = rar3_decompress(inf.extract_version, inf.compress_type, data,
-                              inf.file_size, inf.flags, inf.CRC, psw, inf.salt)
+                              inf.file_size, inf.flags, inf.CRC, pwd, inf.salt)
 
         # check crc
         if self._crc_check:
@@ -1504,10 +1508,10 @@ class RAR3Parser(CommonParser):
 
     # put file compressed data into temporary .rar archive, and run
     # unrar on that, thus avoiding unrar going over whole archive
-    def _open_hack(self, inf, psw):
+    def _open_hack(self, inf, pwd):
         # create main header: crc, type, flags, size, res1, res2
         prefix = RAR_ID + S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + ZERO * (2 + 4)
-        return self._open_hack_core(inf, psw, prefix, EMPTY)
+        return self._open_hack_core(inf, pwd, prefix, EMPTY)
 
 
 #
@@ -1622,10 +1626,10 @@ class RAR5Parser(CommonParser):
             return self._last_aes256_key[2]
         if kdf_count > 24:
             raise BadRarFile("Too large kdf_count")
-        psw = self._password
-        if isinstance(psw, str):
-            psw = psw.encode("utf8")
-        key = pbkdf2_sha256(psw, salt, 1 << kdf_count)
+        pwd = self._password
+        if isinstance(pwd, str):
+            pwd = pwd.encode("utf8")
+        key = pbkdf2_sha256(pwd, salt, 1 << kdf_count)
         self._last_aes256_key = (kdf_count, salt, key)
         return key
 
@@ -1915,13 +1919,13 @@ class RAR5Parser(CommonParser):
         self.comment = cmt.decode("utf8")
         return None
 
-    def _open_hack(self, inf, psw):
+    def _open_hack(self, inf, pwd):
         # len, type, blk_flags, flags
         main_hdr = b"\x03\x01\x00\x00"
         endarc_hdr = b"\x03\x05\x00\x00"
         main_hdr = S_LONG.pack(rar_crc32(main_hdr)) + main_hdr
         endarc_hdr = S_LONG.pack(rar_crc32(endarc_hdr)) + endarc_hdr
-        return self._open_hack_core(inf, psw, RAR5_ID + main_hdr, endarc_hdr)
+        return self._open_hack_core(inf, pwd, RAR5_ID + main_hdr, endarc_hdr)
 
 
 ##
@@ -2798,12 +2802,12 @@ def is_filelike(obj):
     return True
 
 
-def rar3_s2k(psw, salt):
+def rar3_s2k(pwd, salt):
     """String-to-key hash for RAR3.
     """
-    if not isinstance(psw, str):
-        psw = psw.decode("utf8")
-    seed = bytearray(psw.encode("utf-16le") + salt)
+    if not isinstance(pwd, str):
+        pwd = pwd.decode("utf8")
+    seed = bytearray(pwd.encode("utf-16le") + salt)
     h = Rar3Sha1(rarbug=True)
     iv = EMPTY
     for i in range(16):
@@ -2818,7 +2822,7 @@ def rar3_s2k(psw, salt):
     return key_le, iv
 
 
-def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=None):
+def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=None):
     """Decompress blob of compressed data.
 
     Used for data with non-standard header - eg. comments.
@@ -2860,8 +2864,8 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, psw=None, salt=N
         tmpf.write(RAR_ID + mh + hdr + data)
         tmpf.close()
 
-        curpsw = (flags & RAR_FILE_PASSWORD) and psw or None
-        cmd = setup.open_cmdline(curpsw, tmpname)
+        curpwd = (flags & RAR_FILE_PASSWORD) and pwd or None
+        cmd = setup.open_cmdline(curpwd, tmpname)
         p = custom_popen(cmd)
         return p.communicate()[0]
     finally:
@@ -3059,8 +3063,8 @@ class ToolSetup:
         except RarCannotExec:
             return False
 
-    def open_cmdline(self, psw, rarfn, filefn=None):
-        cmdline = self.get_cmdline("open_cmd", psw)
+    def open_cmdline(self, pwd, rarfn, filefn=None):
+        cmdline = self.get_cmdline("open_cmd", pwd)
         cmdline.append(rarfn)
         if filefn:
             self.add_file_arg(cmdline, filefn)
@@ -3069,10 +3073,10 @@ class ToolSetup:
     def get_errmap(self):
         return self.setup["errmap"]
 
-    def get_cmdline(self, key, psw, nodash=False):
+    def get_cmdline(self, key, pwd, nodash=False):
         cmdline = list(self.setup[key])
         cmdline[0] = globals()[cmdline[0]]
-        self.add_password_arg(cmdline, psw)
+        self.add_password_arg(cmdline, pwd)
         if not nodash:
             cmdline.append("--")
         return cmdline
@@ -3081,18 +3085,18 @@ class ToolSetup:
         filename = filename.replace('\\', '/')
         cmdline.append(filename)
 
-    def add_password_arg(self, cmdline, psw):
+    def add_password_arg(self, cmdline, pwd):
         """Append password switch to commandline.
         """
-        if psw is not None:
-            if not isinstance(psw, str):
-                psw = psw.decode("utf8")
+        if pwd is not None:
+            if not isinstance(pwd, str):
+                pwd = pwd.decode("utf8")
             args = self.setup["password"]
             if isinstance(args, str):
-                cmdline.append(args + psw)
+                cmdline.append(args + pwd)
             else:
                 cmdline.extend(args)
-                cmdline.append(psw)
+                cmdline.append(pwd)
         else:
             cmdline.extend(self.setup["no_password"])
 

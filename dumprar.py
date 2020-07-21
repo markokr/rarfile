@@ -13,7 +13,7 @@ usage = """
 dumprar [switches] [ARC1 ARC2 ...] [@ARCLIST]
 switches:
   @file      read archive names from file
-  -pPSW      set password
+  -pPWD      set password
   -Ccharset  set fallback charset
   -v         increase verbosity
   -t         attempt to read all files
@@ -414,7 +414,7 @@ def test_read(r, inf):
     test_read_long(r, inf)
 
 
-def test_real(fn, psw):
+def test_real(fn, pwd):
     """Actual archive processing.
     """
     xprint("Archive: %s", fn)
@@ -436,8 +436,8 @@ def test_real(fn, psw):
     r = rf.RarFile(rfarg, charset=cf_charset, info_callback=cb)
     # set password
     if r.needs_password():
-        if psw:
-            r.setpassword(psw)
+        if pwd:
+            r.setpassword(pwd)
         else:
             xprint(" --- %s requires password ---", fn)
             return
@@ -471,11 +471,11 @@ def test_real(fn, psw):
         r.testrar()
 
 
-def test(fn, psw):
+def test(fn, pwd):
     """Process one archive with error handling.
     """
     try:
-        test_real(fn, psw)
+        test_real(fn, pwd)
     except rf.NeedFirstVolume as ex:
         xprint(" --- %s is middle part of multi-vol archive (%s)---", fn, str(ex))
     except rf.Error:
@@ -495,7 +495,7 @@ def main():
     global cf_extract, cf_test_read, cf_test_unrar
     global cf_test_memory
 
-    psw = None
+    pwd = None
 
     # parse args
     try:
@@ -506,7 +506,7 @@ def main():
 
     for o, v in opts:
         if o == "-p":
-            psw = v
+            pwd = v
         elif o == "-h":
             xprint(usage)
             return
@@ -541,7 +541,7 @@ def main():
         xprint(usage)
 
     for fn in args:
-        test(fn, psw)
+        test(fn, pwd)
 
 
 if __name__ == "__main__":
