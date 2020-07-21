@@ -308,7 +308,7 @@ RAR5_ID = b"Rar!\x1a\x07\x01\x00"
 ZERO = b"\0"
 EMPTY = b""
 UTC = timezone(timedelta(0), "UTC")
-BSIZE = 32 * 1024
+BSIZE = 512 * 1024 if sys.platform == "win32" else 64 * 1024
 
 SFX_MAX_SIZE = 2 * 1024 * 1024
 RAR_V3 = 3
@@ -826,10 +826,7 @@ class RarFile:
             if member.isdir():
                 continue
             with self.open(member, 'r', pwd) as f:
-                while True:
-                    blk = f.read(8192)
-                    if not blk:
-                        break
+                empty_read(f, member.file_size, BSIZE)
 
     def strerror(self):
         """Return error string if parsing failed or None if no problems.
@@ -2151,14 +2148,7 @@ class RarExtFile(RawIOBase):
 
     def _skip(self, cnt):
         """Read and discard data"""
-        while cnt > 0:
-            if cnt > 8192:
-                buf = self.read(8192)
-            else:
-                buf = self.read(cnt)
-            if not buf:
-                break
-            cnt -= len(buf)
+        empty_read(self, cnt, BSIZE)
 
     def readable(self):
         """Returns True"""
@@ -2894,6 +2884,17 @@ def sanitize_filename(fname, pathsep, is_win32):
     return pathsep.join(parts)
 
 
+def empty_read(src, size, blklen):
+    while size > 0:
+        if size > blklen:
+            res = src.read(blklen)
+        else:
+            res = src.read(size)
+        if not res:
+            raise BadRarFile("cannot load data")
+        size -= len(res)
+
+
 def to_datetime(t):
     """Convert 6-part time tuple into datetime object.
     """
@@ -3006,11 +3007,7 @@ def membuf_tempfile(memfile):
     tmpf = os.fdopen(tmpfd, "wb")
 
     try:
-        while True:
-            buf = memfile.read(BSIZE)
-            if not buf:
-                break
-            tmpf.write(buf)
+        shutil.copyfileobj(memfile, tmpf, BSIZE)
         tmpf.close()
     except BaseException:
         tmpf.close()
