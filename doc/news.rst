@@ -4,6 +4,41 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Unreleased
+----------
+
+Breaking changes:
+
+* :data:`PATH_SEP` cannot be changed from "/".
+* Directory names will have "/" appended.
+  [`#31 <https://github.com/markokr/rarfile/issues/31>`_]
+* :meth:`RarFile.extract` operates only on single entry,
+  so when used on directory it will create directory
+  but not extract files under it.
+* :meth:`RarFile.extract`/:meth:`RarFile.extractall`/:meth:`RarFile.testrar`
+  will not launch special unrar command line, instead they are
+  implemented on top of RarFile.open().
+* Keyword args in top-level APIs were renamed to match zipfile:
+  * RarFile(rarfile) -> RarFile(file)
+  * RarFile.setpassword(password) -> .setpassword(pwd)
+  * RarFile.getinfo(fname) -> .getinfo(name)
+  * RarFile.open(fname, mode, psw) -> .open(name, mode, pwd)
+  * RarFile.read(fname, psw) -> .read(name, pwd)
+  * RarFile.printdir() -> .printdir(file=None)
+
+New features:
+
+* :meth:`RarFile.extract` will return final sanitized filename for
+  target file.
+  [`#42 <https://github.com/markokr/rarfile/issues/42>`_,
+  `#52 <https://github.com/markokr/rarfile/issues/52>`_]
+* :meth:`RarInfo.is_dir` is now preferred spelling of ``isdir()``.
+  Old method kept as alias.
+  [`#44 <https://github.com/markokr/rarfile/issues/44>`_]
+* RAR3: throw :exc:`NeedFirstVolume` exception with current volume number,
+  like RAR5 does.
+  [`#58 <https://github.com/markokr/rarfile/issues/58>`_]
+
 Version 3.2 (2020-07-19)
 ------------------------
 
