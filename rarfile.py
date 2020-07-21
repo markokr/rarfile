@@ -574,7 +574,6 @@ class RarInfo:
     file_size = None
     compress_size = None
     date_time = None
-    comment = None
     CRC = None
     volume = None
     orig_filename = None
