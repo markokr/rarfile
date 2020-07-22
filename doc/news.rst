@@ -19,6 +19,7 @@ Breaking changes:
   will not launch special unrar command line, instead they are
   implemented on top of RarFile.open().
 * Keyword args in top-level APIs were renamed to match zipfile:
+
   * RarFile(rarfile) -> RarFile(file)
   * RarFile.setpassword(password) -> .setpassword(pwd)
   * RarFile.getinfo(fname) -> .getinfo(name)
