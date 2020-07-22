@@ -213,20 +213,20 @@ RAR_SKIP_IF_UNKNOWN = 0x4000
 RAR_LONG_BLOCK = 0x8000
 
 # Host OS types
-RAR_OS_MSDOS = 0
-RAR_OS_OS2 = 1
-RAR_OS_WIN32 = 2
-RAR_OS_UNIX = 3
-RAR_OS_MACOS = 4
-RAR_OS_BEOS = 5
+RAR_OS_MSDOS = 0    #: MSDOS (only in RAR3)
+RAR_OS_OS2 = 1      #: OS2 (only in RAR3)
+RAR_OS_WIN32 = 2    #: Windows
+RAR_OS_UNIX = 3     #: UNIX
+RAR_OS_MACOS = 4    #: MacOS (only in RAR3)
+RAR_OS_BEOS = 5     #: BeOS (only in RAR3)
 
 # Compression methods - "0".."5"
-RAR_M0 = 0x30
-RAR_M1 = 0x31
-RAR_M2 = 0x32
-RAR_M3 = 0x33
-RAR_M4 = 0x34
-RAR_M5 = 0x35
+RAR_M0 = 0x30   #: No compression.
+RAR_M1 = 0x31   #: Compression level `-m1` - Fastest compression.
+RAR_M2 = 0x32   #: Compression level `-m2`.
+RAR_M3 = 0x33   #: Compression level `-m3`.
+RAR_M4 = 0x34   #: Compression level `-m4`.
+RAR_M5 = 0x35   #: Compression level `-m5` - Maximum compression.
 
 #
 # RAR5 constants
@@ -489,6 +489,9 @@ class RarInfo:
             File modification timestamp.   As tuple of (year, month, day, hour, minute, second).
             RAR5 allows archives where it is missing, it's None then.
 
+        comment
+            Optional file comment field.  Unicode string.  (RAR3-only)
+
         file_size
             Uncompressed size.
 
@@ -539,8 +542,11 @@ class RarInfo:
         blake2sp_hash
             Blake2SP hash over decompressed data.  (RAR5-only)
 
-        comment
-            Optional file comment field.  Unicode string.  (RAR3-only)
+        volume
+            Volume nr, starting from 0.
+
+        volume_file
+            Volume file name, where file starts.
 
         file_redir
             If not None, file is link of some sort.  Contains tuple of (type, flags, target).
@@ -560,13 +566,6 @@ class RarInfo:
                     current file is copy of another archive entry.
 
             Flags may contain :data:`RAR5_XREDIR_ISDIR` bit.
-
-        volume
-            Volume nr, starting from 0.
-
-        volume_file
-            Volume file name, where file starts.
-
     """
 
     # zipfile-compatible fields
@@ -600,15 +599,17 @@ class RarInfo:
     flags = 0
     type = None
 
-    def isdir(self):
+    # zipfile compat
+    def is_dir(self):
         """Returns True if entry is a directory.
         """
         if self.type == RAR_BLOCK_FILE:
             return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
-    # zipfile compat
-    is_dir = isdir
+    # old tarfile compat, keep undocumented, obsolete...
+    def isdir(self):
+        return self.is_dir()
 
     def needs_password(self):
         """Returns True if data is stored password-protected.
@@ -751,7 +752,7 @@ class RarFile:
 
         # entry lookup
         inf = self.getinfo(name)
-        if inf.isdir():
+        if inf.is_dir():
             raise TypeError("Directory does not have any data: " + inf.filename)
 
         # check password
@@ -828,7 +829,7 @@ class RarFile:
         """Read all files and test CRC.
         """
         for member in self.infolist():
-            if member.isdir():
+            if member.is_dir():
                 continue
             with self.open(member, 'r', pwd) as f:
                 empty_read(f, member.file_size, BSIZE)
@@ -879,7 +880,7 @@ class RarFile:
         dn = os.path.dirname(dstfn)
         if dn and not os.path.isdir(dn):
             os.makedirs(dn)
-        if info.isdir():
+        if info.is_dir():
             if not os.path.isdir(dstfn):
                 os.mkdir(dstfn)
             return dstfn
@@ -1398,7 +1399,7 @@ class RAR3Parser(CommonParser):
 
         # change separator
         h.filename = h.filename.replace("\\", "/")
-        if h.isdir():
+        if h.is_dir():
             h.filename = h.filename + "/"
 
         if h.flags & RAR_FILE_SALT:
@@ -1773,7 +1774,7 @@ class RAR5Parser(CommonParser):
         if h.file_compress_flags & RAR5_COMPR_SOLID:
             h.flags |= RAR_FILE_SOLID
 
-        if h.isdir():
+        if h.is_dir():
             h.filename = h.filename + "/"
         return h
 

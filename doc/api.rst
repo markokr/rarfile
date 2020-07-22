@@ -39,36 +39,19 @@ Functions
 Constants
 ---------
 
-.. py:data:: RAR_M0
+.. autodata:: RAR_M0
+.. autodata:: RAR_M1
+.. autodata:: RAR_M2
+.. autodata:: RAR_M3
+.. autodata:: RAR_M4
+.. autodata:: RAR_M5
 
-    No compression.
-
-.. py:data:: RAR_M1
-
-    Compression level `-m1` - Fastest compression.
-
-.. py:data:: RAR_M2
-
-    Compression level `-m2`.
-
-.. py:data:: RAR_M3
-
-    Compression level `-m3`.
-
-.. py:data:: RAR_M4
-
-    Compression level `-m4`.
-
-.. py:data:: RAR_M5
-
-    Compression level `-m5` - Maximum compression.
-
-.. py:data:: RAR_OS_MSDOS
-.. py:data:: RAR_OS_OS2
-.. py:data:: RAR_OS_WIN32
-.. py:data:: RAR_OS_UNIX
-.. py:data:: RAR_OS_MACOS
-.. py:data:: RAR_OS_BEOS
+.. autodata:: RAR_OS_WIN32
+.. autodata:: RAR_OS_UNIX
+.. autodata:: RAR_OS_MACOS
+.. autodata:: RAR_OS_BEOS
+.. autodata:: RAR_OS_OS2
+.. autodata:: RAR_OS_MSDOS
 
 Exceptions
 ----------
