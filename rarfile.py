@@ -399,10 +399,16 @@ class PasswordRequired(Error):
 
 
 class NeedFirstVolume(Error):
-    """Need to start from first volume."""
-    def __init__(self, msg, volnr):
+    """Need to start from first volume.
+
+    Attributes:
+
+        current_volume
+            Volume number of current file or None if not known
+    """
+    def __init__(self, msg, volume):
         super().__init__(msg)
-        self.current_volnr = volnr
+        self.current_volume = volume
 
 
 class NoCrypto(Error):
