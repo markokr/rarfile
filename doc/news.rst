@@ -38,6 +38,8 @@ New features:
 * RAR3: throw :exc:`NeedFirstVolume` exception with current volume number,
   like RAR5 does.
   [`#58 <https://github.com/markokr/rarfile/issues/58>`_]
+* :meth:`RarFile.__iter__` loops over :class:`RarInfo` entries.
+
 
 Version 3.2 (2020-07-19)
 ------------------------

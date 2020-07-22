@@ -150,6 +150,13 @@ def test_testrar():
     rf.testrar()
 
 
+def test_iter():
+    rf = rarfile.RarFile('test/files/seektest.rar')
+    n1 = rf.namelist()
+    n2 = [m.filename for m in rf]
+    assert n1 == n2
+
+
 def test_testrar_mem():
     with open('test/files/seektest.rar', 'rb') as f:
         arc = f.read()

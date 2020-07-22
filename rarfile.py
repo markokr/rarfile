@@ -689,6 +689,10 @@ class RarFile:
         """Exit context."""
         self.close()
 
+    def __iter__(self):
+        """Iterare over members."""
+        return iter(self.infolist())
+
     def setpassword(self, pwd):
         """Sets the password to use when extracting.
         """
