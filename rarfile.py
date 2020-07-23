@@ -275,6 +275,7 @@ RAR5_XTIME_UNIXTIME = 0x01
 RAR5_XTIME_HAS_MTIME = 0x02
 RAR5_XTIME_HAS_CTIME = 0x04
 RAR5_XTIME_HAS_ATIME = 0x08
+RAR5_XTIME_UNIXTIME_NS = 0x10
 
 RAR5_XENC_CIPHER_AES256 = 0
 
@@ -1828,9 +1829,11 @@ class RAR5Parser(CommonParser):
     # extra block for file time record
     def _parse_file_xtime(self, h, xdata, pos):
         tflags, pos = load_vint(xdata, pos)
+
         ldr = load_windowstime
         if tflags & RAR5_XTIME_UNIXTIME:
             ldr = load_unixtime
+
         if tflags & RAR5_XTIME_HAS_MTIME:
             h.mtime, pos = ldr(xdata, pos)
             h.date_time = h.mtime.timetuple()[:6]
@@ -1838,6 +1841,17 @@ class RAR5Parser(CommonParser):
             h.ctime, pos = ldr(xdata, pos)
         if tflags & RAR5_XTIME_HAS_ATIME:
             h.atime, pos = ldr(xdata, pos)
+
+        if tflags & RAR5_XTIME_UNIXTIME_NS:
+            if tflags & RAR5_XTIME_HAS_MTIME:
+                nsec, pos = load_le32(xdata, pos)
+                h.mtime = h.mtime.replace(microsecond=nsec//1000)
+            if tflags & RAR5_XTIME_HAS_CTIME:
+                nsec, pos = load_le32(xdata, pos)
+                h.ctime = h.ctime.replace(microsecond=nsec//1000)
+            if tflags & RAR5_XTIME_HAS_ATIME:
+                nsec, pos = load_le32(xdata, pos)
+                h.atime = h.atime.replace(microsecond=nsec//1000)
 
     # just remember encryption info
     def _parse_file_encryption(self, h, xdata, pos):
