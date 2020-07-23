@@ -55,9 +55,11 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 ##
 
 import errno
+import math
 import os
 import re
 import shutil
+import stat
 import struct
 import sys
 from binascii import crc32 as rar_crc32
@@ -817,7 +819,7 @@ class RarFile:
                 optional password to use
         """
         inf = self.getinfo(member)
-        return self._extract_one(inf, path, pwd)
+        return self._extract_one(inf, path, pwd, True)
 
     def extractall(self, path=None, members=None, pwd=None):
         """Extract all files into current directory.
@@ -833,8 +835,20 @@ class RarFile:
         """
         if members is None:
             members = self.namelist()
+
+        done = set()
+        dirs = []
         for m in members:
-            self.extract(m, path, pwd)
+            inf = self.getinfo(m)
+            dst = self._extract_one(inf, path, pwd, not inf.is_dir())
+            if inf.is_dir():
+                if dst not in done:
+                    dirs.append((dst, inf))
+                    done.add(dst)
+        if dirs:
+            dirs.sort(reverse=True)
+            for dst, inf in dirs:
+                self._set_attrs(dst, inf)
 
     def testrar(self, pwd=None):
         """Read all files and test CRC.
@@ -876,7 +890,7 @@ class RarFile:
         self._file_parser.parse()
         self.comment = self._file_parser.comment
 
-    def _extract_one(self, info, path, pwd):
+    def _extract_one(self, info, path, pwd, set_attrs):
         fname = sanitize_filename(
             info.filename, os.path.sep, sys.platform == "win32"
         )
@@ -885,22 +899,50 @@ class RarFile:
             path = os.getcwd()
         else:
             path = os.fspath(path)
-
         dstfn = os.path.join(path, fname)
 
-        dn = os.path.dirname(dstfn)
-        if dn and not os.path.isdir(dn):
-            os.makedirs(dn)
         if info.is_dir():
-            if not os.path.isdir(dstfn):
-                os.mkdir(dstfn)
-            return dstfn
+            self._makedirs(dstfn)
+        else:
+            dirname = os.path.dirname(dstfn)
+            if dirname and dirname != ".":
+                self._makedirs(dirname)
 
-        with self.open(info, "r", pwd) as src:
-            with open(dstfn, "wb") as dst:
-                shutil.copyfileobj(src, dst)
+            with self.open(info, "r", pwd) as src:
+                with open(dstfn, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+        if set_attrs:
+            self._set_attrs(info, dstfn)
 
         return dstfn
+
+    def _makedirs(self, name):
+        if not name:
+            return
+        head, tail = os.path.split(name)
+        if not tail:
+            head, tail = os.path.split(head)
+        if head and tail and not os.path.isdir(head):
+            self._makedirs(head)
+        try:
+            os.mkdir(name)
+        except OSError:
+            if not os.path.isdir(name):
+                raise
+
+    def _set_attrs(self, info, dstfn):
+        mode = info.is_dir() and DEFAULT_DIR_MODE or DEFAULT_FILE_MODE
+        if info.host_os == RAR_OS_UNIX:
+            os.chmod(dstfn, info.mode)
+        elif info.host_os in (RAR_OS_WIN32, RAR_OS_MSDOS):
+            pass
+
+        if info.mtime and hasattr(os, "utime"):
+            mtime_ns = atime_ns = to_nsecs(info.mtime)
+            if info.atime:
+                atime_ns = to_nsecs(info.atime)
+            os.utime(dstfn, ns=(atime_ns, mtime_ns))
 
 
 #
@@ -2974,6 +3016,14 @@ def parse_dos_time(stamp):
     mon, stamp = stamp & 0x0F, stamp >> 4
     yr = (stamp & 0x7F) + 1980
     return (yr, mon, day, hr, mn, sec * 2)
+
+
+def to_nsecs(dt):
+    """Convert datatime instance to nanoseconds.
+    """
+    secs = math.trunc(dt.timestamp())
+    usecs = dt.microsecond
+    return (secs * 1000000 + usecs) * 1000
 
 
 def custom_popen(cmd):
