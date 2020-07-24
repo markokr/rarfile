@@ -183,27 +183,27 @@ def expect_ctime(mtime, ctime):
 
 def test_rar3_ctime0():
     r = rarfile.RarFile('test/files/ctime0.rar')
-    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', None))
+    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', None))
 
 
 def test_rar3_ctime1():
     r = rarfile.RarFile('test/files/ctime1.rar')
-    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47'))
+    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', '2011-05-10T21:28:47'))
 
 
 def test_rar3_ctime2():
     r = rarfile.RarFile('test/files/ctime2.rar')
-    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.897843'))
+    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', '2011-05-10T21:28:47.897843200'))
 
 
 def test_rar3_ctime3():
     r = rarfile.RarFile('test/files/ctime3.rar')
-    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.899328'))
+    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', '2011-05-10T21:28:47.899328'))
 
 
 def test_rar3_ctime4():
     r = rarfile.RarFile('test/files/ctime4.rar')
-    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345', '2011-05-10T21:28:47.899345'))
+    cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', '2011-05-10T21:28:47.899345100'))
 
 
 def test_rar5_times():

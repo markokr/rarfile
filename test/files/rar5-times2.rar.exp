@@ -7,4 +7,4 @@ R5_FILE: hdrlen=42 datlen=0 hdr_extra=11
   os=0:WINDOWS mode=ARCHIVE cmp=0 dec=0 vol=0
   crc=0x00000000 (0)
   date_time=2011-05-10 18:28:47
-  mtime=2011-05-10T18:28:47.899345+00:00
+  mtime=2011-05-10T18:28:47.899345100+00:00

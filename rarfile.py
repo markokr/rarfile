@@ -55,11 +55,9 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 ##
 
 import errno
-import math
 import os
 import re
 import shutil
-import stat
 import struct
 import sys
 from binascii import crc32 as rar_crc32
@@ -1895,13 +1893,13 @@ class RAR5Parser(CommonParser):
         if tflags & RAR5_XTIME_UNIXTIME_NS:
             if tflags & RAR5_XTIME_HAS_MTIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.mtime = h.mtime.replace(microsecond=nsec // 1000)
+                h.mtime = to_nsdatetime(h.mtime, nsec)
             if tflags & RAR5_XTIME_HAS_CTIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.ctime = h.ctime.replace(microsecond=nsec // 1000)
+                h.ctime = to_nsdatetime(h.ctime, nsec)
             if tflags & RAR5_XTIME_HAS_ATIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.atime = h.atime.replace(microsecond=nsec // 1000)
+                h.atime = to_nsdatetime(h.atime, nsec)
 
     # just remember encryption info
     def _parse_file_encryption(self, h, xdata, pos):
@@ -2772,7 +2770,7 @@ def load_windowstime(buf, pos):
     val2, pos = load_le32(buf, pos)
     secs, n1secs = divmod((val2 << 32) | val1, 10000000)
     dt = datetime.fromtimestamp(secs - unix_epoch, UTC)
-    dt = dt.replace(microsecond=n1secs // 10)
+    dt = to_nsdatetime(dt, n1secs * 100)
     return dt, pos
 
 
@@ -2843,14 +2841,14 @@ def _parse_xtime(flag, data, pos, basetime=None):
             b, pos = load_byte(data, pos)
             rem = (b << 16) | (rem >> 8)
 
-        # convert 100ns units to microseconds
-        usec = min(rem // 10, 999999)
+        # convert 100ns units to nanoseconds
+        nsec = rem * 100
 
         # dostime has room for 30 seconds only, correct if needed
         if flag & 4 and basetime.second < 59:
-            res = basetime.replace(microsecond=usec, second=basetime.second + 1)
-        else:
-            res = basetime.replace(microsecond=usec)
+            basetime = basetime.replace(second=basetime.second + 1)
+
+        res = to_nsdatetime(basetime, nsec)
     return res, pos
 
 
@@ -3017,10 +3015,38 @@ def parse_dos_time(stamp):
     return (yr, mon, day, hr, mn, sec * 2)
 
 
+class nsdatetime(datetime):
+    __slots__ = ("nanosecond",)
+    nanosecond: int
+
+    def isoformat(self, sep="T", timespec="auto"):
+        if timespec == "auto" or timespec == "nanoseconds":
+            res = super().isoformat(sep, "microseconds")
+            pos = res.find(".")
+            part1 = res[:pos+1]
+            part2 = res[pos+7:]
+            return "%s%09d%s" % (part1, self.nanosecond, part2)
+        return super().isoformat(sep, timespec)
+
+
+def to_nsdatetime(dt, nsec):
+    if not nsec:
+        return dt
+    nsec = min(nsec, 999999999)
+    usec, rem = divmod(nsec, 1000)
+    if rem == 0:
+        return dt.replace(microsecond=usec)
+    ns = nsdatetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, usec, dt.tzinfo)
+    ns.nanosecond = nsec
+    return ns
+
+
 def to_nsecs(dt):
     """Convert datatime instance to nanoseconds.
     """
-    secs = math.trunc(dt.timestamp())
+    secs = int(dt.timestamp())
+    if isinstance(dt, nsdatetime):
+        return secs * 1000000000 + dt.nanosecond
     usecs = dt.microsecond
     return (secs * 1000000 + usecs) * 1000
 
