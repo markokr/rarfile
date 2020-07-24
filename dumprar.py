@@ -147,6 +147,30 @@ r5_file_redir_flags = (
 )
 
 
+dos_mode_bits = (
+    (0x01, "READONLY"),
+    (0x02, "HIDDEN"),
+    (0x04, "SYSTEM"),
+    (0x08, "VOLUME_ID"),
+    (0x10, "DIRECTORY"),
+    (0x20, "ARCHIVE"),
+    (0x40, "DEVICE"),
+    (0x80, "NORMAL"),
+    (0x0100, "TEMPORARY"),
+    (0x0200, "SPARSE_FILE"),
+    (0x0400, "REPARSE_POINT"),
+    (0x0800, "COMPRESSED"),
+    (0x1000, "OFFLINE"),
+    (0x2000, "NOT_CONTENT_INDEXED"),
+    (0x4000, "ENCRYPTED"),
+    (0x8000, "INTEGRITY_STREAM"),
+    (0x010000, "VIRTUAL"),
+    (0x020000, "NO_SCRUB_DATA"),
+    (0x040000, "RECALL_ON_OPEN"),
+    (0x400000, "RECALL_ON_DATA_ACCESS"),
+)
+
+
 def xprint(m, *args):
     """Print string to stdout.
 
@@ -216,16 +240,49 @@ def show_item(h):
         xprint("Unknown info record")
 
 
+def modex3(v):
+    return [v & 4 and "r" or "-", v & 2 and "w" or "-", v & 1 and "x" or "-"]
+
+def unix_mode(mode):
+    perms = modex3(mode>>6) + modex3(mode>>3) + modex3(mode)
+    if mode & 0x0800:
+        perms[2] = perms[2] == "x" and "s" or "S"
+    if mode & 0x0400:
+        perms[5] = perms[5] == "x" and "s" or "S"
+    if mode & 0x0200:
+        perms[8] = perms[8] == "x" and "t" or "-"
+    rest = mode & 0xF000
+    if rest == 0x4000:
+        perms.insert(0, "d")
+    elif rest == 0xA000:
+        perms.insert(0, "l")
+    elif rest == 0x8000:
+        # common
+        perms.insert(0, "-")
+    elif rest == 0:
+        perms.insert(0, "-")
+    else:
+        perms.insert(0, "?")
+        perms.append("(0x%04x)" % rest)
+    return "".join(perms)
+
+def show_mode(h):
+    if h.host_os in (rf.RAR_OS_UNIX, rf.RAR_OS_BEOS):
+        s_mode = unix_mode(h.mode)
+    elif h.host_os in (rf.RAR_OS_MSDOS, rf.RAR_OS_WIN32, rf.RAR_OS_OS2):
+        s_mode = render_flags(h.mode, dos_mode_bits)
+    else:
+        s_mode = "0x%x" % h.mode
+    return s_mode
+
+
 def show_item_v3(h):
     """Show any RAR3 record.
     """
     st = rar3_type(h.type)
     xprint("%s: hdrlen=%d datlen=%d", st, h.header_size, h.add_size)
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
-        if h.host_os == rf.RAR_OS_UNIX:
-            s_mode = "0%o" % h.mode
-        else:
-            s_mode = "0x%x" % h.mode
+        s_mode = show_mode(h)
         xprint("  flags=0x%04x:%s", h.flags, get_file_flags(h.flags))
         if h.host_os >= 0 and h.host_os < len(os_list):
             s_os = os_list[h.host_os]
@@ -275,12 +332,11 @@ def show_item_v5(h):
     xprint("  block_flags=0x%04x:%s", h.block_flags, render_flags(h.block_flags, r5_block_flags))
     if h.block_type in (rf.RAR5_BLOCK_FILE, rf.RAR5_BLOCK_SERVICE):
         xprint("  name=%s", h.filename)
+        s_mode = show_mode(h)
         if h.file_host_os == rf.RAR5_OS_UNIX:
             s_os = "UNIX"
-            s_mode = "0%o" % h.mode
         else:
             s_os = "WINDOWS"
-            s_mode = "0x%x" % h.mode
         xprint("  file_flags=0x%04x:%s", h.file_flags, render_flags(h.file_flags, r5_file_flags))
 
         cmp_flags = h.file_compress_flags

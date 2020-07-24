@@ -5,7 +5,7 @@ R5_FILE: hdrlen=125 datlen=64 hdr_extra=95
   name=stest1.txt
   file_flags=0x0000:-
   cmp_algo=0 cmp_meth=3 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=64 dec=2048 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=64 dec=2048 vol=0
   blake2sp=5cdbd3f49f594a35edb63c923b64abdadba3bf1468b6259ee1e1c54ba2f0d65e
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
@@ -15,7 +15,7 @@ R5_FILE: hdrlen=142 datlen=2048 hdr_extra=111
   name=stest2.txt
   file_flags=0x0000:-
   cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=2048 dec=2048 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=2048 dec=2048 vol=0
   blake2sp=5cdbd3f49f594a35edb63c923b64abdadba3bf1468b6259ee1e1c54ba2f0d65e
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00

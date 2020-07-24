@@ -4,7 +4,7 @@ R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
   name=sub/dir2/file2.txt
   file_flags=0x0004:CRC32
   cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=6 dec=6 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=6 dec=6 vol=0
   crc=0xc904a4c7 (3372524743)
   date_time=2020-07-20 18:01:44
   mtime=2020-07-20T18:01:44.319218+00:00
@@ -13,7 +13,7 @@ R5_FILE: hdrlen=61 datlen=8 hdr_extra=11
   name=sub/with space/long fn.txt
   file_flags=0x0004:CRC32
   cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=8 dec=8 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=8 dec=8 vol=0
   crc=0x71b7247d (1907827837)
   date_time=2020-07-20 18:02:17
   mtime=2020-07-20T18:02:17.499892+00:00
@@ -22,7 +22,7 @@ R5_FILE: hdrlen=61 datlen=5 hdr_extra=11
   name=sub/üȵĩöḋè/file.txt
   file_flags=0x0004:CRC32
   cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=5 dec=5 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=5 dec=5 vol=0
   crc=0x2fec89c1 (804030913)
   date_time=2020-07-20 18:07:00
   mtime=2020-07-20T18:07:00.141758+00:00
@@ -31,7 +31,7 @@ R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
   name=sub/dir1/file1.txt
   file_flags=0x0004:CRC32
   cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=1:UNIX mode=0100644 cmp=6 dec=6 vol=0
+  os=1:UNIX mode=-rw-r--r-- cmp=6 dec=6 vol=0
   crc=0xe229f704 (3794401028)
   date_time=2020-07-20 18:01:33
   mtime=2020-07-20T18:01:33.875008+00:00
