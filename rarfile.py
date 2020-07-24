@@ -324,8 +324,8 @@ RAR_V3 = 3
 RAR_V5 = 5
 
 _BAD_CHARS = r"""\x00-\x1F<>|"?*"""
-RC_BAD_CHARS_UNIX = re.compile("[%s]" % _BAD_CHARS)
-RC_BAD_CHARS_WIN32 = re.compile("[%s:]" % _BAD_CHARS)
+RC_BAD_CHARS_UNIX = re.compile(r"[%s]" % _BAD_CHARS)
+RC_BAD_CHARS_WIN32 = re.compile(r"[%s:^\\]" % _BAD_CHARS)
 
 
 def _get_rar_version(xfile):
