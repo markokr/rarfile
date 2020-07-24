@@ -9,7 +9,6 @@ Unreleased
 
 Breaking changes:
 
-* :data:`PATH_SEP` cannot be changed from "/".
 * Directory names will have "/" appended.
   [`#31 <https://github.com/markokr/rarfile/issues/31>`_]
 * :meth:`RarFile.extract` operates only on single entry,
@@ -17,7 +16,7 @@ Breaking changes:
   but not extract files under it.
 * :meth:`RarFile.extract`/:meth:`RarFile.extractall`/:meth:`RarFile.testrar`
   will not launch special unrar command line, instead they are
-  implemented on top of RarFile.open().
+  implemented on top of :meth:`RarFile.open`.
 * Keyword args in top-level APIs were renamed to match zipfile:
 
   * RarFile(rarfile) -> RarFile(file)
@@ -26,6 +25,7 @@ Breaking changes:
   * RarFile.open(fname, mode, psw) -> .open(name, mode, pwd)
   * RarFile.read(fname, psw) -> .read(name, pwd)
   * RarFile.printdir() -> .printdir(file=None)
+* :data:`PATH_SEP` cannot be changed from "/".
 
 New features:
 
@@ -36,11 +36,16 @@ New features:
 * :meth:`RarInfo.is_dir` is now preferred spelling of ``isdir()``.
   Old method kept as alias.
   [`#44 <https://github.com/markokr/rarfile/issues/44>`_]
+* :meth:`RarFile.__iter__` loops over :class:`RarInfo` entries.
 * RAR3: throw :exc:`NeedFirstVolume` exception with current volume number,
   like RAR5 does.
   [`#58 <https://github.com/markokr/rarfile/issues/58>`_]
-* :meth:`RarFile.__iter__` loops over :class:`RarInfo` entries.
+* RAR5: nanosecond timestamp support.
+* Minimal CLI when run as script: ``python3 -m rarfile``
 
+Cleanups:
+
+* Use pbkdf2 implementation from :mod:`hashlib`.
 
 Version 3.2 (2020-07-19)
 ------------------------
