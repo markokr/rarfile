@@ -699,7 +699,7 @@ class RarFile:
         self.close()
 
     def __iter__(self):
-        """Iterare over members."""
+        """Iterate over members."""
         return iter(self.infolist())
 
     def setpassword(self, pwd):
@@ -1893,13 +1893,13 @@ class RAR5Parser(CommonParser):
         if tflags & RAR5_XTIME_UNIXTIME_NS:
             if tflags & RAR5_XTIME_HAS_MTIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.mtime = h.mtime.replace(microsecond=nsec//1000)
+                h.mtime = h.mtime.replace(microsecond=nsec // 1000)
             if tflags & RAR5_XTIME_HAS_CTIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.ctime = h.ctime.replace(microsecond=nsec//1000)
+                h.ctime = h.ctime.replace(microsecond=nsec // 1000)
             if tflags & RAR5_XTIME_HAS_ATIME:
                 nsec, pos = load_le32(xdata, pos)
-                h.atime = h.atime.replace(microsecond=nsec//1000)
+                h.atime = h.atime.replace(microsecond=nsec // 1000)
 
     # just remember encryption info
     def _parse_file_encryption(self, h, xdata, pos):
@@ -2842,9 +2842,7 @@ def _parse_xtime(flag, data, pos, basetime=None):
             rem = (b << 16) | (rem >> 8)
 
         # convert 100ns units to microseconds
-        usec = rem // 10
-        if usec > 1000000:
-            usec = 999999
+        usec = min(rem // 10, 999999)
 
         # dostime has room for 30 seconds only, correct if needed
         if flag & 4 and basetime.second < 59:
@@ -2963,6 +2961,8 @@ def sanitize_filename(fname, pathsep, is_win32):
 
 
 def empty_read(src, size, blklen):
+    """Read and drop fixed amount of data.
+    """
     while size > 0:
         if size > blklen:
             res = src.read(blklen)
@@ -2990,20 +2990,11 @@ def to_datetime(t):
 
     # sanitize invalid values
     mday = (0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-    if mon < 1:
-        mon = 1
-    if mon > 12:
-        mon = 12
-    if day < 1:
-        day = 1
-    if day > mday[mon]:
-        day = mday[mon]
-    if h > 23:
-        h = 23
-    if m > 59:
-        m = 59
-    if s > 59:
-        s = 59
+    mon = max(1, min(mon, 12))
+    day = max(1, min(day, mday[mon]))
+    h = min(h, 23)
+    m = min(m, 59)
+    s = min(s, 59)
     if mon == 2 and day == 29:
         try:
             return datetime(year, mon, day, h, m, s)

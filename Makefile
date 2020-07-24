@@ -31,8 +31,8 @@ toxclean: clean
 	rm -rf .tox
 
 ack:
-	for fn in test/files/*.py27; do \
-		cp $$fn `echo $$fn | sed 's/py27/exp/'` || exit 1; \
+	for fn in test/files/*.py38-cryptography; do \
+		cp $$fn `echo $$fn | sed 's/[.]py.*/.exp/'` || exit 1; \
 	done
 
 prepare:

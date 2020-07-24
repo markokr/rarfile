@@ -81,6 +81,7 @@ disable=bad-continuation,
 	chained-comparison,
 	len-as-condition,
 	redefined-builtin,
+	import-outside-toplevel,
 	unnecessary-pass
 
 # Enable the message, report, category or checker with the given id(s). You can
