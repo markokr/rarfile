@@ -938,11 +938,13 @@ class RarFile:
                 raise
 
     def _set_attrs(self, info, dstfn):
-        mode = info.is_dir() and DEFAULT_DIR_MODE or DEFAULT_FILE_MODE
         if info.host_os == RAR_OS_UNIX:
-            os.chmod(dstfn, info.mode)
+            os.chmod(dstfn, info.mode & 0o777)
         elif info.host_os in (RAR_OS_WIN32, RAR_OS_MSDOS):
-            pass
+            if info.mode & DOS_MODE_READONLY:
+                st = os.stat(dstfn)
+                new_mode = st.st_mode & ~0o222
+                os.chmod(dstfn, new_mode & 0o777)
 
         if info.mtime and hasattr(os, "utime"):
             mtime_ns = atime_ns = to_nsecs(info.mtime)
