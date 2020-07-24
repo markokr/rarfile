@@ -3245,3 +3245,33 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, force=False):
         raise RarCannotExec("Cannot find working tool")
     return CURRENT_SETUP
 
+
+def main():
+    """Minimal command-line interface for rarfile module.
+    """
+    import argparse
+    p = argparse.ArgumentParser(description=main.__doc__)
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("-l", "--list", metavar="<rarfile>",
+                   help="Show archive listing")
+    g.add_argument("-e", "--extract", nargs=2,
+                   metavar=("<rarfile>", "<output_dir>"),
+                   help="Extract archive into target dir")
+    g.add_argument("-t", "--test", metavar="<rarfile>",
+                   help="Test if a archive is valid")
+    args = p.parse_args(sys.argv[1:])
+
+    if args.list:
+        with RarFile(args.list) as rf:
+            rf.printdir()
+    elif args.test:
+        with RarFile(args.test) as rf:
+            rf.testrar()
+    elif args.extract:
+        with RarFile(args.extract[0]) as rf:
+            rf.extractall(args.extract[1])
+
+
+if __name__ == "__main__":
+    main()
+
