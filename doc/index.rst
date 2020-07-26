@@ -1,13 +1,12 @@
 
 .. include:: ../README.rst
-    :end-before: Links
 
 Documentation:
 
 .. toctree::
    :maxdepth: 1
 
-   Module Documentation <api>
+   API Documentation <api>
    FAQs <faq>
    Release News  <news>
 
