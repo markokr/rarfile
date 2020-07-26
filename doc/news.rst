@@ -47,6 +47,15 @@ Cleanups:
 
 * Use pbkdf2 implementation from :mod:`hashlib`.
 
+Version 3.3 (2020-07-26)
+------------------------
+
+Fixes:
+
+* Add the .sfx test files to MANIFEST.in for inclusion in pypi tarball.
+  [`#60 <https://github.com/markokr/rarfile/issues/60>`_]
+* Add all files in git to tarball.
+
 Version 3.2 (2020-07-19)
 ------------------------
 
