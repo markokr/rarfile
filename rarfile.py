@@ -50,18 +50,13 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 
 """
 
-##
-## Imports and compat - support various crypto options
-##
-
 import errno
 import os
 import re
 import shutil
 import struct
 import sys
-from binascii import crc32 as rar_crc32
-from binascii import hexlify
+from binascii import crc32, hexlify
 from datetime import datetime, timedelta, timezone
 from hashlib import blake2s, pbkdf2_hmac, sha1
 from io import BytesIO, RawIOBase
@@ -1388,7 +1383,7 @@ class RAR3Parser(CommonParser):
         else:
             crcdat = hdata[2:crc_pos]
 
-        calc_crc = rar_crc32(crcdat) & 0xFFFF
+        calc_crc = crc32(crcdat) & 0xFFFF
 
         # return good header
         if h.header_crc == calc_crc:
@@ -1483,7 +1478,7 @@ class RAR3Parser(CommonParser):
                                       crc, self._password)
                 if not self._crc_check:
                     h.comment = self._decode_comment(cmt)
-                elif rar_crc32(cmt) & 0xFFFF == crc:
+                elif crc32(cmt) & 0xFFFF == crc:
                     h.comment = self._decode_comment(cmt)
 
             pos = pos_next
@@ -1502,7 +1497,7 @@ class RAR3Parser(CommonParser):
 
         # check crc
         if self._crc_check:
-            crc = rar_crc32(cmt)
+            crc = crc32(cmt)
             if crc != inf.CRC:
                 return None
 
@@ -1708,7 +1703,7 @@ class RAR5Parser(CommonParser):
             return None
         data_offset = fd.tell()
 
-        calc_crc = rar_crc32(memoryview(hdata)[4:])
+        calc_crc = crc32(memoryview(hdata)[4:])
         if header_crc != calc_crc:
             # header parsing failed.
             self._set_error("Header CRC error: exp=%x got=%x (xlen = %d)",
@@ -1983,8 +1978,8 @@ class RAR5Parser(CommonParser):
         # len, type, blk_flags, flags
         main_hdr = b"\x03\x01\x00\x00"
         endarc_hdr = b"\x03\x05\x00\x00"
-        main_hdr = S_LONG.pack(rar_crc32(main_hdr)) + main_hdr
-        endarc_hdr = S_LONG.pack(rar_crc32(endarc_hdr)) + endarc_hdr
+        main_hdr = S_LONG.pack(crc32(main_hdr)) + main_hdr
+        endarc_hdr = S_LONG.pack(crc32(endarc_hdr)) + endarc_hdr
         return self._open_hack_core(inf, pwd, RAR5_ID + main_hdr, endarc_hdr)
 
 
@@ -2556,7 +2551,7 @@ class CRC32Context:
 
     def update(self, data):
         """Process data."""
-        self._crc = rar_crc32(data, self._crc)
+        self._crc = crc32(data, self._crc)
 
     def digest(self):
         """Final hash."""
@@ -2906,7 +2901,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=N
     # full header
     hlen = S_BLK_HDR.size + len(fhdr)
     hdr = S_BLK_HDR.pack(0, RAR_BLOCK_FILE, flags, hlen) + fhdr
-    hcrc = rar_crc32(hdr[2:]) & 0xFFFF
+    hcrc = crc32(hdr[2:]) & 0xFFFF
     hdr = S_BLK_HDR.pack(hcrc, RAR_BLOCK_FILE, flags, hlen) + fhdr
 
     # archive main header
