@@ -60,3 +60,9 @@ unrelease:
 	git push github :$(TAG)
 	git tag -d $(TAG)
 
+dist-test:
+	python3 setup.py sdist
+	rm -rf $(PACKAGE)-$(VERSION)
+	tar xf $(TGZ)
+	cd $(PACKAGE)-$(VERSION) && tox
+
