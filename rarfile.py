@@ -63,8 +63,7 @@ import sys
 from binascii import crc32 as rar_crc32
 from binascii import hexlify
 from datetime import datetime, timedelta, timezone
-from hashlib import blake2s, sha1, sha256
-from hmac import HMAC
+from hashlib import blake2s, sha1, pbkdf2_hmac
 from io import BytesIO, RawIOBase
 from pathlib import Path
 from struct import Struct, pack, unpack
@@ -75,11 +74,9 @@ from tempfile import mkstemp
 try:
     try:
         from cryptography.hazmat.backends import default_backend
-        from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.ciphers import (
             Cipher, algorithms, modes,
         )
-        from cryptography.hazmat.primitives.kdf import pbkdf2
 
         class AES_CBC_Decrypt:
             """Decrypt API"""
@@ -87,23 +84,13 @@ try:
                 ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
                 self.decrypt = ciph.decryptor().update
 
-        def pbkdf2_sha256(password, salt, iters):
-            """PBKDF2 with HMAC-SHA256"""
-            ctx = pbkdf2.PBKDF2HMAC(hashes.SHA256(), 32, salt, iters, default_backend())
-            return ctx.derive(password)
-
     except ImportError:
         from Crypto.Cipher import AES
-        from Crypto.Protocol import KDF
 
         class AES_CBC_Decrypt:
             """Decrypt API"""
             def __init__(self, key, iv):
                 self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
-
-        def pbkdf2_sha256(password, salt, iters):
-            """PBKDF2 with HMAC-SHA256"""
-            return KDF.PBKDF2(password, salt, 32, iters, hmac_sha256)
 
     _have_crypto = 1
 except ImportError:
@@ -2887,6 +2874,11 @@ def rar3_s2k(pwd, salt):
     return key_le, iv
 
 
+def pbkdf2_sha256(password, salt, iters):
+    """PBKDF2 with HMAC-SHA256"""
+    return pbkdf2_hmac("sha256", password, salt, iters)
+
+
 def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=None):
     """Decompress blob of compressed data.
 
@@ -3096,11 +3088,6 @@ def check_returncode(p, out):
         msg = "%s [%d]" % (exc.__doc__, p.returncode)
 
     raise exc(msg)
-
-
-def hmac_sha256(key, data):
-    """HMAC-SHA256"""
-    return HMAC(key, data, sha256).digest()
 
 
 def membuf_tempfile(memfile):

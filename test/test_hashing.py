@@ -61,11 +61,6 @@ def test_blake2sp():
     assert xblake2sp_slow(long2) == '24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3'
 
 
-def test_hmac_sha256():
-    assert tohex(rarfile.hmac_sha256(b'key', b'data')
-                 ) == '5031fe3d989c6d1537a013fa6e739da23463fdaec3b70137d828e36ace221bd0'
-
-
 def test_rar3_sha1():
     for n in range(0, 200):
         data = bytearray(range(n))
@@ -103,8 +98,7 @@ def test_rar3_s2k():
     assert (tohex(key), tohex(iv)) == exp
 
 
-if rarfile._have_crypto:
-    def test_pbkdf2_hmac_sha256():
-        assert tohex(rarfile.pbkdf2_sha256(b'password', b'salt', 100)) == \
-            '07e6997180cf7f12904f04100d405d34888fdf62af6d506a0ecc23b196fe99d8'
+def test_pbkdf2_hmac_sha256():
+    assert tohex(rarfile.pbkdf2_sha256(b'password', b'salt', 100)) == \
+        '07e6997180cf7f12904f04100d405d34888fdf62af6d506a0ecc23b196fe99d8'
 
