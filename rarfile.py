@@ -1169,12 +1169,14 @@ class CommonParser:
         """Return stream object for file data."""
 
         if inf.file_redir:
+            redir_type, redir_flags, redir_name = inf.file_redir
             # cannot leave to unrar as it expects copied file to exist
-            if inf.file_redir[0] in (RAR5_XREDIR_FILE_COPY, RAR5_XREDIR_HARD_LINK):
-                inf = self.getinfo(inf.file_redir[2])
+            if redir_type in (RAR5_XREDIR_FILE_COPY, RAR5_XREDIR_HARD_LINK):
+                inf = self.getinfo(redir_name)
                 if not inf:
                     raise BadRarFile("cannot find copied file")
-
+            elif redir_type in (RAR5_XREDIR_UNIX_SYMLINK, RAR5_XREDIR_WINDOWS_SYMLINK):
+                return BytesIO(redir_name.encode("utf8"))
         if inf.flags & RAR_FILE_SPLIT_BEFORE:
             raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename, None)
 

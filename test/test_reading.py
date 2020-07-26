@@ -202,6 +202,11 @@ def test_reading_readonly():
     run_reading('test/files/rar5-readonly-win.rar')
 
 
+def test_reading_symlinks():
+    run_reading('test/files/rar3-symlink-unix.rar')
+    run_reading('test/files/rar5-symlink-unix.rar')
+
+
 def test_reading_missed():
     problems = []
     missed = []

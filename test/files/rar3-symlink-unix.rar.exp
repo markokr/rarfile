@@ -1,0 +1,19 @@
+Archive: test/files/rar3-symlink-unix.rar
+FILE: hdrlen=46 datlen=8
+  flags=0x90c0:EXTTIME,LONG,D4096
+  os=3:UNIX ver=20 mode=lrwxrwxrwx meth=0 cmp=8 dec=8 vol=0
+  crc=0x8b387909 (2335734025) date_time=2020-07-26 23:13:58
+  name=data_link
+  mtime=2020-07-26T23:13:58.125453100
+FILE: hdrlen=45 datlen=5
+  flags=0x90c0:EXTTIME,LONG,D4096
+  os=3:UNIX ver=29 mode=-rw-rw-r-- meth=0 cmp=5 dec=5 vol=0
+  crc=0xe6c1c582 (3871458690) date_time=2020-07-26 23:13:33
+  name=data.txt
+  mtime=2020-07-26T23:13:33.568312800
+FILE: hdrlen=48 datlen=12
+  flags=0x90c0:EXTTIME,LONG,D4096
+  os=3:UNIX ver=20 mode=lrwxrwxrwx meth=0 cmp=12 dec=12 vol=0
+  crc=0xcfb67605 (3484841477) date_time=2020-07-26 23:32:08
+  name=random_link
+  mtime=2020-07-26T23:32:08.896575800

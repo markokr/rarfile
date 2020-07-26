@@ -1,0 +1,28 @@
+Archive: test/files/rar5-symlink-win.rar
+R5_FILE: hdrlen=42 datlen=5 hdr_extra=11
+  block_flags=0x0003:EXTRA,DATA
+  name=data_link
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=ARCHIVE cmp=5 dec=5 vol=0
+  crc=0xe6c1c582 (3871458690)
+  date_time=2020-07-26 20:13:33
+  mtime=2020-07-26T20:13:33.568312800+00:00
+R5_FILE: hdrlen=41 datlen=5 hdr_extra=11
+  block_flags=0x0003:EXTRA,DATA
+  name=data.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=ARCHIVE cmp=5 dec=5 vol=0
+  crc=0xe6c1c582 (3871458690)
+  date_time=2020-07-26 20:13:33
+  mtime=2020-07-26T20:13:33.568312800+00:00
+R5_FILE: hdrlen=44 datlen=0 hdr_extra=11
+  block_flags=0x0003:EXTRA,DATA
+  name=random_link
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=ARCHIVE cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-26 20:31:57
+  mtime=2020-07-26T20:31:57.632334200+00:00
