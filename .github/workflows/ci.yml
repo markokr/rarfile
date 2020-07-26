@@ -38,15 +38,15 @@ jobs:
           python -m tox -r -- --color=yes
 
   linux:
-    name: "Test - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
+    name: "Test - Ubuntu ${{matrix.pick.OS}} / ${{matrix.pick.PYNAME}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
       matrix:
         pick:
-          - {OS: "18.04", PY: "3.6", TOXENV: "py36-pycryptodome"}
-          - {OS: "18.04", PY: "3.7", TOXENV: "py37-cryptography"}
-          - {OS: "20.04", PY: "3.8", TOXENV: "py38,py38-cryptography"}
-          - {OS: "18.04", PY: "pypy3", TOXENV: "pypy3"}
+          - {OS: "18.04", PY: "pypy3", PYNAME: "PyPy3", TOXENV: "pypy3"}
+          - {OS: "18.04", PY: "3.6", PYNAME: "Python 3.6", TOXENV: "py36-pycryptodome"}
+          - {OS: "18.04", PY: "3.7", PYNAME: "Python 3.7", TOXENV: "py37-cryptography"}
+          - {OS: "20.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38,py38-cryptography"}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
