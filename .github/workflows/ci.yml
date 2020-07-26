@@ -12,7 +12,7 @@ on:
 jobs:
 
   lint:
-    name: "Check - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
+    name: "Lint - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
       matrix:
@@ -46,6 +46,8 @@ jobs:
           - {OS: "18.04", PY: "3.6", TOXENV: "py36-pycryptodome"}
           - {OS: "18.04", PY: "3.7", TOXENV: "py37-cryptography"}
           - {OS: "20.04", PY: "3.8", TOXENV: "py38,py38-cryptography"}
+          - {OS: "20.04", PY: "3.9", TOXENV: "py39"}
+          - {OS: "18.04", PY: "pypy3", TOXENV: "pypy3"}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -60,6 +62,7 @@ jobs:
 
       - name: "Install tox"
         run: |
+          python --version
           python -m pip install tox wheel
 
       - name: "Run tox - ${{matrix.pick.TOXENV}}"
