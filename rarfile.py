@@ -63,7 +63,7 @@ import sys
 from binascii import crc32 as rar_crc32
 from binascii import hexlify
 from datetime import datetime, timedelta, timezone
-from hashlib import blake2s, sha1, pbkdf2_hmac
+from hashlib import blake2s, pbkdf2_hmac, sha1
 from io import BytesIO, RawIOBase
 from pathlib import Path
 from struct import Struct, pack, unpack
@@ -116,7 +116,6 @@ UNRAR_TOOL = "unrar"
 
 #: executable for unar tool
 UNAR_TOOL = "unar"
-LSAR_TOOL = "lsar"
 
 #: executable for bsdtar tool
 BSDTAR_TOOL = "bsdtar"
@@ -3015,8 +3014,8 @@ class nsdatetime(datetime):
         if timespec == "auto" or timespec == "nanoseconds":
             res = super().isoformat(sep, "microseconds")
             pos = res.find(".")
-            part1 = res[:pos+1]
-            part2 = res[pos+7:]
+            part1 = res[:pos + 1]
+            part2 = res[pos + 7:]
             return "%s%09d%s" % (part1, self.nanosecond, part2)
         return super().isoformat(sep, timespec)
 

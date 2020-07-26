@@ -6,11 +6,14 @@ from __future__ import division, print_function
 from binascii import unhexlify
 
 import pytest
+
 import rarfile
 
 try:
-    from cryptography.hazmat.primitives.ciphers import algorithms, modes, Cipher
     from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.ciphers import (
+        Cipher, algorithms, modes,
+    )
     def aes_encrypt(key, iv, data):
         ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
         enc = ciph.encryptor()

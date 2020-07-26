@@ -4,6 +4,7 @@
 import sys
 
 import pytest
+
 import rarfile
 
 

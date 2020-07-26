@@ -5,6 +5,7 @@ import io
 from glob import glob
 
 import pytest
+
 import rarfile
 
 _done_reading = set()

@@ -243,8 +243,9 @@ def show_item(h):
 def modex3(v):
     return [v & 4 and "r" or "-", v & 2 and "w" or "-", v & 1 and "x" or "-"]
 
+
 def unix_mode(mode):
-    perms = modex3(mode>>6) + modex3(mode>>3) + modex3(mode)
+    perms = modex3(mode >> 6) + modex3(mode >> 3) + modex3(mode)
     if mode & 0x0800:
         perms[2] = perms[2] == "x" and "s" or "S"
     if mode & 0x0400:
@@ -265,6 +266,7 @@ def unix_mode(mode):
         perms.insert(0, "?")
         perms.append("(0x%04x)" % rest)
     return "".join(perms)
+
 
 def show_mode(h):
     if h.host_os in (rf.RAR_OS_UNIX, rf.RAR_OS_BEOS):
