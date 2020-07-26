@@ -102,13 +102,12 @@ def check_subdir(rf, tmp_path):
         os.chdir(old)
 
 
-def test_subdir_rar3(tmp_path):
-    with rarfile.RarFile("test/files/rar3-subdirs.rar") as rf:
-        check_subdir(rf, tmp_path)
-
-
-def test_subdir_rar5(tmp_path):
-    with rarfile.RarFile("test/files/rar5-subdirs.rar") as rf:
+@pytest.mark.parametrize("fn", [
+    "test/files/rar3-subdirs.rar",
+    "test/files/rar5-subdirs.rar",
+])
+def test_subdirs(fn, tmp_path):
+    with rarfile.RarFile(fn) as rf:
         check_subdir(rf, tmp_path)
 
 
