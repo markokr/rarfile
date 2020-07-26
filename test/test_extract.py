@@ -4,8 +4,9 @@
 import os
 from datetime import datetime
 
-import rarfile
+import pytest
 
+import rarfile
 
 def san_unix(fn):
     return rarfile.sanitize_filename(fn, "/", False)
@@ -102,11 +103,28 @@ def check_subdir(rf, tmp_path):
 
 
 def test_subdir_rar3(tmp_path):
-    with rarfile.RarFile('test/files/rar3-subdirs.rar') as rf:
+    with rarfile.RarFile("test/files/rar3-subdirs.rar") as rf:
         check_subdir(rf, tmp_path)
 
 
 def test_subdir_rar5(tmp_path):
-    with rarfile.RarFile('test/files/rar5-subdirs.rar') as rf:
+    with rarfile.RarFile("test/files/rar5-subdirs.rar") as rf:
         check_subdir(rf, tmp_path)
+
+
+@pytest.mark.parametrize("fn", [
+    "test/files/rar3-readonly-unix.rar",
+    "test/files/rar3-readonly-win.rar",
+    "test/files/rar5-readonly-unix.rar",
+    "test/files/rar5-readonly-win.rar",
+])
+def test_readonly(fn, tmp_path):
+    with rarfile.RarFile(fn) as rf:
+        rf.extractall(tmp_path)
+
+    assert os.access(tmp_path / "ro_dir/ro_file.txt", os.R_OK)
+    assert not os.access(tmp_path / "ro_dir/ro_file.txt", os.W_OK)
+
+    assert os.access(tmp_path / "ro_dir", os.R_OK)
+    assert not os.access(tmp_path / "ro_dir", os.W_OK)
 

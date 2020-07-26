@@ -195,6 +195,13 @@ def test_reading_rar5_subdirs():
     run_reading('test/files/rar5-subdirs.rar')
 
 
+def test_reading_readonly():
+    run_reading('test/files/rar3-readonly-unix.rar')
+    run_reading('test/files/rar3-readonly-win.rar')
+    run_reading('test/files/rar5-readonly-unix.rar')
+    run_reading('test/files/rar5-readonly-win.rar')
+
+
 def test_reading_missed():
     problems = []
     missed = []

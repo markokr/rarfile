@@ -1,0 +1,10 @@
+Archive: test/files/rar5-readonly-unix.rar
+R5_FILE: hdrlen=53 datlen=9 hdr_extra=11
+  block_flags=0x0003:EXTRA,DATA
+  name=ro_dir/ro_file.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-r--r--r-- cmp=9 dec=9 vol=0
+  crc=0x818d2276 (2173510262)
+  date_time=2020-07-26 19:11:42
+  mtime=2020-07-26T19:11:42.312616322+00:00

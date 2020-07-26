@@ -833,7 +833,7 @@ class RarFile:
         if dirs:
             dirs.sort(reverse=True)
             for dst, inf in dirs:
-                self._set_attrs(dst, inf)
+                self._set_attrs(inf, dst)
 
     def testrar(self, pwd=None):
         """Read all files and test CRC.

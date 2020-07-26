@@ -1,0 +1,7 @@
+Archive: test/files/rar3-readonly-unix.rar
+FILE: hdrlen=55 datlen=9
+  flags=0x9020:EXTTIME,LONG,D128
+  os=3:UNIX ver=29 mode=-r--r--r-- meth=0 cmp=9 dec=9 vol=0
+  crc=0x818d2276 (2173510262) date_time=2020-07-26 22:11:42
+  name=ro_dir/ro_file.txt
+  mtime=2020-07-26T22:11:42.312616300
