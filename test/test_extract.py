@@ -31,20 +31,22 @@ def test_sanitize_win32():
     assert san_win32("z<>*?:\\^") == "z_______"
 
 
-def checktime(fn, timestamp):
-    # cannot check subsecond precision as filesystem may not support it
+def checktime(fn, exp_mtime):
+    cut = len("0000-00-00 00:00:00")
     st = os.stat(fn)
-    mtime = datetime.fromtimestamp(st.st_mtime, rarfile.UTC)
-    mtime = mtime.isoformat(" ", "seconds").split("+")[0]
-    assert timestamp == mtime
+    got_mtime = datetime.fromtimestamp(st.st_mtime, exp_mtime.tzinfo)
+    exp_stamp = exp_mtime.isoformat(" ", "seconds")[:cut]
+    got_stamp = got_mtime.isoformat(" ", "seconds")[:cut]
+    # cannot check subsecond precision as filesystem may not support it
+    assert exp_stamp == got_stamp
 
 
-def checkfile(fn, data, timestamp=None):
+def checkfile(fn, data, mtime):
     with open(fn, "r") as f:
         got = f.read()
         assert got.strip() == data
 
-    checktime(fn, timestamp)
+    checktime(fn, mtime)
 
 
 def check_subdir(rf, tmp_path):
@@ -55,31 +57,35 @@ def check_subdir(rf, tmp_path):
     rf.extract(inf, ext1)
     assert sorted(os.listdir(tmp_path)) == ["ext1"]
     assert os.listdir(ext1 / "sub") == ["dir1"]
-    checkfile(ext1 / "sub/dir1/file1.txt", "file1", "2020-07-20 18:01:33")
+    checkfile(ext1 / "sub/dir1/file1.txt", "file1", inf.mtime)
 
     # no mkdir
     ext2 = tmp_path / "ext2"
+    inf = rf.getinfo("sub/dir2/file2.txt")
     rf.extract("sub/dir2/file2.txt", ext2)
     assert sorted(os.listdir(tmp_path)) == ["ext1", "ext2"]
     assert os.listdir(ext2 / "sub") == ["dir2"]
-    checkfile(ext2 / "sub/dir2/file2.txt", "file2", "2020-07-20 18:01:44")
+    checkfile(ext2 / "sub/dir2/file2.txt", "file2", inf.mtime)
 
     # spaced
     ext3 = tmp_path / "ext3"
+    inf = rf.getinfo("sub/with space/long fn.txt")
     rf.extract("sub/with space/long fn.txt", ext3)
-    checkfile(ext3 / "sub/with space/long fn.txt", "long fn", "2020-07-20 18:02:17")
+    checkfile(ext3 / "sub/with space/long fn.txt", "long fn", inf.mtime)
 
     # unicode
     ext4 = tmp_path / "ext4"
+    inf = rf.getinfo("sub/üȵĩöḋè/file.txt")
     rf.extract("sub/üȵĩöḋè/file.txt", ext4)
-    checkfile(ext4 / "sub/üȵĩöḋè/file.txt", "file", "2020-07-20 18:07:00")
+    checkfile(ext4 / "sub/üȵĩöḋè/file.txt", "file", inf.mtime)
 
     # dir only
     ext5 = tmp_path / "ext5"
+    inf = rf.getinfo("sub/dir2")
     rf.extract("sub/dir2", ext5)
     assert os.listdir(ext5 / "sub") == ["dir2"]
     assert os.listdir(ext5 / "sub/dir2") == []
-    checktime(ext5 / "sub/dir2", "2020-07-20 18:01:44")
+    checktime(ext5 / "sub/dir2", inf.mtime)
 
     # cwd
     ext6 = tmp_path / "ext6"
