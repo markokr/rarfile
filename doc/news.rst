@@ -24,6 +24,7 @@ Breaking changes:
   * RarFile.getinfo(fname) -> .getinfo(name)
   * RarFile.open(fname, mode, psw) -> .open(name, mode, pwd)
   * RarFile.read(fname, psw) -> .read(name, pwd)
+
 * :data:`PATH_SEP` cannot be changed from "/".
 
 New features:
@@ -45,7 +46,7 @@ New features:
 
 Cleanups:
 
-* Use pbkdf2 implementation from :mod:`hashlib`.
+* Use PBKDF2 implementation from :mod:`hashlib`.
 
 Version 3.3 (2020-07-26)
 ------------------------
