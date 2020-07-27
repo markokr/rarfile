@@ -144,9 +144,9 @@ def test_symlink(fn, tmp_path):
         data_link = rf.getinfo("data_link")
         random_link = rf.getinfo("random_link")
 
-        assert not data.is_link()
-        assert data_link.is_link()
-        assert random_link.is_link()
+        assert not data.is_symlink()
+        assert data_link.is_symlink()
+        assert random_link.is_symlink()
 
         assert rf.read(data) == b"data\n"
         assert rf.read(data_link) == b"data.txt"

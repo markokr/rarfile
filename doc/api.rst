@@ -53,6 +53,11 @@ Constants
 .. autodata:: RAR_OS_OS2
 .. autodata:: RAR_OS_MSDOS
 
+Warnings
+--------
+
+.. autoclass:: UnsupportedWarning
+
 Exceptions
 ----------
 

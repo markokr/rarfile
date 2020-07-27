@@ -24,6 +24,12 @@ def run_reading_normal(fn, comment):
         if ifn.endswith("/"):
             continue
 
+        info = rf.getinfo(ifn)
+        if info.is_dir():
+            continue
+        if info.is_symlink():
+            continue
+
         # full read
         rf.read(ifn)
 
@@ -37,7 +43,7 @@ def run_reading_normal(fn, comment):
                 break
             total += len(buf)
         f.close()
-        assert total == item.file_size
+        assert total == item.file_size, ifn
 
         # read from stream with readinto
         bbuf = bytearray(1024)
@@ -205,6 +211,7 @@ def test_reading_readonly():
 def test_reading_symlinks():
     run_reading('test/files/rar3-symlink-unix.rar')
     run_reading('test/files/rar5-symlink-unix.rar')
+    run_reading('test/files/rar5-symlink-win.rar')
 
 
 def test_reading_missed():

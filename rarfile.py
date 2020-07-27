@@ -56,6 +56,7 @@ import re
 import shutil
 import struct
 import sys
+import warnings
 from binascii import crc32, hexlify
 from datetime import datetime, timedelta, timezone
 from hashlib import blake2s, pbkdf2_hmac, sha1
@@ -467,6 +468,10 @@ class RarCannotExec(RarExecError):
     """Executable not found."""
 
 
+class UnsupportedWarning(UserWarning):
+    """There is issue with RAR archive."""
+
+
 class RarInfo:
     r"""An entry in rar archive.
 
@@ -605,8 +610,12 @@ class RarInfo:
     def isdir(self):
         return self.is_dir()
 
-    def is_link(self):
+    def is_symlink(self):
         """Returns True if entry is a symlink."""
+        return False
+
+    def is_file(self):
+        """Returns True if entry is a normal file."""
         return False
 
     def needs_password(self):
@@ -894,12 +903,12 @@ class RarFile:
         if dirname and dirname != ".":
             self._makedirs(dirname)
 
-        if info.is_dir():
-            self._make_dir(info, dstfn, set_attrs)
-        elif info.is_link():
-            self._make_symlink(info, dstfn)
-        else:
+        if info.is_file():
             self._make_file(info, dstfn, pwd, set_attrs)
+        elif info.is_dir():
+            self._make_dir(info, dstfn, set_attrs)
+        elif info.is_symlink():
+            self._make_symlink(info, dstfn)
 
         return dstfn
 
@@ -917,15 +926,17 @@ class RarFile:
             self._set_attrs(info, dstfn)
 
     def _make_symlink(self, info, dstfn):
-        src = self.read(info)
-
         target_is_directory = False
         if info.host_os == RAR_OS_UNIX:
-            pass
+            link_name = self.read(info)
         elif info.file_redir:
-            target_is_directory = info.file_redir[0] == RAR5_XREDIR_WINDOWS_JUNCTION
+            redir_type, redir_flags, link_name = info.file_redir
+            if redir_type == RAR5_XREDIR_WINDOWS_JUNCTION:
+                warnings.warn(f"Windows junction not supported - {info.filename}", UnsupportedWarning)
+                return
+            target_is_directory = redir_type & RAR5_XREDIR_ISDIR > 0
 
-        os.symlink(src, dstfn, target_is_directory=target_is_directory)
+        os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
 
     def _makedirs(self, name):
         if not name:
@@ -1320,12 +1331,19 @@ class Rar3Info(RarInfo):
                 return True
         return False
 
-    def is_link(self):
+    def is_symlink(self):
         """Returns True if entry is a symlink."""
         return (
             self.type == RAR_BLOCK_FILE and
             self.host_os == RAR_OS_UNIX and
             self.mode & 0xF000 == 0xA000
+        )
+
+    def is_file(self):
+        """Returns True if entry is a normal file."""
+        return (
+            self.type == RAR_BLOCK_FILE and
+            not (self.is_dir() or self.is_symlink())
         )
 
 
@@ -1655,7 +1673,7 @@ class Rar5FileInfo(Rar5BaseFile):
     """
     type = RAR_BLOCK_FILE
 
-    def is_link(self):
+    def is_symlink(self):
         """Returns True if entry is a symlink."""
         # pylint: disable=unsubscriptable-object
         return (
@@ -1667,6 +1685,9 @@ class Rar5FileInfo(Rar5BaseFile):
             )
         )
 
+    def is_file(self):
+        """Returns True if entry is a normal file."""
+        return not (self.is_dir() or self.is_symlink())
 
 class Rar5ServiceInfo(Rar5BaseFile):
     """RAR5 service record.

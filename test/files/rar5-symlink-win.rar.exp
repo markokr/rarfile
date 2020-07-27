@@ -1,28 +1,30 @@
 Archive: test/files/rar5-symlink-win.rar
-R5_FILE: hdrlen=42 datlen=5 hdr_extra=11
+R5_FILE: hdrlen=49 datlen=9 hdr_extra=11
   block_flags=0x0003:EXTRA,DATA
-  name=data_link
+  name=content/file.txt
   file_flags=0x0004:CRC32
-  cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=0:WINDOWS mode=ARCHIVE cmp=5 dec=5 vol=0
-  crc=0xe6c1c582 (3871458690)
-  date_time=2020-07-26 20:13:33
-  mtime=2020-07-26T20:13:33.568312800+00:00
-R5_FILE: hdrlen=41 datlen=5 hdr_extra=11
+  cmp_algo=0 cmp_meth=0 dict=8 solid=False
+  os=0:WINDOWS mode=ARCHIVE cmp=9 dec=9 vol=0
+  crc=0x35f39d4d (905157965)
+  date_time=2020-07-27 17:39:15
+  mtime=2020-07-27T17:39:15.672228900+00:00
+R5_FILE: hdrlen=64 datlen=0 hdr_extra=29
   block_flags=0x0003:EXTRA,DATA
-  name=data.txt
+  name=links/bad_link
   file_flags=0x0004:CRC32
-  cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=0:WINDOWS mode=ARCHIVE cmp=5 dec=5 vol=0
-  crc=0xe6c1c582 (3871458690)
-  date_time=2020-07-26 20:13:33
-  mtime=2020-07-26T20:13:33.568312800+00:00
-R5_FILE: hdrlen=44 datlen=0 hdr_extra=11
-  block_flags=0x0003:EXTRA,DATA
-  name=random_link
-  file_flags=0x0004:CRC32
-  cmp_algo=0 cmp_meth=0 dict=0 solid=False
-  os=0:WINDOWS mode=ARCHIVE cmp=0 dec=0 vol=0
+  cmp_algo=0 cmp_meth=0 dict=8 solid=False
+  os=0:WINDOWS mode=ARCHIVE,REPARSE_POINT cmp=0 dec=0 vol=0
   crc=0x00000000 (0)
-  date_time=2020-07-26 20:31:57
-  mtime=2020-07-26T20:31:57.632334200+00:00
+  date_time=2020-07-27 17:43:43
+  mtime=2020-07-27T17:43:43.625091100+00:00
+  redir: type=WINDOWS_SYMLINK flags=0:- destination=../../missing
+R5_FILE: hdrlen=71 datlen=0 hdr_extra=35
+  block_flags=0x0003:EXTRA,DATA
+  name=links/file_link
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=8 solid=False
+  os=0:WINDOWS mode=ARCHIVE,REPARSE_POINT cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:40:02
+  mtime=2020-07-27T17:40:02.484275100+00:00
+  redir: type=WINDOWS_SYMLINK flags=0:- destination=../content/file.txt
