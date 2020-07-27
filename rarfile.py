@@ -1303,6 +1303,7 @@ class Rar3Info(RarInfo):
     data_offset = None
     _md_class = None
     _md_expect = None
+    _name_size = None
 
     # make sure some rar5 fields are always present
     file_redir = None
@@ -1448,7 +1449,7 @@ class RAR3Parser(CommonParser):
         h.mtime = to_datetime(h.date_time)
         h.extract_version = fld[5]
         h.compress_type = fld[6]
-        name_size = fld[7]
+        h._name_size = name_size = fld[7]
         h.mode = fld[8]
 
         h._md_class = CRC32Context

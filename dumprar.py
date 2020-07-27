@@ -290,10 +290,14 @@ def show_item_v3(h):
             s_os = os_list[h.host_os]
         else:
             s_os = "?"
-        xprint("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d vol=%d",
+        if h.flags & rf.RAR_FILE_UNICODE:
+            s_namecmp = " namecmp=%d/%d" % (len(h.orig_filename), h._name_size)
+        else:
+            s_namecmp = ""
+        xprint("  os=%d:%s ver=%d mode=%s meth=%c cmp=%d dec=%d vol=%d%s",
                h.host_os, s_os,
                h.extract_version, s_mode, h.compress_type,
-               h.compress_size, h.file_size, h.volume)
+               h.compress_size, h.file_size, h.volume, s_namecmp)
         ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
         xprint("  crc=0x%08x (%d) date_time=%s", ucrc, h.CRC, fmt_time(h.date_time))
         xprint("  name=%s", h.filename)

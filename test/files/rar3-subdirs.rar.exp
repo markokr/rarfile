@@ -13,7 +13,7 @@ FILE: hdrlen=63 datlen=8
   mtime=2020-07-20T21:02:17.499892
 FILE: hdrlen=87 datlen=5
   flags=0x9220:UNICODE,EXTTIME,LONG,D128
-  os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=5 dec=5 vol=0
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=5 dec=5 vol=0 namecmp=26/50
   crc=0x2fec89c1 (804030913) date_time=2020-07-20 21:07:00
   name=sub/üȵĩöḋè/file.txt
   mtime=2020-07-20T21:07:00.141758600
