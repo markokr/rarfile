@@ -156,6 +156,7 @@ def test_symlink(fn, tmp_path):
         assert os.path.islink(tmp_path / "data_link")
         assert os.path.islink(tmp_path / "random_link")
 
-        assert os.readlink(tmp_path / "data_link") == "data.txt"
-        assert os.readlink(tmp_path / "random_link") == "../random123"
+        # str - work around pypy3 bug
+        assert os.readlink(str(tmp_path / "data_link")) == "data.txt"
+        assert os.readlink(str(tmp_path / "random_link")) == "../random123"
 
