@@ -1462,7 +1462,8 @@ class RAR3Parser(CommonParser):
             h.add_size = h.compress_size
 
         name, pos = load_bytes(hdata, name_size, pos)
-        if h.flags & RAR_FILE_UNICODE:
+        if h.flags & RAR_FILE_UNICODE and b"\0" in name:
+            # stored in custom encoding
             nul = name.find(ZERO)
             h.orig_filename = name[:nul]
             u = UnicodeFilename(h.orig_filename, name[nul + 1:])
@@ -1471,7 +1472,12 @@ class RAR3Parser(CommonParser):
             # if parsing failed fall back to simple name
             if u.failed:
                 h.filename = self._decode(h.orig_filename)
+        elif h.flags & RAR_FILE_UNICODE:
+            # stored in UTF8
+            h.orig_filename = name
+            h.filename = name.decode("utf8", "replace")
         else:
+            # stored in random encoding
             h.orig_filename = name
             h.filename = self._decode(name)
 
