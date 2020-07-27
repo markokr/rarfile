@@ -2,6 +2,7 @@
 """
 
 import os
+import sys
 from datetime import datetime
 
 import pytest
@@ -33,12 +34,12 @@ def test_sanitize_win32():
 
 
 def checktime(fn, exp_mtime):
+    # cannot check subsecond precision as filesystem may not support it
     cut = len("0000-00-00 00:00:00")
     st = os.stat(fn)
     got_mtime = datetime.fromtimestamp(st.st_mtime, exp_mtime.tzinfo)
     exp_stamp = exp_mtime.isoformat(" ", "seconds")[:cut]
     got_stamp = got_mtime.isoformat(" ", "seconds")[:cut]
-    # cannot check subsecond precision as filesystem may not support it
     assert exp_stamp == got_stamp
 
 
@@ -124,6 +125,37 @@ def test_readonly(fn, tmp_path):
     assert os.access(tmp_path / "ro_dir/ro_file.txt", os.R_OK)
     assert not os.access(tmp_path / "ro_dir/ro_file.txt", os.W_OK)
 
-    assert os.access(tmp_path / "ro_dir", os.R_OK)
-    assert not os.access(tmp_path / "ro_dir", os.W_OK)
+    if sys.platform != "win32":
+        assert os.access(tmp_path / "ro_dir", os.R_OK)
+        assert not os.access(tmp_path / "ro_dir", os.W_OK)
+
+
+@pytest.mark.parametrize("fn", [
+    "test/files/rar3-symlink-unix.rar",
+    "test/files/rar5-symlink-unix.rar",
+])
+def test_symlink(fn, tmp_path):
+    with rarfile.RarFile(fn) as rf:
+        rf.extractall(tmp_path)
+
+        assert sorted(os.listdir(tmp_path)) == ["data.txt", "data_link", "random_link"]
+
+        data = rf.getinfo("data.txt")
+        data_link = rf.getinfo("data_link")
+        random_link = rf.getinfo("random_link")
+
+        assert not data.is_link()
+        assert data_link.is_link()
+        assert random_link.is_link()
+
+        assert rf.read(data) == b"data\n"
+        assert rf.read(data_link) == b"data.txt"
+        assert rf.read(random_link) == b"../random123"
+
+        assert os.path.isfile(tmp_path / "data.txt")
+        assert os.path.islink(tmp_path / "data_link")
+        assert os.path.islink(tmp_path / "random_link")
+
+        assert os.readlink(tmp_path / "data_link") == "data.txt"
+        assert os.readlink(tmp_path / "random_link") == "../random123"
 

@@ -605,6 +605,10 @@ class RarInfo:
     def isdir(self):
         return self.is_dir()
 
+    def is_link(self):
+        """Returns True if entry is a symlink."""
+        return False
+
     def needs_password(self):
         """Returns True if data is stored password-protected.
         """
@@ -886,21 +890,42 @@ class RarFile:
             path = os.fspath(path)
         dstfn = os.path.join(path, fname)
 
-        if info.is_dir():
-            self._makedirs(dstfn)
-        else:
-            dirname = os.path.dirname(dstfn)
-            if dirname and dirname != ".":
-                self._makedirs(dirname)
+        dirname = os.path.dirname(dstfn)
+        if dirname and dirname != ".":
+            self._makedirs(dirname)
 
-            with self.open(info, "r", pwd) as src:
-                with open(dstfn, "wb") as dst:
-                    shutil.copyfileobj(src, dst)
+        if info.is_dir():
+            self._make_dir(info, dstfn, set_attrs)
+        elif info.is_link():
+            self._make_symlink(info, dstfn)
+        else:
+            self._make_file(info, dstfn, pwd, set_attrs)
+
+        return dstfn
+
+    def _make_dir(self, info, dstfn, set_attrs):
+        self._makedirs(dstfn)
+        if set_attrs:
+            self._set_attrs(info, dstfn)
+
+    def _make_file(self, info, dstfn, pwd, set_attrs):
+        with self.open(info, "r", pwd) as src:
+            with open(dstfn, "wb") as dst:
+                shutil.copyfileobj(src, dst)
 
         if set_attrs:
             self._set_attrs(info, dstfn)
 
-        return dstfn
+    def _make_symlink(self, info, dstfn):
+        src = self.read(info)
+
+        target_is_directory = False
+        if info.host_os == RAR_OS_UNIX:
+            pass
+        elif info.file_redir:
+            target_is_directory = info.file_redir[0] == RAR5_XREDIR_WINDOWS_JUNCTION
+
+        os.symlink(src, dstfn, target_is_directory=target_is_directory)
 
     def _makedirs(self, name):
         if not name:
@@ -1175,7 +1200,10 @@ class CommonParser:
                 inf = self.getinfo(redir_name)
                 if not inf:
                     raise BadRarFile("cannot find copied file")
-            elif redir_type in (RAR5_XREDIR_UNIX_SYMLINK, RAR5_XREDIR_WINDOWS_SYMLINK):
+            elif redir_type in (
+                RAR5_XREDIR_UNIX_SYMLINK, RAR5_XREDIR_WINDOWS_SYMLINK,
+                RAR5_XREDIR_WINDOWS_JUNCTION,
+            ):
                 return BytesIO(redir_name.encode("utf8"))
         if inf.flags & RAR_FILE_SPLIT_BEFORE:
             raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename, None)
@@ -1293,6 +1321,14 @@ class Rar3Info(RarInfo):
             if self.flags & (RAR_MAIN_SOLID | RAR_MAIN_PASSWORD):
                 return True
         return False
+
+    def is_link(self):
+        """Returns True if entry is a symlink."""
+        return (
+            self.type == RAR_BLOCK_FILE and
+            self.host_os == RAR_OS_UNIX and
+            self.mode & 0xF000 == 0xA000
+        )
 
 
 class RAR3Parser(CommonParser):
@@ -1614,6 +1650,18 @@ class Rar5FileInfo(Rar5BaseFile):
     """RAR5 file record.
     """
     type = RAR_BLOCK_FILE
+
+    def is_link(self):
+        """Returns True if entry is a symlink."""
+        # pylint: disable=unsubscriptable-object
+        return (
+            self.file_redir is not None and
+            self.file_redir[0] in (
+                RAR5_XREDIR_UNIX_SYMLINK,
+                RAR5_XREDIR_WINDOWS_SYMLINK,
+                RAR5_XREDIR_WINDOWS_JUNCTION,
+            )
+        )
 
 
 class Rar5ServiceInfo(Rar5BaseFile):
