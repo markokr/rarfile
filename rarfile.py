@@ -1025,9 +1025,6 @@ class CommonParser:
         else:
             fname = member
 
-        # accept both ways here
-        if "\\" in fname:
-            fname = fname.replace("\\", "/")
         if fname.endswith("/"):
             fname = fname.rstrip("/")
 
@@ -1482,8 +1479,8 @@ class RAR3Parser(CommonParser):
             h.orig_filename = name
             h.filename = self._decode(name)
 
-        # change separator
-        h.filename = h.filename.replace("\\", "/")
+        # change separator, set dir suffix
+        h.filename = h.filename.replace("\\", "/").rstrip("/")
         if h.is_dir():
             h.filename = h.filename + "/"
 
@@ -1846,7 +1843,7 @@ class RAR5Parser(CommonParser):
         h.file_compress_flags, pos = load_vint(hdata, pos)
         h.file_host_os, pos = load_vint(hdata, pos)
         h.orig_filename, pos = load_vstr(hdata, pos)
-        h.filename = h.orig_filename.decode("utf8", "replace")
+        h.filename = h.orig_filename.decode("utf8", "replace").rstrip("/")
 
         # use compatible values
         if h.file_host_os == RAR5_OS_WINDOWS:
@@ -3220,7 +3217,6 @@ class ToolSetup:
         return cmdline
 
     def add_file_arg(self, cmdline, filename):
-        filename = filename.replace('\\', '/')
         cmdline.append(filename)
 
     def add_password_arg(self, cmdline, pwd):
