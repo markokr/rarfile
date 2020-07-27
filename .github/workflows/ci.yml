@@ -51,7 +51,7 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v2
 
-      - name: "Setup Python ${{matrix.pick.PY}}"
+      - name: "Setup ${{matrix.pick.PYNAME}}"
         uses: actions/setup-python@v2
         with:
           python-version: ${{matrix.pick.PY}}
