@@ -3389,7 +3389,7 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, force=False):
     return CURRENT_SETUP
 
 
-def main():
+def main(args):
     """Minimal command-line interface for rarfile module.
     """
     import argparse
@@ -3402,19 +3402,19 @@ def main():
                    help="Extract archive into target dir")
     g.add_argument("-t", "--test", metavar="<rarfile>",
                    help="Test if a archive is valid")
-    args = p.parse_args(sys.argv[1:])
+    cmd = p.parse_args(args)
 
-    if args.list:
-        with RarFile(args.list) as rf:
+    if cmd.list:
+        with RarFile(cmd.list) as rf:
             rf.printdir()
-    elif args.test:
-        with RarFile(args.test) as rf:
+    elif cmd.test:
+        with RarFile(cmd.test) as rf:
             rf.testrar()
-    elif args.extract:
-        with RarFile(args.extract[0]) as rf:
-            rf.extractall(args.extract[1])
+    elif cmd.extract:
+        with RarFile(cmd.extract[0]) as rf:
+            rf.extractall(cmd.extract[1])
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
 

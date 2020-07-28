@@ -3,3 +3,4 @@ exclude_lines =
     ^try:
     ^except
     pragma: no cover
+    if __name__

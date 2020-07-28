@@ -51,3 +51,38 @@ def test_bsdtar_tool():
     finally:
         uninstall_alt_tool()
 
+
+def cli(*args):
+    try:
+        rarfile.main(args)
+        return 0
+    except SystemExit as ex:
+        return int(ex.code)
+    except Exception as ex:
+        sys.stderr.write(str(ex) + "\n")
+        return 1
+
+
+def test_cli_list(capsys):
+    assert cli("-l", "test/files/rar3-old.rar") == 0
+    res = capsys.readouterr()
+    assert "bigfile" in res.out
+
+
+def test_cli_testrar(capsys):
+    assert cli("-t", "test/files/rar3-old.rar") == 0
+    res = capsys.readouterr()
+    assert not res.err
+
+
+def test_cli_extract(capsys, tmp_path):
+    assert cli("-e", "test/files/rar3-old.rar", str(tmp_path)) == 0
+    res = capsys.readouterr()
+    assert not res.err
+
+
+def test_cli_help(capsys):
+    assert cli("--help") == 0
+    res = capsys.readouterr()
+    assert "optional" in res.out
+
