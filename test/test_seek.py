@@ -3,12 +3,16 @@
 
 import io
 
+import pytest
+
 import rarfile
 
 ARC = 'test/files/seektest.rar'
 
+_WHENCE = 0
 
-def do_seek(f, pos, lim):
+def do_seek(f, pos, lim, size=None):
+    global _WHENCE
     ofs = pos * 4
     fsize = lim * 4
 
@@ -19,7 +23,18 @@ def do_seek(f, pos, lim):
     else:
         exp = ofs
 
-    f.seek(ofs)
+    if size:
+        cur = f.tell()
+        if _WHENCE == 0:
+            f.seek(ofs, _WHENCE)
+        elif _WHENCE == 1:
+            f.seek(ofs - cur, _WHENCE)
+        else:
+            assert _WHENCE == 2
+            f.seek(ofs - size, _WHENCE)
+        _WHENCE = (_WHENCE + 1) % 3
+    else:
+        f.seek(ofs)
 
     got = f.tell()
 
@@ -39,17 +54,22 @@ def run_seek(rf, fn):
     cnt = int(inf.file_size / 4)
     f = rf.open(fn)
 
+    with pytest.raises(ValueError):
+        f.seek(0, -1)
+    with pytest.raises(ValueError):
+        f.seek(0, 3)
+
     do_seek(f, int(cnt / 2), cnt)
     do_seek(f, 0, cnt)
 
     for i in range(int(cnt / 2)):
-        do_seek(f, i * 2, cnt)
+        do_seek(f, i * 2, cnt, inf.file_size)
 
     for i in range(cnt):
-        do_seek(f, i * 2 - int(cnt / 2), cnt)
+        do_seek(f, i * 2 - int(cnt / 2), cnt, inf.file_size)
 
     for i in range(cnt + 10):
-        do_seek(f, cnt - i - 5, cnt)
+        do_seek(f, cnt - i - 5, cnt, inf.file_size)
 
     f.close()
 
