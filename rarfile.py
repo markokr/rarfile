@@ -3076,40 +3076,96 @@ def parse_dos_time(stamp):
     return (yr, mon, day, hr, mn, sec * 2)
 
 
+# pylint: disable=arguments-differ,signature-differs
 class nsdatetime(datetime):
+    """Datetime that carries nanoseconds.
+
+    Arithmetic not supported, will lose nanoseconds.
+
+    .. versionadded:: 4.0
+    """
     __slots__ = ("nanosecond",)
-    nanosecond: int
+    nanosecond: int     #: Number of nanoseconds, 0 <= nanosecond < 999999999
+
+    def __new__(cls, year, month, day, hour=0, minute=0, second=0,
+                microsecond=0, tzinfo=None, *, fold=0, nanosecond=0):
+        usec, mod = divmod(nanosecond, 1000) if nanosecond else (microsecond, 0)
+        if mod == 0:
+            return datetime(year, month, day, hour, minute, second, usec, tzinfo, fold=fold)
+        self = super().__new__(cls, year, month, day, hour, minute, second, usec, tzinfo, fold=fold)
+        self.nanosecond = nanosecond
+        return self
 
     def isoformat(self, sep="T", timespec="auto"):
-        if timespec == "auto" or timespec == "nanoseconds":
-            res = super().isoformat(sep, "microseconds")
-            pos = res.find(".")
-            part1 = res[:pos + 1]
-            part2 = res[pos + 7:]
-            return "%s%09d%s" % (part1, self.nanosecond, part2)
+        """Formats with nanosecond precision by default.
+        """
+        if timespec == "auto":
+            pre, post = super().isoformat(sep, "microseconds").split(".", 1)
+            return f"{pre}.{self.nanosecond:09d}{post[6:]}"
         return super().isoformat(sep, timespec)
+
+    def astimezone(self, tz=None):
+        """Convert to new timezone.
+        """
+        tmp = super().astimezone(tz)
+        return self.__class__(tmp.year, tmp.month, tmp.day, tmp.hour, tmp.minute, tmp.second,
+                              nanosecond=self.nanosecond, tzinfo=tmp.tzinfo, fold=tmp.fold)
+
+    def replace(self, year=None, month=None, day=None, hour=None, minute=None, second=None,
+                microsecond=None, tzinfo=None, *, fold=None, nanosecond=None):
+        """Return new timestamp with specified fields replaced.
+        """
+        return self.__class__(
+            self.year if year is None else year,
+            self.month if month is None else month,
+            self.day if day is None else day,
+            self.hour if hour is None else hour,
+            self.minute if minute is None else minute,
+            self.second if second is None else second,
+            nanosecond=((self.nanosecond if microsecond is None else microsecond * 1000)
+                        if nanosecond is None else nanosecond),
+            tzinfo=self.tzinfo if tzinfo is None else tzinfo,
+            fold=self.fold if fold is None else fold)
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.nanosecond)) if self.nanosecond else super().__hash__()
+
+    def __eq__(self, other):
+        otherns = other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000
+        return super().__eq__(other) and self.nanosecond == otherns
+
+    def __gt__(self, other):
+        otherns = other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000
+        return super().__gt__(other) or (super().__eq__(other) and self.nanosecond > otherns)
+
+    def __lt__(self, other):
+        return not (self > other or self == other)
+
+    def __ge__(self, other):
+        return not self < other
+
+    def __le__(self, other):
+        return not self > other
+
+    def __ne__(self, other):
+        return not self == other
 
 
 def to_nsdatetime(dt, nsec):
+    """Apply nanoseconds to datetime.
+    """
     if not nsec:
         return dt
-    nsec = min(nsec, 999999999)
-    usec, rem = divmod(nsec, 1000)
-    if rem == 0:
-        return dt.replace(microsecond=usec)
-    ns = nsdatetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, usec, dt.tzinfo)
-    ns.nanosecond = nsec
-    return ns
+    return nsdatetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second,
+                      tzinfo=dt.tzinfo, fold=dt.fold, nanosecond=nsec)
 
 
 def to_nsecs(dt):
     """Convert datatime instance to nanoseconds.
     """
     secs = int(dt.timestamp())
-    if isinstance(dt, nsdatetime):
-        return secs * 1000000000 + dt.nanosecond
-    usecs = dt.microsecond
-    return (secs * 1000000 + usecs) * 1000
+    nsecs = dt.nanosecond if isinstance(dt, nsdatetime) else dt.microsecond * 1000
+    return secs * 1000000000 + nsecs
 
 
 def custom_popen(cmd):

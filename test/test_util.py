@@ -1,5 +1,7 @@
 
-from datetime import datetime
+# pylint: disable=comparison-with-itself,unneeded-not
+
+from datetime import datetime, timedelta, timezone
 
 import rarfile
 
@@ -38,4 +40,61 @@ def test_to_nsdatetime():
     assert res.isoformat(" ") == "2020-01-01 00:00:00.000001001+00:00"
     assert res.isoformat(" ", "auto") == "2020-01-01 00:00:00.000001001+00:00"
     assert res.isoformat(" ", "microseconds") == "2020-01-01 00:00:00.000001+00:00"
+
+
+def test_nsdatetime_cmp():
+    nsdatetime = rarfile.nsdatetime
+
+    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200300, tzinfo=rarfile.UTC)
+    n2 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200301, tzinfo=rarfile.UTC)
+    n3 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=rarfile.UTC)
+
+    d1 = datetime(2000,1,1,9,15,30,100100, rarfile.UTC)
+    d2 = datetime(2000,1,1,9,15,30,100200, rarfile.UTC)
+    d3 = datetime(2000,1,1,9,15,30,100300, rarfile.UTC)
+
+    n2x = n2 + timedelta(seconds=0)
+    assert not isinstance(n2x, nsdatetime)
+    assert not hasattr(n2x, "_nanoseconds")
+    assert n2x == d2
+    assert hash(n2x) == hash(d2)
+    assert hash(n2) != hash(d2)
+
+    # compare nsdatetime only
+    n1c = n1.replace()
+    assert n1 == n1
+    assert n1 == n1c
+    assert n1 <= n1c
+    assert n1 >= n1c
+    assert n1 < n2
+    assert n1 <= n2
+    assert n1 != n2
+    assert not n1 == n2
+    assert n2 > n1
+    assert n2 >= n1
+    assert not n2 < n1
+    assert not n1 > n2
+
+    # mixed eq
+    assert not d2 == n2
+    assert not n2 == d2
+    assert d2 != n2
+    assert n2 != d2
+
+    # mixed gt
+    assert n2 > d2
+    assert d3 > n2
+    assert not d2 > n3
+    assert not n2 > d3
+
+
+def test_nsdatetime_astimezone():
+    nsdatetime = rarfile.nsdatetime
+    X1 = timezone(timedelta(hours=1), "X1")
+
+    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=rarfile.UTC)
+    n2 = n1.astimezone(X1)
+    assert n2.nanosecond == n1.nanosecond
+    assert (n1.year, n1.month, n1.day) == (n2.year, n2.month, n2.day)
+    assert (n1.hour, n1.minute, n1.second) == (n2.hour - 1, n2.minute, n2.second)
 
