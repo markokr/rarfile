@@ -918,7 +918,7 @@ class RarFile:
 
         dirname = os.path.dirname(dstfn)
         if dirname and dirname != ".":
-            self._makedirs(dirname)
+            os.makedirs(dirname, exist_ok=True)
 
         if info.is_file():
             self._make_file(info, dstfn, pwd, set_attrs)
@@ -930,7 +930,7 @@ class RarFile:
         return dstfn
 
     def _make_dir(self, info, dstfn, set_attrs):
-        self._makedirs(dstfn)
+        os.makedirs(dstfn, exist_ok=True)
         if set_attrs:
             self._set_attrs(info, dstfn)
 
@@ -954,20 +954,6 @@ class RarFile:
             target_is_directory = redir_type & RAR5_XREDIR_ISDIR > 0
 
         os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
-
-    def _makedirs(self, name):
-        if not name:
-            return
-        head, tail = os.path.split(name)
-        if not tail:
-            head, tail = os.path.split(head)
-        if head and tail and not os.path.isdir(head):
-            self._makedirs(head)
-        try:
-            os.mkdir(name)
-        except OSError:
-            if not os.path.isdir(name):
-                raise
 
     def _set_attrs(self, info, dstfn):
         if info.host_os == RAR_OS_UNIX:
