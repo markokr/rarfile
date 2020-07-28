@@ -68,7 +68,7 @@ jobs:
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
-          python -m tox -r -- --color=yes
+          python -m tox -r -- --color=yes -n auto
 
   macos:
     name: "Test - MacOS ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
@@ -114,7 +114,7 @@ jobs:
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
-          python -m tox -r -- --color=yes
+          python -m tox -r -- --color=yes -n auto
 
   windows:
     name: "Test - Windows ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
@@ -177,5 +177,5 @@ jobs:
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
-          python -m tox -r -- --color=yes
+          python -m tox -r -- --color=yes -n auto
 
