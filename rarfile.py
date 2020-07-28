@@ -2173,30 +2173,30 @@ class RarExtFile(io.RawIOBase):
         self._fd = None
         self._remain = self._inf.file_size
 
-    def read(self, cnt=None):
+    def read(self, n=-1):
         """Read all or specified amount of data from archive entry."""
 
-        # sanitize cnt
-        if cnt is None or cnt < 0:
-            cnt = self._remain
-        elif cnt > self._remain:
-            cnt = self._remain
-        if cnt == 0:
+        # sanitize count
+        if n is None or n < 0:
+            n = self._remain
+        elif n > self._remain:
+            n = self._remain
+        if n == 0:
             return EMPTY
 
         buf = []
-        orig = cnt
-        while cnt > 0:
+        orig = n
+        while n > 0:
             # actual read
-            data = self._read(cnt)
+            data = self._read(n)
             if not data:
                 break
             buf.append(data)
             self._md_context.update(data)
             self._remain -= len(data)
-            cnt -= len(data)
+            n -= len(data)
         data = EMPTY.join(buf)
-        if cnt > 0:
+        if n > 0:
             raise BadRarFile("Failed the read enough data: req=%d got=%d" % (orig, len(data)))
 
         # done?
@@ -2249,7 +2249,7 @@ class RarExtFile(io.RawIOBase):
         """Return current reading position in uncompressed data."""
         return self._inf.file_size - self._remain
 
-    def seek(self, ofs, whence=0):
+    def seek(self, offset, whence=0):
         """Seek in data.
 
         On uncompressed files, the seeking works by actual
@@ -2265,11 +2265,11 @@ class RarExtFile(io.RawIOBase):
         cur_ofs = self.tell()
 
         if whence == 0:     # seek from beginning of file
-            new_ofs = ofs
+            new_ofs = offset
         elif whence == 1:   # seek from current position
-            new_ofs = cur_ofs + ofs
+            new_ofs = cur_ofs + offset
         elif whence == 2:   # seek from end of file
-            new_ofs = fsize + ofs
+            new_ofs = fsize + offset
         else:
             raise ValueError("Invalid value for whence")
 
@@ -2600,9 +2600,9 @@ class XFile:
         """Move file pos."""
         return self._fd.seek(ofs, whence)
 
-    def readinto(self, dst):
+    def readinto(self, buf):
         """Read into buffer."""
-        return self._fd.readinto(dst)
+        return self._fd.readinto(buf)
 
     def close(self):
         """Close file object."""
