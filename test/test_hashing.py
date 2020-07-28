@@ -97,8 +97,3 @@ def test_rar3_s2k():
     key, iv = rarfile.rar3_s2k('p' * 29, unhexlify('1122334455667788'))
     assert (tohex(key), tohex(iv)) == exp
 
-
-def test_pbkdf2_hmac_sha256():
-    assert tohex(rarfile.pbkdf2_sha256(b'password', b'salt', 100)) == \
-        '07e6997180cf7f12904f04100d405d34888fdf62af6d506a0ecc23b196fe99d8'
-

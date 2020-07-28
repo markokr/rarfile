@@ -1764,7 +1764,7 @@ class RAR5Parser(CommonParser):
         pwd = self._password
         if isinstance(pwd, str):
             pwd = pwd.encode("utf8")
-        key = pbkdf2_sha256(pwd, salt, 1 << kdf_count)
+        key = pbkdf2_hmac("sha256", pwd, salt, 1 << kdf_count)
         self._last_aes256_key = (kdf_count, salt, key)
         return key
 
@@ -2214,7 +2214,7 @@ class RarExtFile(io.RawIOBase):
         if final is None:
             return
         if self._returncode:
-            check_returncode(self, "")
+            check_returncode(self._returncode, "", tool_setup().get_errmap())
         if self._remain != 0:
             raise BadRarFile("Failed the read enough data")
         if final != exp:
@@ -2956,11 +2956,6 @@ def rar3_s2k(pwd, salt):
     return key_le, iv
 
 
-def pbkdf2_sha256(password, salt, iters):
-    """PBKDF2 with HMAC-SHA256"""
-    return pbkdf2_hmac("sha256", password, salt, iters)
-
-
 def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=None):
     """Decompress blob of compressed data.
 
@@ -3199,14 +3194,12 @@ def custom_popen(cmd):
     return p
 
 
-def check_returncode(p, out):
+def check_returncode(code, out, errmap):
     """Raise exception according to unrar exit code.
     """
-    code = p.returncode
     if code == 0:
         return
 
-    errmap = tool_setup().get_errmap()
     if code > 0 and code < len(errmap):
         exc = errmap[code]
     elif code == 255:
@@ -3218,9 +3211,9 @@ def check_returncode(p, out):
 
     # format message
     if out:
-        msg = "%s [%d]: %s" % (exc.__doc__, p.returncode, out)
+        msg = "%s [%d]: %s" % (exc.__doc__, code, out)
     else:
-        msg = "%s [%d]" % (exc.__doc__, p.returncode)
+        msg = "%s [%d]" % (exc.__doc__, code)
 
     raise exc(msg)
 
@@ -3241,31 +3234,6 @@ def membuf_tempfile(memfile):
         os.unlink(tmpname)
         raise
     return tmpname
-
-
-class XTempFile:
-    """Real file for archive.
-    """
-    __slots__ = ("_tmpfile", "_filename")
-
-    def __init__(self, rarfile):
-        if is_filelike(rarfile):
-            self._tmpfile = membuf_tempfile(rarfile)
-            self._filename = self._tmpfile
-        else:
-            self._tmpfile = None
-            self._filename = rarfile
-
-    def __enter__(self):
-        return self._filename
-
-    def __exit__(self, exc_type, exc_value, tb):
-        if self._tmpfile:
-            try:
-                os.unlink(self._tmpfile)
-            except OSError:
-                pass
-            self._tmpfile = None
 
 
 #

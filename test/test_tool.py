@@ -52,6 +52,36 @@ def test_bsdtar_tool():
         uninstall_alt_tool()
 
 
+# test popen errors
+
+def test_popen_fail():
+    with pytest.raises(rarfile.RarCannotExec):
+        rarfile.custom_popen(["missing-unrar-exe"])
+    with pytest.raises(rarfile.RarCannotExec):
+        rarfile.custom_popen(["./test/files/rar5-blake.rar.exp"])
+
+
+def test_check_returncode():
+    errmap = rarfile.UNRAR_CONFIG["errmap"]
+
+    assert not rarfile.check_returncode(0, "", errmap)
+
+    with pytest.raises(rarfile.RarFatalError):
+        rarfile.check_returncode(2, "x", errmap)
+    with pytest.raises(rarfile.RarUnknownError):
+        rarfile.check_returncode(100, "", errmap)
+    with pytest.raises(rarfile.RarUserBreak):
+        rarfile.check_returncode(255, "", errmap)
+    with pytest.raises(rarfile.RarSignalExit):
+        rarfile.check_returncode(-11, "", errmap)
+
+    errmap = rarfile.UNAR_CONFIG["errmap"]
+    with pytest.raises(rarfile.RarUnknownError):
+        rarfile.check_returncode(2, "", errmap)
+
+
+# own cli tests
+
 def cli(*args):
     try:
         rarfile.main(args)
