@@ -59,7 +59,7 @@ import struct
 import sys
 import warnings
 from binascii import crc32, hexlify
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from hashlib import blake2s, pbkdf2_hmac, sha1
 from pathlib import Path
 from struct import Struct, pack, unpack
@@ -294,9 +294,6 @@ DOS_MODE_READONLY = 0x01
 
 RAR_ID = b"Rar!\x1a\x07\x00"
 RAR5_ID = b"Rar!\x1a\x07\x01\x00"
-ZERO = b"\0"
-EMPTY = b""
-UTC = timezone(timedelta(0), "UTC")
 BSIZE = 512 * 1024 if sys.platform == "win32" else 64 * 1024
 
 SFX_MAX_SIZE = 2 * 1024 * 1024
@@ -1483,7 +1480,7 @@ class RAR3Parser(CommonParser):
         name, pos = load_bytes(hdata, name_size, pos)
         if h.flags & RAR_FILE_UNICODE and b"\0" in name:
             # stored in custom encoding
-            nul = name.find(ZERO)
+            nul = name.find(b"\0")
             h.orig_filename = name[:nul]
             u = UnicodeFilename(h.orig_filename, name[nul + 1:])
             h.filename = u.decode()
@@ -1615,8 +1612,8 @@ class RAR3Parser(CommonParser):
     # unrar on that, thus avoiding unrar going over whole archive
     def _open_hack(self, inf, pwd):
         # create main header: crc, type, flags, size, res1, res2
-        prefix = RAR_ID + S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + ZERO * (2 + 4)
-        return self._open_hack_core(inf, pwd, prefix, EMPTY)
+        prefix = RAR_ID + S_BLK_HDR.pack(0x90CF, 0x73, 0, 13) + b"\0" * (2 + 4)
+        return self._open_hack_core(inf, pwd, prefix, b"")
 
 
 #
@@ -1652,7 +1649,7 @@ class Rar5BaseFile(Rar5Info):
     """
     type = -1
     file_flags = None
-    file_encryption = (0, 0, 0, EMPTY, EMPTY, EMPTY)
+    file_encryption = (0, 0, 0, b"", b"", b"")
     file_compress_flags = None
     file_redir = None
     file_owner = None
@@ -2049,7 +2046,7 @@ class RAR5Parser(CommonParser):
                 cmt = cmtstream.read()
 
         # rar bug? - appends zero to comment
-        cmt = cmt.split(ZERO, 1)[0]
+        cmt = cmt.split(b"\0", 1)[0]
         self.comment = cmt.decode("utf8")
         return None
 
@@ -2168,7 +2165,7 @@ class RarExtFile(io.RawIOBase):
         elif n > self._remain:
             n = self._remain
         if n == 0:
-            return EMPTY
+            return b""
 
         buf = []
         orig = n
@@ -2181,7 +2178,7 @@ class RarExtFile(io.RawIOBase):
             self._md_context.update(data)
             self._remain -= len(data)
             n -= len(data)
-        data = EMPTY.join(buf)
+        data = b"".join(buf)
         if n > 0:
             raise BadRarFile("Failed the read enough data: req=%d got=%d" % (orig, len(data)))
 
@@ -2357,7 +2354,7 @@ class PipeReader(RarExtFile):
                 break
             cnt -= len(data)
             buf.append(data)
-        return EMPTY.join(buf)
+        return b"".join(buf)
 
     def close(self):
         """Close open resources."""
@@ -2455,7 +2452,7 @@ class DirectReader(RarExtFile):
 
         if len(buf) == 1:
             return buf[0]
-        return EMPTY.join(buf)
+        return b"".join(buf)
 
     def _open_next(self):
         """Proceed to next volume."""
@@ -2522,7 +2519,7 @@ class HeaderDecrypt:
     def __init__(self, f, key, iv):
         self.f = f
         self.ciph = AES_CBC_Decrypt(key, iv)
-        self.buf = EMPTY
+        self.buf = b""
 
     def tell(self):
         """Current file pos - works only on block boundaries."""
@@ -2539,7 +2536,7 @@ class HeaderDecrypt:
             self.buf = self.buf[cnt:]
             return res
         res = self.buf
-        self.buf = EMPTY
+        self.buf = b""
         cnt -= len(res)
 
         # decrypt new data
@@ -2688,7 +2685,7 @@ class Blake2SP:
         if self._digest is None:
             if self._buf:
                 self._add_block(self._buf)
-                self._buf = EMPTY
+                self._buf = b""
             ctx = self._blake2s(0, 1, True)
             for t in self._thread:
                 ctx.update(t.digest())
@@ -2813,7 +2810,7 @@ def load_dostime(buf, pos):
 def load_unixtime(buf, pos):
     """Load LE32 unix timestamp"""
     secs, pos = load_le32(buf, pos)
-    dt = datetime.fromtimestamp(secs, UTC)
+    dt = datetime.fromtimestamp(secs, timezone.utc)
     return dt, pos
 
 
@@ -2824,7 +2821,7 @@ def load_windowstime(buf, pos):
     val1, pos = load_le32(buf, pos)
     val2, pos = load_le32(buf, pos)
     secs, n1secs = divmod((val2 << 32) | val1, 10000000)
-    dt = datetime.fromtimestamp(secs - unix_epoch, UTC)
+    dt = datetime.fromtimestamp(secs - unix_epoch, timezone.utc)
     dt = to_nsdatetime(dt, n1secs * 100)
     return dt, pos
 
@@ -2929,7 +2926,7 @@ def rar3_s2k(pwd, salt):
         pwd = pwd.decode("utf8")
     seed = bytearray(pwd.encode("utf-16le") + salt)
     h = Rar3Sha1(rarbug=True)
-    iv = EMPTY
+    iv = b""
     for i in range(16):
         for j in range(0x4000):
             cnt = S_LONG.pack(i * 0x4000 + j)
@@ -2964,7 +2961,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=N
     fhdr += fname
     if flags & RAR_FILE_SALT:
         if not salt:
-            return EMPTY
+            return b""
         fhdr += salt
 
     # full header
@@ -2974,7 +2971,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=N
     hdr = S_BLK_HDR.pack(hcrc, RAR_BLOCK_FILE, flags, hlen) + fhdr
 
     # archive main header
-    mh = S_BLK_HDR.pack(0x90CF, RAR_BLOCK_MAIN, 0, 13) + ZERO * (2 + 4)
+    mh = S_BLK_HDR.pack(0x90CF, RAR_BLOCK_MAIN, 0, 13) + b"\0" * (2 + 4)
 
     # decompress via temp rar
     setup = tool_setup()

@@ -24,7 +24,7 @@ def test_to_datetime():
 
 
 def test_to_nsdatetime():
-    base = datetime(2020, 1, 1, 0, 0, 0, tzinfo=rarfile.UTC)
+    base = datetime(2020, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     assert rarfile.to_nsdatetime(base, 0) is base
 
     res = rarfile.to_nsdatetime(base, 1000)
@@ -45,13 +45,13 @@ def test_to_nsdatetime():
 def test_nsdatetime_cmp():
     nsdatetime = rarfile.nsdatetime
 
-    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200300, tzinfo=rarfile.UTC)
-    n2 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200301, tzinfo=rarfile.UTC)
-    n3 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=rarfile.UTC)
+    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200300, tzinfo=timezone.utc)
+    n2 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200301, tzinfo=timezone.utc)
+    n3 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=timezone.utc)
 
-    d1 = datetime(2000,1,1,9,15,30,100100, rarfile.UTC)
-    d2 = datetime(2000,1,1,9,15,30,100200, rarfile.UTC)
-    d3 = datetime(2000,1,1,9,15,30,100300, rarfile.UTC)
+    d1 = datetime(2000,1,1,9,15,30,100100, timezone.utc)
+    d2 = datetime(2000,1,1,9,15,30,100200, timezone.utc)
+    d3 = datetime(2000,1,1,9,15,30,100300, timezone.utc)
 
     n2x = n2 + timedelta(seconds=0)
     assert not isinstance(n2x, nsdatetime)
@@ -92,7 +92,7 @@ def test_nsdatetime_astimezone():
     nsdatetime = rarfile.nsdatetime
     X1 = timezone(timedelta(hours=1), "X1")
 
-    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=rarfile.UTC)
+    n1 = nsdatetime(2000,1,1,9,15,30,nanosecond=100200402, tzinfo=timezone.utc)
     n2 = n1.astimezone(X1)
     assert n2.nanosecond == n1.nanosecond
     assert (n1.year, n1.month, n1.day) == (n2.year, n2.month, n2.day)
