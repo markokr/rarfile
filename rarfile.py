@@ -3050,9 +3050,6 @@ def empty_read(src, size, blklen):
 def to_datetime(t):
     """Convert 6-part time tuple into datetime object.
     """
-    if t is None:
-        return None
-
     # extract values
     year, mon, day, h, m, s = t
 
