@@ -1,6 +1,7 @@
 """Extract tests.
 """
 
+import io
 import os
 import sys
 from datetime import datetime
@@ -101,6 +102,10 @@ def check_subdir(rf, tmp_path):
         assert os.listdir("sub/dir1") == []
     finally:
         os.chdir(old)
+
+    # errors
+    with pytest.raises(io.UnsupportedOperation):
+        rf.open("sub/dir1")
 
 
 @pytest.mark.parametrize("fn", [

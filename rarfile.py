@@ -781,7 +781,7 @@ class RarFile:
         # entry lookup
         inf = self.getinfo(name)
         if inf.is_dir():
-            raise TypeError("Directory does not have any data: " + inf.filename)
+            raise io.UnsupportedOperation("Directory does not have any data: " + inf.filename)
 
         # check password
         if inf.needs_password():
