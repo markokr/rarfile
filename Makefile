@@ -14,7 +14,7 @@ URL = $(REPO)/releases/download/v$(VERSION)/$(PACKAGE)-$(VERSION).tar.gz
 all:
 	pyflakes3 rarfile.py
 	tox -e lint
-	tox -e py38-cryptography
+	tox -e py38-cryptography -- -n auto
 
 install:
 	python setup.py install --prefix=$(prefix)

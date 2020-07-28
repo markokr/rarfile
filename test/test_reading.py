@@ -214,7 +214,7 @@ def test_reading_symlinks():
     run_reading('test/files/rar5-symlink-win.rar')
 
 
-def test_reading_missed():
+def disable_test_reading_missed():
     problems = []
     missed = []
     for fn in glob('test/files/*.rar'):
