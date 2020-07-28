@@ -57,8 +57,10 @@ def test_bsdtar_tool():
 def test_popen_fail():
     with pytest.raises(rarfile.RarCannotExec):
         rarfile.custom_popen(["missing-unrar-exe"])
-    with pytest.raises(rarfile.RarCannotExec):
-        rarfile.custom_popen(["./test/files/rar5-blake.rar.exp"])
+
+    if sys.platform != "win32":
+        with pytest.raises(rarfile.RarCannotExec):
+            rarfile.custom_popen(["./test/files/rar5-blake.rar.exp"])
 
 
 def test_check_returncode():
