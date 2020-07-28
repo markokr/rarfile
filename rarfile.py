@@ -51,6 +51,7 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 """
 
 import errno
+import io
 import os
 import re
 import shutil
@@ -60,7 +61,6 @@ import warnings
 from binascii import crc32, hexlify
 from datetime import datetime, timedelta, timezone
 from hashlib import blake2s, pbkdf2_hmac, sha1
-from io import BytesIO, RawIOBase
 from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import PIPE, STDOUT, Popen
@@ -322,7 +322,7 @@ def _get_rar_version(xfile):
 
 def _find_sfx_header(xfile):
     sig = RAR_ID[:-1]
-    buf = BytesIO()
+    buf = io.BytesIO()
     steps = (64, SFX_MAX_SIZE)
 
     with XFile(xfile) as fd:
@@ -1212,7 +1212,7 @@ class CommonParser:
                 RAR5_XREDIR_UNIX_SYMLINK, RAR5_XREDIR_WINDOWS_SYMLINK,
                 RAR5_XREDIR_WINDOWS_JUNCTION,
             ):
-                return BytesIO(redir_name.encode("utf8"))
+                return io.BytesIO(redir_name.encode("utf8"))
         if inf.flags & RAR_FILE_SPLIT_BEFORE:
             raise NeedFirstVolume("Partial file, please start from first volume: " + inf.filename, None)
 
@@ -2125,7 +2125,7 @@ class UnicodeFilename:
         return self.buf.decode("utf-16le", "replace")
 
 
-class RarExtFile(RawIOBase):
+class RarExtFile(io.RawIOBase):
     """Base class for file-like object that :meth:`RarFile.open` returns.
 
     Provides public methods and common crc checking.
