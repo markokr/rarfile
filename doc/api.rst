@@ -14,21 +14,29 @@ RarFile class
 
 .. autoclass:: RarFile
    :members:
-   :inherited-members:
+   :special-members: __enter__, __exit__, __iter__
 
 RarInfo class
 -------------
 
 .. autoclass:: RarInfo
    :members:
-   :inherited-members:
 
 RarExtFile class
 ----------------
 
 .. autoclass:: RarExtFile
+   :show-inheritance:
    :members:
    :inherited-members:
+   :exclude-members: truncate, flush
+
+nsdatetime class
+----------------
+
+.. autoclass:: nsdatetime
+   :show-inheritance:
+   :members:
 
 Functions
 ---------

@@ -29,8 +29,8 @@ needs_sphinx = '1.3'
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.napoleon']
 
 autodoc_member_order = 'bysource'
-autoclass_content = 'both'
-autodoc_default_options = {'show-inheritance': True}
+autoclass_content = 'class'
+autodoc_default_options = {}
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 

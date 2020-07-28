@@ -469,7 +469,10 @@ class RarCannotExec(RarExecError):
 
 
 class UnsupportedWarning(UserWarning):
-    """There is issue with RAR archive."""
+    """There is issue with RAR archive.
+
+    .. versionadded:: 4.0
+    """
 
 
 class RarInfo:
@@ -554,17 +557,20 @@ class RarInfo:
             Type is one of constants:
 
                 :data:`RAR5_XREDIR_UNIX_SYMLINK`
-                    unix symlink to target.
+                    Unix symlink.
                 :data:`RAR5_XREDIR_WINDOWS_SYMLINK`
-                    windows symlink to target.
+                    Windows symlink.
                 :data:`RAR5_XREDIR_WINDOWS_JUNCTION`
-                    windows junction.
+                    Windows junction.
                 :data:`RAR5_XREDIR_HARD_LINK`
-                    hard link to target.
+                    Hard link to target.
                 :data:`RAR5_XREDIR_FILE_COPY`
-                    current file is copy of another archive entry.
+                    Current file is copy of another archive entry.
 
-            Flags may contain :data:`RAR5_XREDIR_ISDIR` bit.
+            Flags may contain bits:
+
+                :data:`RAR5_XREDIR_ISDIR`
+                    Symlink points to directory.
     """
 
     # zipfile-compatible fields
@@ -601,21 +607,25 @@ class RarInfo:
     # zipfile compat
     def is_dir(self):
         """Returns True if entry is a directory.
+
+        .. versionadded:: 4.0
         """
         if self.type == RAR_BLOCK_FILE:
             return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
-    # old tarfile compat, keep undocumented, obsolete...
-    def isdir(self):
-        return self.is_dir()
-
     def is_symlink(self):
-        """Returns True if entry is a symlink."""
+        """Returns True if entry is a symlink.
+
+        .. versionadded:: 4.0
+        """
         return False
 
     def is_file(self):
-        """Returns True if entry is a normal file."""
+        """Returns True if entry is a normal file.
+
+        .. versionadded:: 4.0
+        """
         return False
 
     def needs_password(self):
@@ -624,6 +634,13 @@ class RarInfo:
         if self.type == RAR_BLOCK_FILE:
             return (self.flags & RAR_FILE_PASSWORD) > 0
         return False
+
+    def isdir(self):
+        """Returns True if entry is a directory.
+
+        .. deprecated:: 4.0
+        """
+        return self.is_dir()
 
 
 class RarFile:
@@ -1689,6 +1706,7 @@ class Rar5FileInfo(Rar5BaseFile):
         """Returns True if entry is a normal file."""
         return not (self.is_dir() or self.is_symlink())
 
+
 class Rar5ServiceInfo(Rar5BaseFile):
     """RAR5 service record.
     """
@@ -2134,30 +2152,20 @@ class RarExtFile(io.RawIOBase):
      - no short reads - .read() and .readinfo() read as much as requested.
      - no internal buffer, use io.BufferedReader for that.
     """
+    name = None     #: Filename of the archive entry
+    mode = "rb"
+    _parser = None
+    _inf = None
+    _fd = None
+    _remain = 0
+    _returncode = 0
+    _md_context = None
 
-    #: Filename of the archive entry
-    name = None
-
-    def __init__(self, parser, inf):
-        """Open archive entry.
-        """
-        super().__init__()
-
-        # standard io.* properties
+    def _open_extfile(self, parser, inf):
         self.name = inf.filename
-        self.mode = "rb"
-
         self._parser = parser
         self._inf = inf
-        self._fd = None
-        self._remain = 0
-        self._returncode = 0
 
-        self._md_context = None
-
-        self._open()
-
-    def _open(self):
         if self._fd:
             self._fd.close()
         md_class = self._inf._md_class or NoHashContext
@@ -2276,7 +2284,7 @@ class RarExtFile(io.RawIOBase):
             self._skip(new_ofs - cur_ofs)
         else:
             # reopen and seek
-            self._open()
+            self._open_extfile(self._parser, self._inf)
             self._skip(new_ofs)
         return self.tell()
 
@@ -2311,11 +2319,12 @@ class RarExtFile(io.RawIOBase):
 class PipeReader(RarExtFile):
     """Read data from pipe, handle tempfile cleanup."""
 
-    def __init__(self, rf, inf, cmd, tempfile=None):
+    def __init__(self, parser, inf, cmd, tempfile=None):
+        super().__init__()
         self._cmd = cmd
         self._proc = None
         self._tempfile = tempfile
-        super().__init__(rf, inf)
+        self._open_extfile(parser, inf)
 
     def _close_proc(self):
         if not self._proc:
@@ -2330,8 +2339,8 @@ class PipeReader(RarExtFile):
         self._returncode = self._proc.returncode
         self._proc = None
 
-    def _open(self):
-        super()._open()
+    def _open_extfile(self, parser, inf):
+        super()._open_extfile(parser, inf)
 
         # stop old process
         self._close_proc()
@@ -2401,8 +2410,12 @@ class DirectReader(RarExtFile):
     _cur_avail = None
     _volfile = None
 
-    def _open(self):
-        super()._open()
+    def __init__(self, parser, inf):
+        super().__init__()
+        self._open_extfile(parser, inf)
+
+    def _open_extfile(self, parser, inf):
+        super()._open_extfile(parser, inf)
 
         self._volfile = self._inf.volume_file
         self._fd = XFile(self._volfile, 0)
