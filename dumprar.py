@@ -462,7 +462,7 @@ def test_read_long(r, inf):
         f.seek(0, 0)
 
         total = 0
-        buf = bytearray(rf.ZERO * 1024)
+        buf = bytearray(1024)
         while 1:
             res = f.readinto(buf)
             if not res:
