@@ -11,6 +11,7 @@ ARC = 'test/files/seektest.rar'
 
 _WHENCE = 0
 
+
 def do_seek(f, pos, lim, size=None):
     global _WHENCE
     ofs = pos * 4

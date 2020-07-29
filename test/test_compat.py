@@ -10,7 +10,7 @@ import pytest
 import rarfile
 
 # dont fail on new python by default
-_VERS = [(3,6), (3,7), (3,8)]
+_VERS = [(3, 6), (3, 7), (3, 8)]
 
 _UNSUPPORTED = sys.version_info[:2] not in _VERS
 
@@ -44,6 +44,7 @@ def load_cls_names(maincls):
             if name not in res:
                 res[name] = val
     return res
+
 
 def cleansig(sig):
     res = str(sig).replace(", /", "")
