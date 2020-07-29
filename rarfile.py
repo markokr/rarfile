@@ -63,7 +63,7 @@ from datetime import datetime, timezone
 from hashlib import blake2s, pbkdf2_hmac, sha1
 from pathlib import Path
 from struct import Struct, pack, unpack
-from subprocess import PIPE, STDOUT, Popen
+from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
 
 # only needed for encrypted headers
@@ -3159,14 +3159,12 @@ def to_nsecs(dt):
 def custom_popen(cmd):
     """Disconnect cmd from parent fds, read only from stdout.
     """
-    # needed for py2exe
     creationflags = 0
     if sys.platform == "win32":
         creationflags = 0x08000000   # CREATE_NO_WINDOW
 
-    # run command
     try:
-        p = Popen(cmd, bufsize=0, stdout=PIPE, stdin=PIPE, stderr=STDOUT,
+        p = Popen(cmd, bufsize=0, stdout=PIPE, stderr=STDOUT, stdin=DEVNULL,
                   creationflags=creationflags)
     except OSError as ex:
         if ex.errno == errno.ENOENT:
