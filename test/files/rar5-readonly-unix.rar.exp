@@ -1,5 +1,5 @@
 Archive: test/files/rar5-readonly-unix.rar
-R5_FILE: hdrlen=53 datlen=9 hdr_extra=11
+R5_FILE: hdrlen=53 datlen=9 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=ro_dir/ro_file.txt
   file_flags=0x0004:CRC32
@@ -8,3 +8,12 @@ R5_FILE: hdrlen=53 datlen=9 hdr_extra=11
   crc=0x818d2276 (2173510262)
   date_time=2020-07-26 19:11:42
   mtime=2020-07-26T19:11:42.312616322+00:00
+R5_FILE: hdrlen=39 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=ro_dir/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=dr-xr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-26 19:11:42
+  mtime=2020-07-26T19:11:42.328617082+00:00

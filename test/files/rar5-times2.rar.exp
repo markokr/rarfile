@@ -1,5 +1,5 @@
 Archive: test/files/rar5-times2.rar
-R5_FILE: hdrlen=42 datlen=0 hdr_extra=11
+R5_FILE: hdrlen=42 datlen=0 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=afile.txt
   file_flags=0x0004:CRC32

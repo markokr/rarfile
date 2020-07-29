@@ -10,6 +10,16 @@ import pytest
 
 import rarfile
 
+
+def get_props(rf, name):
+    inf = rf.getinfo(name)
+    return "".join([
+        inf.is_file() and "F" or "-",
+        inf.is_dir() and "D" or "-",
+        inf.is_symlink() and "L" or "-",
+    ])
+
+
 def san_unix(fn):
     return rarfile.sanitize_filename(fn, "/", False)
 
@@ -125,6 +135,9 @@ def test_subdirs(fn, tmp_path):
 ])
 def test_readonly(fn, tmp_path):
     with rarfile.RarFile(fn) as rf:
+        assert get_props(rf, "ro_dir") == "-D-"
+        assert get_props(rf, "ro_dir/ro_file.txt") == "F--"
+
         rf.extractall(tmp_path)
 
     assert os.access(tmp_path / "ro_dir/ro_file.txt", os.R_OK)
@@ -141,6 +154,10 @@ def test_readonly(fn, tmp_path):
 ])
 def test_symlink(fn, tmp_path):
     with rarfile.RarFile(fn) as rf:
+        assert get_props(rf, "data.txt") == "F--"
+        assert get_props(rf, "data_link") == "--L"
+        assert get_props(rf, "random_link") == "--L"
+
         rf.extractall(tmp_path)
 
         assert sorted(os.listdir(tmp_path)) == ["data.txt", "data_link", "random_link"]
@@ -164,4 +181,27 @@ def test_symlink(fn, tmp_path):
         # str - work around pypy3 bug
         assert os.readlink(str(tmp_path / "data_link")) == "data.txt"
         assert os.readlink(str(tmp_path / "random_link")) == "../random123"
+
+
+def test_symlink_win(tmp_path):
+    fn = "test/files/rar5-symlink-win.rar"
+    with rarfile.RarFile(fn) as rf:
+        assert get_props(rf, "content/dir1") == "-D-"
+        assert get_props(rf, "content/dir2") == "-D-"
+        assert get_props(rf, "content/file.txt") == "F--"
+        assert get_props(rf, "links/bad_link") == "--L"
+        assert get_props(rf, "links/dir_junction") == "--L"
+        assert get_props(rf, "links/dir_link") == "--L"
+        assert get_props(rf, "links/file_link") == "--L"
+
+        with pytest.warns(rarfile.UnsupportedWarning):
+            rf.extractall(tmp_path)
+
+        assert sorted(os.listdir(tmp_path)) == ["content", "links"]
+        assert sorted(os.listdir(tmp_path / "content")) == ["dir1", "dir2", "file.txt"]
+        assert sorted(os.listdir(tmp_path / "links")) == ["bad_link", "dir_link", "file_link"]
+
+        assert os.path.islink(tmp_path / "links/bad_link")
+        assert os.path.islink(tmp_path / "links/dir_link")
+        assert os.path.islink(tmp_path / "links/file_link")
 

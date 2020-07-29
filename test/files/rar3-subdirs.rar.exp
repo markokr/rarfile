@@ -1,25 +1,61 @@
 Archive: test/files/rar3-subdirs.rar
-FILE: hdrlen=55 datlen=6
+FILE: hdrlen=55 datlen=6 is=F--
   flags=0x9020:EXTTIME,LONG,D128
   os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=6 dec=6 vol=0
   crc=0xc904a4c7 (3372524743) date_time=2020-07-20 21:01:44
   name=sub/dir2/file2.txt
   mtime=2020-07-20T21:01:44.319218800
-FILE: hdrlen=63 datlen=8
+FILE: hdrlen=63 datlen=8 is=F--
   flags=0x9020:EXTTIME,LONG,D128
   os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=8 dec=8 vol=0
   crc=0x71b7247d (1907827837) date_time=2020-07-20 21:02:17
   name=sub/with space/long fn.txt
   mtime=2020-07-20T21:02:17.499892
-FILE: hdrlen=87 datlen=5
+FILE: hdrlen=87 datlen=5 is=F--
   flags=0x9220:UNICODE,EXTTIME,LONG,D128
   os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=5 dec=5 vol=0 namecmp=26/50
   crc=0x2fec89c1 (804030913) date_time=2020-07-20 21:07:00
   name=sub/üȵĩöḋè/file.txt
   mtime=2020-07-20T21:07:00.141758600
-FILE: hdrlen=55 datlen=6
+FILE: hdrlen=55 datlen=6 is=F--
   flags=0x9020:EXTTIME,LONG,D128
   os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=6 dec=6 vol=0
   crc=0xe229f704 (3794401028) date_time=2020-07-20 21:01:33
   name=sub/dir1/file1.txt
   mtime=2020-07-20T21:01:33.875008200
+FILE: hdrlen=45 datlen=0 is=-D-
+  flags=0x90e0:EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0
+  crc=0x00000000 (0) date_time=2020-07-20 21:01:44
+  name=sub/dir2/
+  mtime=2020-07-20T21:01:44.335219100
+FILE: hdrlen=51 datlen=0 is=-D-
+  flags=0x90e0:EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0
+  crc=0x00000000 (0) date_time=2020-07-20 21:02:17
+  name=sub/with space/
+  mtime=2020-07-20T21:02:17.511892300
+FILE: hdrlen=46 datlen=0 is=-D-
+  flags=0x90e0:EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0
+  crc=0x00000000 (0) date_time=2020-07-20 21:01:09
+  name=sub/empty/
+  mtime=2020-07-20T21:01:09.182513600
+FILE: hdrlen=67 datlen=0 is=-D-
+  flags=0x92e0:UNICODE,EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0 namecmp=17/30
+  crc=0x00000000 (0) date_time=2020-07-20 21:07:00
+  name=sub/üȵĩöḋè/
+  mtime=2020-07-20T21:07:00.153758800
+FILE: hdrlen=45 datlen=0 is=-D-
+  flags=0x90e0:EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0
+  crc=0x00000000 (0) date_time=2020-07-20 21:01:33
+  name=sub/dir1/
+  mtime=2020-07-20T21:01:33.887008500
+FILE: hdrlen=40 datlen=0 is=-D-
+  flags=0x90e0:EXTTIME,LONG,DIR
+  os=3:UNIX ver=20 mode=drwxr-xr-x meth=0 cmp=0 dec=0 vol=0
+  crc=0x00000000 (0) date_time=2020-07-20 21:06:42
+  name=sub/
+  mtime=2020-07-20T21:06:42.241383800

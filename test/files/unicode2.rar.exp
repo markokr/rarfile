@@ -1,10 +1,10 @@
 Archive: test/files/unicode2.rar
-FILE: hdrlen=62 datlen=2
+FILE: hdrlen=62 datlen=2 is=F--
   flags=0x8220:UNICODE,LONG,D128
   os=2:WIN ver=29 mode=ARCHIVE meth=0 cmp=2 dec=2 vol=0 namecmp=12/30
   crc=0x6751fc53 (1733426259) date_time=2011-07-06 16:48:04
   name=𝐀𝐁𝐁𝐂.txt
-FILE: hdrlen=59 datlen=2
+FILE: hdrlen=59 datlen=2 is=F--
   flags=0x8220:UNICODE,LONG,D128
   os=2:WIN ver=29 mode=ARCHIVE meth=0 cmp=2 dec=2 vol=0 namecmp=13/27
   crc=0x6751fc53 (1733426259) date_time=2011-07-06 16:48:04

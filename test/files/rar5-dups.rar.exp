@@ -1,5 +1,5 @@
 Archive: test/files/rar5-dups.rar
-R5_FILE: hdrlen=43 datlen=55 hdr_extra=11
+R5_FILE: hdrlen=43 datlen=55 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest1.txt
   file_flags=0x0004:CRC32
@@ -8,7 +8,7 @@ R5_FILE: hdrlen=43 datlen=55 hdr_extra=11
   crc=0xc5b7e6a2 (3317163682)
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest2.txt
   file_flags=0x0004:CRC32
@@ -18,7 +18,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest3.txt
   file_flags=0x0004:CRC32
@@ -28,7 +28,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest4.txt
   file_flags=0x0004:CRC32
@@ -38,7 +38,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest5.txt
   file_flags=0x0004:CRC32
@@ -48,7 +48,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest6.txt
   file_flags=0x0004:CRC32
@@ -58,7 +58,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest7.txt
   file_flags=0x0004:CRC32
@@ -68,7 +68,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest8.txt
   file_flags=0x0004:CRC32
@@ -78,7 +78,7 @@ R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   redir: type=FILE_COPY flags=0:- destination=stest1.txt
-R5_FILE: hdrlen=58 datlen=0 hdr_extra=26
+R5_FILE: hdrlen=58 datlen=0 hdr_extra=26 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest9.txt
   file_flags=0x0004:CRC32

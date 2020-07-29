@@ -1,5 +1,5 @@
 Archive: test/files/rar5-subdirs.rar
-R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
+R5_FILE: hdrlen=53 datlen=6 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=sub/dir2/file2.txt
   file_flags=0x0004:CRC32
@@ -8,7 +8,7 @@ R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
   crc=0xc904a4c7 (3372524743)
   date_time=2020-07-20 18:01:44
   mtime=2020-07-20T18:01:44.319218821+00:00
-R5_FILE: hdrlen=61 datlen=8 hdr_extra=11
+R5_FILE: hdrlen=61 datlen=8 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=sub/with space/long fn.txt
   file_flags=0x0004:CRC32
@@ -17,7 +17,7 @@ R5_FILE: hdrlen=61 datlen=8 hdr_extra=11
   crc=0x71b7247d (1907827837)
   date_time=2020-07-20 18:02:17
   mtime=2020-07-20T18:02:17.499892070+00:00
-R5_FILE: hdrlen=61 datlen=5 hdr_extra=11
+R5_FILE: hdrlen=61 datlen=5 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=sub/üȵĩöḋè/file.txt
   file_flags=0x0004:CRC32
@@ -26,7 +26,7 @@ R5_FILE: hdrlen=61 datlen=5 hdr_extra=11
   crc=0x2fec89c1 (804030913)
   date_time=2020-07-20 18:07:00
   mtime=2020-07-20T18:07:00.141758621+00:00
-R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
+R5_FILE: hdrlen=53 datlen=6 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=sub/dir1/file1.txt
   file_flags=0x0004:CRC32
@@ -35,3 +35,57 @@ R5_FILE: hdrlen=53 datlen=6 hdr_extra=11
   crc=0xe229f704 (3794401028)
   date_time=2020-07-20 18:01:33
   mtime=2020-07-20T18:01:33.875008284+00:00
+R5_FILE: hdrlen=41 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/dir2/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:01:44
+  mtime=2020-07-20T18:01:44.335219144+00:00
+R5_FILE: hdrlen=47 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/with space/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:02:17
+  mtime=2020-07-20T18:02:17.511892315+00:00
+R5_FILE: hdrlen=42 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/empty/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:01:09
+  mtime=2020-07-20T18:01:09.182513654+00:00
+R5_FILE: hdrlen=50 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/üȵĩöḋè/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:07:00
+  mtime=2020-07-20T18:07:00.153758873+00:00
+R5_FILE: hdrlen=41 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/dir1/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:01:33
+  mtime=2020-07-20T18:01:33.887008525+00:00
+R5_FILE: hdrlen=36 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=sub/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=drwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-20 18:06:42
+  mtime=2020-07-20T18:06:42.241383868+00:00

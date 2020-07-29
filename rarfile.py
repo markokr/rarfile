@@ -607,8 +607,6 @@ class RarInfo:
 
         .. versionadded:: 4.0
         """
-        if self.type == RAR_BLOCK_FILE:
-            return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
     def is_symlink(self):
@@ -917,12 +915,12 @@ class RarFile:
         if dirname and dirname != ".":
             os.makedirs(dirname, exist_ok=True)
 
-        if info.is_file():
+        if info.is_symlink():
+            self._make_symlink(info, dstfn)
+        elif info.is_file():
             self._make_file(info, dstfn, pwd, set_attrs)
         elif info.is_dir():
             self._make_dir(info, dstfn, set_attrs)
-        elif info.is_symlink():
-            self._make_symlink(info, dstfn)
 
         return dstfn
 
@@ -1331,6 +1329,12 @@ class Rar3Info(RarInfo):
                 return True
         return False
 
+    def is_dir(self):
+        """Returns True if entry is a directory."""
+        if self.type == RAR_BLOCK_FILE and not self.is_symlink():
+            return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
+        return False
+
     def is_symlink(self):
         """Returns True if entry is a symlink."""
         return (
@@ -1688,6 +1692,13 @@ class Rar5FileInfo(Rar5BaseFile):
     def is_file(self):
         """Returns True if entry is a normal file."""
         return not (self.is_dir() or self.is_symlink())
+
+    def is_dir(self):
+        """Returns True if entry is a directory."""
+        if not self.file_redir:
+            if self.file_flags & RAR5_FILE_FLAG_ISDIR:
+                return True
+        return False
 
 
 class Rar5ServiceInfo(Rar5BaseFile):

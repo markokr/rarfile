@@ -1,6 +1,6 @@
 Archive: test/files/rar5-crc.rar
   comment='RAR5 archive - crc\n'
-R5_FILE: hdrlen=45 datlen=55 hdr_extra=11
+R5_FILE: hdrlen=45 datlen=55 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest1.txt
   file_flags=0x0004:CRC32
@@ -9,7 +9,7 @@ R5_FILE: hdrlen=45 datlen=55 hdr_extra=11
   crc=0xc5b7e6a2 (3317163682)
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
-R5_FILE: hdrlen=61 datlen=2048 hdr_extra=27
+R5_FILE: hdrlen=61 datlen=2048 hdr_extra=27 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest2.txt
   file_flags=0x0004:CRC32

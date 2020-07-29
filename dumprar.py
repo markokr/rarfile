@@ -243,6 +243,14 @@ def show_item(h):
         xprint("Unknown info record")
 
 
+def show_rftype(h):
+    return "".join([
+        h.is_file() and "F" or "-",
+        h.is_dir() and "D" or "-",
+        h.is_symlink() and "L" or "-",
+    ])
+
+
 def modex3(v):
     return [v & 4 and "r" or "-", v & 2 and "w" or "-", v & 1 and "x" or "-"]
 
@@ -285,7 +293,8 @@ def show_item_v3(h):
     """Show any RAR3 record.
     """
     st = rar3_type(h.type)
-    xprint("%s: hdrlen=%d datlen=%d", st, h.header_size, h.add_size)
+    xprint("%s: hdrlen=%d datlen=%d is=%s",
+           st, h.header_size, h.add_size, show_rftype(h))
     if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
         s_mode = show_mode(h)
         xprint("  flags=0x%04x:%s", h.flags, get_file_flags(h.flags))
@@ -336,8 +345,8 @@ def show_item_v5(h):
     """Show any RAR5 record.
     """
     st = rar5_type(h.block_type)
-    xprint("%s: hdrlen=%d datlen=%d hdr_extra=%d", st, h.header_size,
-           h.compress_size, h.block_extra_size)
+    xprint("%s: hdrlen=%d datlen=%d hdr_extra=%d is=%s", st, h.header_size,
+           h.compress_size, h.block_extra_size, show_rftype(h))
     xprint("  block_flags=0x%04x:%s", h.block_flags, render_flags(h.block_flags, r5_block_flags))
     if h.block_type in (rf.RAR5_BLOCK_FILE, rf.RAR5_BLOCK_SERVICE):
         xprint("  name=%s", h.filename)
@@ -520,10 +529,10 @@ def test_real(fn, pwd):
     # process
     for n in r.namelist():
         inf = r.getinfo(n)
-        if inf.isdir():
-            continue
         if cf_verbose == 1:
             show_item(inf)
+        if inf.is_dir() or inf.is_symlink():
+            continue
         if cf_test_read:
             test_read(r, inf)
 

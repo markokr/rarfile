@@ -1,5 +1,5 @@
 Archive: test/files/rar5-symlink-unix.rar
-R5_FILE: hdrlen=55 datlen=0 hdr_extra=24
+R5_FILE: hdrlen=55 datlen=0 hdr_extra=24 is=--L
   block_flags=0x0003:EXTRA,DATA
   name=data_link
   file_flags=0x0004:CRC32
@@ -9,7 +9,7 @@ R5_FILE: hdrlen=55 datlen=0 hdr_extra=24
   date_time=2020-07-26 20:13:58
   mtime=2020-07-26T20:13:58.125453113+00:00
   redir: type=UNIX_SYMLINK flags=0:- destination=data.txt
-R5_FILE: hdrlen=43 datlen=5 hdr_extra=11
+R5_FILE: hdrlen=43 datlen=5 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=data.txt
   file_flags=0x0004:CRC32
@@ -18,7 +18,7 @@ R5_FILE: hdrlen=43 datlen=5 hdr_extra=11
   crc=0xe6c1c582 (3871458690)
   date_time=2020-07-26 20:13:33
   mtime=2020-07-26T20:13:33.568312816+00:00
-R5_FILE: hdrlen=61 datlen=0 hdr_extra=28
+R5_FILE: hdrlen=61 datlen=0 hdr_extra=28 is=--L
   block_flags=0x0003:EXTRA,DATA
   name=random_link
   file_flags=0x0004:CRC32

@@ -1,5 +1,5 @@
 Archive: test/files/rar5-symlink-win.rar
-R5_FILE: hdrlen=49 datlen=9 hdr_extra=11
+R5_FILE: hdrlen=49 datlen=9 hdr_extra=11 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=content/file.txt
   file_flags=0x0004:CRC32
@@ -8,7 +8,7 @@ R5_FILE: hdrlen=49 datlen=9 hdr_extra=11
   crc=0x35f39d4d (905157965)
   date_time=2020-07-27 17:39:15
   mtime=2020-07-27T17:39:15.672228900+00:00
-R5_FILE: hdrlen=64 datlen=0 hdr_extra=29
+R5_FILE: hdrlen=64 datlen=0 hdr_extra=29 is=--L
   block_flags=0x0003:EXTRA,DATA
   name=links/bad_link
   file_flags=0x0004:CRC32
@@ -18,7 +18,7 @@ R5_FILE: hdrlen=64 datlen=0 hdr_extra=29
   date_time=2020-07-27 17:43:43
   mtime=2020-07-27T17:43:43.625091100+00:00
   redir: type=WINDOWS_SYMLINK flags=0:- destination=../../missing
-R5_FILE: hdrlen=71 datlen=0 hdr_extra=35
+R5_FILE: hdrlen=71 datlen=0 hdr_extra=35 is=--L
   block_flags=0x0003:EXTRA,DATA
   name=links/file_link
   file_flags=0x0004:CRC32
@@ -28,3 +28,59 @@ R5_FILE: hdrlen=71 datlen=0 hdr_extra=35
   date_time=2020-07-27 17:40:02
   mtime=2020-07-27T17:40:02.484275100+00:00
   redir: type=WINDOWS_SYMLINK flags=0:- destination=../content/file.txt
+R5_FILE: hdrlen=43 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=content/dir1/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:39:19
+  mtime=2020-07-27T17:39:19.969920300+00:00
+R5_FILE: hdrlen=43 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=content/dir2/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:39:21
+  mtime=2020-07-27T17:39:21.062348800+00:00
+R5_FILE: hdrlen=91 datlen=0 hdr_extra=52 is=--L
+  block_flags=0x0003:EXTRA,DATA
+  name=links/dir_junction
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY,REPARSE_POINT cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:40:48
+  mtime=2020-07-27T17:40:48.345425800+00:00
+  redir: type=WINDOWS_JUNCTION flags=1:DIR destination=/??/C:/Users/User/stuff/content/dir2
+R5_FILE: hdrlen=66 datlen=0 hdr_extra=31 is=--L
+  block_flags=0x0003:EXTRA,DATA
+  name=links/dir_link
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY,REPARSE_POINT cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:40:28
+  mtime=2020-07-27T17:40:28.452838+00:00
+  redir: type=WINDOWS_SYMLINK flags=1:DIR destination=../content/dir1
+R5_FILE: hdrlen=38 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=content/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:43:17
+  mtime=2020-07-27T17:43:17.077898200+00:00
+R5_FILE: hdrlen=36 datlen=0 hdr_extra=11 is=-D-
+  block_flags=0x0003:EXTRA,DATA
+  name=links/
+  file_flags=0x0005:DIR,CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=0:WINDOWS mode=DIRECTORY cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2020-07-27 17:43:43
+  mtime=2020-07-27T17:43:43.625091100+00:00

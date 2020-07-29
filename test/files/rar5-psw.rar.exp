@@ -1,6 +1,6 @@
 Archive: test/files/rar5-psw.rar
   comment='RAR5 archive - nohdr-password\n'
-R5_FILE: hdrlen=94 datlen=64 hdr_extra=60
+R5_FILE: hdrlen=94 datlen=64 hdr_extra=60 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest1.txt
   file_flags=0x0004:CRC32
@@ -10,7 +10,7 @@ R5_FILE: hdrlen=94 datlen=64 hdr_extra=60
   date_time=2011-06-12 09:53:33
   mtime=2011-06-12T09:53:33+00:00
   algo=0:AES256 enc_flags=0003:CHECKVAL,TWEAKED kdf_lg=15 kdf_count=32768 salt=7e982cdd1ae21c36c7a391da8d088a68 iv=a03aad26f4827b87d54c725ce73b6967 checkval=8151cff63649c16e186a220f
-R5_FILE: hdrlen=110 datlen=2048 hdr_extra=76
+R5_FILE: hdrlen=110 datlen=2048 hdr_extra=76 is=F--
   block_flags=0x0003:EXTRA,DATA
   name=stest2.txt
   file_flags=0x0004:CRC32
