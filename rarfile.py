@@ -3119,12 +3119,12 @@ class nsdatetime(datetime):
         return hash((super().__hash__(), self.nanosecond)) if self.nanosecond else super().__hash__()
 
     def __eq__(self, other):
-        otherns = other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000
-        return super().__eq__(other) and self.nanosecond == otherns
+        return super().__eq__(other) and self.nanosecond == (
+            other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000)
 
     def __gt__(self, other):
-        otherns = other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000
-        return super().__gt__(other) or (super().__eq__(other) and self.nanosecond > otherns)
+        return super().__gt__(other) or (super().__eq__(other) and self.nanosecond > (
+            other.nanosecond if isinstance(other, nsdatetime) else other.microsecond * 1000))
 
     def __lt__(self, other):
         return not (self > other or self == other)
