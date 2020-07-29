@@ -466,7 +466,7 @@ class RarCannotExec(RarExecError):
 
 
 class UnsupportedWarning(UserWarning):
-    """There is issue with RAR archive.
+    """Archive uses feature that are unsupported by rarfile.
 
     .. versionadded:: 4.0
     """
