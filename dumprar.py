@@ -176,17 +176,10 @@ dos_mode_bits = (
 
 def xprint(m, *args):
     """Print string to stdout.
-
-    Format unicode safely.
     """
-    if sys.hexversion < 0x3000000:
-        m = m.decode("utf8")
     if args:
         m = m % args
-    if sys.hexversion < 0x3000000:
-        m = m.encode("utf8")
-    sys.stdout.write(m)
-    sys.stdout.write("\n")
+    print(m)
 
 
 def render_flags(flags, bit_list):
