@@ -864,10 +864,9 @@ class RarFile:
         """Read all files and test CRC.
         """
         for member in self.infolist():
-            if member.is_dir():
-                continue
-            with self.open(member, 'r', pwd) as f:
-                empty_read(f, member.file_size, BSIZE)
+            if member.is_file():
+                with self.open(member, 'r', pwd) as f:
+                    empty_read(f, member.file_size, BSIZE)
 
     def strerror(self):
         """Return error string if parsing failed or None if no problems.
@@ -915,54 +914,64 @@ class RarFile:
         if dirname and dirname != ".":
             os.makedirs(dirname, exist_ok=True)
 
+        if info.is_file():
+            return self._make_file(info, dstfn, pwd, set_attrs)
+        if info.is_dir():
+            return self._make_dir(info, dstfn, pwd, set_attrs)
         if info.is_symlink():
-            self._make_symlink(info, dstfn)
-        elif info.is_file():
-            self._make_file(info, dstfn, pwd, set_attrs)
-        elif info.is_dir():
-            self._make_dir(info, dstfn, set_attrs)
+            return self._make_symlink(info, dstfn, pwd, set_attrs)
+        return None
 
+    def _create_helper(self, name, flags, info):
+        return os.open(name, flags)
+
+    def _make_file(self, info, dstfn, pwd, set_attrs):
+        def helper(name, flags):
+            return self._create_helper(name, flags, info)
+        with self.open(info, "r", pwd) as src:
+            with open(dstfn, "wb", opener=helper) as dst:
+                shutil.copyfileobj(src, dst)
+        if set_attrs:
+            self._set_attrs(info, dstfn)
         return dstfn
 
-    def _make_dir(self, info, dstfn, set_attrs):
+    def _make_dir(self, info, dstfn, pwd, set_attrs):
         os.makedirs(dstfn, exist_ok=True)
         if set_attrs:
             self._set_attrs(info, dstfn)
+        return dstfn
 
-    def _make_file(self, info, dstfn, pwd, set_attrs):
-        with self.open(info, "r", pwd) as src:
-            with open(dstfn, "wb") as dst:
-                shutil.copyfileobj(src, dst)
-
-        if set_attrs:
-            self._set_attrs(info, dstfn)
-
-    def _make_symlink(self, info, dstfn):
+    def _make_symlink(self, info, dstfn, pwd, set_attrs):
         target_is_directory = False
         if info.host_os == RAR_OS_UNIX:
-            link_name = self.read(info)
+            link_name = self.read(info, pwd)
+            target_is_directory = (info.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         elif info.file_redir:
             redir_type, redir_flags, link_name = info.file_redir
             if redir_type == RAR5_XREDIR_WINDOWS_JUNCTION:
                 warnings.warn(f"Windows junction not supported - {info.filename}", UnsupportedWarning)
-                return
-            target_is_directory = redir_type & RAR5_XREDIR_ISDIR > 0
+                return None
+            target_is_directory = (redir_type & RAR5_XREDIR_ISDIR) > 0
+        else:
+            warnings.warn(f"Unsupported link type - {info.filename}", UnsupportedWarning)
+            return None
 
         os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
+        return dstfn
 
     def _set_attrs(self, info, dstfn):
         if info.host_os == RAR_OS_UNIX:
             os.chmod(dstfn, info.mode & 0o777)
         elif info.host_os in (RAR_OS_WIN32, RAR_OS_MSDOS):
-            if info.mode & DOS_MODE_READONLY:
+            # only keep R/O attr, except for dirs on win32
+            if info.mode & DOS_MODE_READONLY and (info.is_file() or sys.platform != "win32"):
                 st = os.stat(dstfn)
                 new_mode = st.st_mode & ~0o222
-                os.chmod(dstfn, new_mode & 0o777)
+                os.chmod(dstfn, new_mode)
 
-        if info.mtime and hasattr(os, "utime"):
-            mtime_ns = atime_ns = to_nsecs(info.mtime)
-            if info.atime:
-                atime_ns = to_nsecs(info.atime)
+        if info.mtime:
+            mtime_ns = to_nsecs(info.mtime)
+            atime_ns = to_nsecs(info.atime) if info.atime else mtime_ns
             os.utime(dstfn, ns=(atime_ns, mtime_ns))
 
 
