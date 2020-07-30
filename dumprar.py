@@ -531,9 +531,7 @@ def test_real(fn, pwd):
         inf = r.getinfo(n)
         if cf_verbose == 1:
             show_item(inf)
-        if inf.is_dir() or inf.is_symlink():
-            continue
-        if cf_test_read:
+        if cf_test_read and inf.is_file():
             test_read(r, inf)
 
     if cf_extract:
