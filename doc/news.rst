@@ -36,17 +36,22 @@ New features:
 * :meth:`RarInfo.is_dir` is now preferred spelling of ``isdir()``.
   Old method kept as alias.
   [`#44 <https://github.com/markokr/rarfile/issues/44>`_]
+* New :meth:`RarInfo.is_file` and :meth:`RarInfo.is_symlink`
+  methods. Only one of ``is_file/is_dir/is_symlink`` will be True.
 * :meth:`RarFile.printdir` has ``file`` argument for output.
 * :meth:`RarFile.__iter__` loops over :class:`RarInfo` entries.
 * RAR3: throw :exc:`NeedFirstVolume` exception with current volume number,
   like RAR5 does.
   [`#58 <https://github.com/markokr/rarfile/issues/58>`_]
-* RAR5: nanosecond timestamp support.
+* Nanosecond timestamp support.  Visible as :class:`nsdatetime`
+  instance.
 * Minimal CLI when run as script: ``python3 -m rarfile``
+* Skip old file versions in versioned archive.
 
 Cleanups:
 
 * Use PBKDF2 implementation from :mod:`hashlib`.
+* Improve test coverage.
 
 Version 3.3 (2020-07-26)
 ------------------------
