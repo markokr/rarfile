@@ -9,9 +9,17 @@ import pytest
 
 import rarfile
 
+
 #
 # test start
 #
+
+def test_not_rar():
+    with pytest.raises(rarfile.NotRarFile):
+        rarfile.RarFile('rarfile.py', 'r')
+    with pytest.raises(rarfile.NotRarFile):
+        with open('rarfile.py', 'rb') as f:
+            rarfile.RarFile(f, 'r')
 
 
 def test_bad_arc_mode_w():
@@ -97,13 +105,13 @@ def test_detection():
 
 
 def test_signature_error():
-    with pytest.raises(rarfile.BadRarFile):
+    with pytest.raises(rarfile.NotRarFile):
         rarfile.RarFile('test/files/ctime4.rar.exp')
 
 
 def test_signature_error_mem():
     data = io.BytesIO(b'x' * 40)
-    with pytest.raises(rarfile.BadRarFile):
+    with pytest.raises(rarfile.NotRarFile):
         rarfile.RarFile(data)
 
 
@@ -225,28 +233,36 @@ def test_extract_mem(tmp_path):
     assert os.path.isfile(str(ex3 / 'stest1.txt')) is False
     assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
 
+def get_rftype(h):
+    assert h.is_dir() == h.isdir()
+    return "".join([
+        h.is_file() and "F" or "-",
+        h.is_dir() and "D" or "-",
+        h.is_symlink() and "L" or "-",
+    ])
+
 
 def test_infocb():
     infos = []
 
     def info_cb(info):
-        infos.append((info.type, info.needs_password(), info.isdir(), info._must_disable_hack()))
+        infos.append((info.type, info.needs_password(), get_rftype(info), info._must_disable_hack()))
 
     rf = rarfile.RarFile('test/files/seektest.rar', info_callback=info_cb)
     assert infos == [
-        (rarfile.RAR_BLOCK_MAIN, False, False, False),
-        (rarfile.RAR_BLOCK_FILE, False, False, False),
-        (rarfile.RAR_BLOCK_FILE, False, False, False),
-        (rarfile.RAR_BLOCK_ENDARC, False, False, False)]
+        (rarfile.RAR_BLOCK_MAIN, False, "---", False),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", False),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", False),
+        (rarfile.RAR_BLOCK_ENDARC, False, "---", False)]
 
     infos = []
     rf = rarfile.RarFile('test/files/rar5-solid-qo.rar', info_callback=info_cb)
     assert infos == [
-        (rarfile.RAR_BLOCK_MAIN, False, False, True),
-        (rarfile.RAR_BLOCK_FILE, False, False, False),
-        (rarfile.RAR_BLOCK_FILE, False, False, True),
-        (rarfile.RAR_BLOCK_FILE, False, False, True),
-        (rarfile.RAR_BLOCK_FILE, False, False, True),
-        (rarfile.RAR_BLOCK_SUB, False, False, False),
-        (rarfile.RAR_BLOCK_ENDARC, False, False, False)]
+        (rarfile.RAR_BLOCK_MAIN, False, "---", True),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", False),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", True),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", True),
+        (rarfile.RAR_BLOCK_FILE, False, "F--", True),
+        (rarfile.RAR_BLOCK_SUB, False, "---", False),
+        (rarfile.RAR_BLOCK_ENDARC, False, "---", False)]
 
