@@ -24,7 +24,11 @@ ARCHIVE_COMMENTS = {
     "rar5-psw.rar": "RAR5 archive - nohdr-password\n",
 }
 
-ARCHIVE_FILES = [f for f in sorted(glob("test/files/*.rar")) if "hpsw" not in f]
+ARCHIVE_FILES = [
+    f.replace("\\", "/")
+    for f in sorted(glob("test/files/*.rar"))
+    if "hpsw" not in f
+]
 
 
 def run_reading_normal(fn, comment):
@@ -83,7 +87,8 @@ def run_reading_inmem(fn, comment):
 
 
 def run_reading(fn):
-    comment = ARCHIVE_COMMENTS.get(fn.split("/")[-1])
+    basename = fn.split("/")[-1]
+    comment = ARCHIVE_COMMENTS.get(basename)
     run_reading_normal(fn, comment)
     run_reading_inmem(fn, comment)
 
