@@ -1,0 +1,13 @@
+Archive: test/files/rar3-owner.rar
+FILE: hdrlen=47 datlen=2 is=F--
+  flags=0x9020:EXTTIME,LONG,D128
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=2 dec=2 vol=0
+  crc=0x6751fc53 (1733426259) date_time=2020-07-30 22:48:11
+  name=owner1.txt
+  mtime=2020-07-30T22:48:11.364898100
+FILE: hdrlen=47 datlen=2 is=F--
+  flags=0x9020:EXTTIME,LONG,D128
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=2 dec=2 vol=0
+  crc=0x4c7caf90 (1283239824) date_time=2020-07-30 22:48:16
+  name=owner2.txt
+  mtime=2020-07-30T22:48:16.347603

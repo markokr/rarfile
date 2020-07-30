@@ -1,0 +1,12 @@
+Archive: test/files/ctime5.rar
+R5_FILE: hdrlen=60 datlen=2 hdr_extra=27 is=F--
+  block_flags=0x0003:EXTRA,DATA
+  name=timed.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-rw-r--r-- cmp=2 dec=2 vol=0
+  crc=0xea5f4713 (3932112659)
+  date_time=2020-07-30 20:26:59
+  mtime=2020-07-30T20:26:59.677675904+00:00
+  ctime=2020-07-30T20:28:19.398867888+00:00
+  atime=2020-07-30T20:27:10.121196721+00:00

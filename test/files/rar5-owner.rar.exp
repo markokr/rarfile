@@ -1,0 +1,21 @@
+Archive: test/files/rar5-owner.rar
+R5_FILE: hdrlen=56 datlen=2 hdr_extra=22 is=F--
+  block_flags=0x0003:EXTRA,DATA
+  name=owner1.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-rw-r--r-- cmp=2 dec=2 vol=0
+  crc=0x6751fc53 (1733426259)
+  date_time=2020-07-30 19:48:11
+  mtime=2020-07-30T19:48:11.364898178+00:00
+  owner: name=b'bin' group=b'sys' uid=None gid=None
+R5_FILE: hdrlen=52 datlen=2 hdr_extra=18 is=F--
+  block_flags=0x0003:EXTRA,DATA
+  name=owner2.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-rw-r--r-- cmp=2 dec=2 vol=0
+  crc=0x4c7caf90 (1283239824)
+  date_time=2020-07-30 19:48:16
+  mtime=2020-07-30T19:48:16.347603034+00:00
+  owner: name=None group=None uid=400 gid=500

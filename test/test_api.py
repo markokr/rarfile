@@ -266,3 +266,15 @@ def test_infocb():
         (rarfile.RAR_BLOCK_SUB, False, "---", False),
         (rarfile.RAR_BLOCK_ENDARC, False, "---", False)]
 
+
+# pylint: disable=singleton-comparison
+def test_rarextfile():
+    with rarfile.RarFile('test/files/seektest.rar') as rf:
+        for fn in ("stest1.txt", "stest2.txt"):
+            with rf.open(fn) as f:
+                assert f.tell() == 0
+                assert f.writable() == False
+                assert f.seekable() == True
+                assert f.readable() == True
+                assert f.readall() == rf.read(fn)
+

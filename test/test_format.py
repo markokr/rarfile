@@ -207,6 +207,14 @@ def test_rar3_ctime4():
     cmp_struct(dumparc(r), expect_ctime('2011-05-10T21:28:47.899345100', '2011-05-10T21:28:47.899345100'))
 
 
+def test_rar5_ctime5():
+    r = rarfile.RarFile('test/files/ctime5.rar')
+    inf = r.getinfo("timed.txt")
+    assert inf.mtime.isoformat() == "2020-07-30T20:26:59.677675904+00:00"
+    assert inf.ctime.isoformat() == "2020-07-30T20:28:19.398867888+00:00"
+    assert inf.atime.isoformat() == "2020-07-30T20:27:10.121196721+00:00"
+
+
 def test_rar5_times():
     r = rarfile.RarFile('test/files/rar5-times.rar')
     cmp_struct(dumparc(r), [mkitem(
@@ -240,4 +248,10 @@ def test_newvols():
 def test_newvols_err():
     with pytest.raises(rarfile.BadRarName):
         rarfile._next_newvol('xx.rar')
+
+
+@pytest.mark.parametrize("fn", ["test/files/rar3-versions.rar", "test/files/rar5-versions.rar"])
+def test_versions(fn):
+    with rarfile.RarFile(fn) as rf:
+        assert rf.namelist() == ["versioned.txt"]
 

@@ -1,0 +1,7 @@
+Archive: test/files/rar3-versions.rar
+FILE: hdrlen=50 datlen=2 is=F--
+  flags=0x9020:EXTTIME,LONG,D128
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=0 cmp=2 dec=2 vol=0
+  crc=0x55679ed1 (1432854225) date_time=2020-07-30 22:52:46
+  name=versioned.txt
+  mtime=2020-07-30T22:52:46.436647500

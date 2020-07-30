@@ -1,0 +1,10 @@
+Archive: test/files/rar5-versions.rar
+R5_FILE: hdrlen=48 datlen=2 hdr_extra=11 is=F--
+  block_flags=0x0003:EXTRA,DATA
+  name=versioned.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-rw-r--r-- cmp=2 dec=2 vol=0
+  crc=0x55679ed1 (1432854225)
+  date_time=2020-07-30 19:52:46
+  mtime=2020-07-30T19:52:46.436647570+00:00

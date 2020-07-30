@@ -14,7 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-r"""RAR archive reader.
+"""RAR archive reader.
 
 This is Python module for Rar archive reading.  The interface
 is made as :mod:`zipfile`-like as possible.
@@ -1547,9 +1547,7 @@ class RAR3Parser(CommonParser):
                 data = hdata[pos: pos_next]
                 cmt = rar3_decompress(ver, meth, data, declen, sflags,
                                       crc, self._password)
-                if not self._crc_check:
-                    h.comment = self._decode_comment(cmt)
-                elif crc32(cmt) & 0xFFFF == crc:
+                if not self._crc_check or (crc32(cmt) & 0xFFFF == crc):
                     h.comment = self._decode_comment(cmt)
 
             pos = pos_next
@@ -1588,7 +1586,9 @@ class RAR3Parser(CommonParser):
     def process_entry(self, fd, item):
         if item.type == RAR_BLOCK_FILE:
             # use only first part
-            if (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
+            if item.flags & RAR_FILE_VERSION:
+                pass    # skip old versions
+            elif (item.flags & RAR_FILE_SPLIT_BEFORE) == 0:
                 self._info_map[item.filename.rstrip("/")] = item
                 self._info_list.append(item)
             elif len(self._info_list) > 0:
@@ -2030,8 +2030,10 @@ class RAR5Parser(CommonParser):
 
     def process_entry(self, fd, item):
         if item.block_type == RAR5_BLOCK_FILE:
-            # use only first part
-            if (item.block_flags & RAR5_BLOCK_FLAG_SPLIT_BEFORE) == 0:
+            if item.file_version:
+                pass    # skip old versions
+            elif (item.block_flags & RAR5_BLOCK_FLAG_SPLIT_BEFORE) == 0:
+                # use only first part
                 self._info_map[item.filename.rstrip("/")] = item
                 self._info_list.append(item)
             elif len(self._info_list) > 0:
@@ -2330,12 +2332,9 @@ class PipeReader(RarExtFile):
     def _close_proc(self):
         if not self._proc:
             return
-        if self._proc.stdout:
-            self._proc.stdout.close()
-        if self._proc.stdin:
-            self._proc.stdin.close()
-        if self._proc.stderr:
-            self._proc.stderr.close()
+        for f in (self._proc.stdout, self._proc.stderr, self._proc.stdin):
+            if f:
+                f.close()
         self._proc.wait()
         self._returncode = self._proc.returncode
         self._proc = None
@@ -2350,10 +2349,6 @@ class PipeReader(RarExtFile):
         self._returncode = 0
         self._proc = custom_popen(self._cmd)
         self._fd = self._proc.stdout
-
-        # avoid situation where unrar waits on stdin
-        if self._proc.stdin:
-            self._proc.stdin.close()
 
     def _read(self, cnt):
         """Read from pipe."""
@@ -2977,9 +2972,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=N
     fhdr = S_FILE_HDR.pack(len(data), declen, RAR_OS_MSDOS, crc,
                            date, vers, meth, len(fname), mode)
     fhdr += fname
-    if flags & RAR_FILE_SALT:
-        if not salt:
-            return b""
+    if salt:
         fhdr += salt
 
     # full header
