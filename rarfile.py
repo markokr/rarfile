@@ -894,7 +894,7 @@ class RarFile:
                             sfx_ofs)
             self._file_parser = p5  # noqa
         else:
-            raise BadRarFile("Not a RAR file")
+            raise NotRarFile("Not a RAR file")
 
         self._file_parser.parse()
         self.comment = self._file_parser.comment
@@ -1069,8 +1069,6 @@ class CommonParser:
         fd.seek(self._sfx_offset, 0)
         sig = fd.read(len(self._expect_sig))
         if sig != self._expect_sig:
-            if isinstance(self._rarfile, str):
-                raise NotRarFile("Not a Rar archive: {}".format(self._rarfile))
             raise NotRarFile("Not a Rar archive")
 
         volume = 0  # first vol (.rar) is 0
