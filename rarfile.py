@@ -467,8 +467,8 @@ class UnsupportedWarning(UserWarning):
 class RarInfo:
     r"""An entry in rar archive.
 
-    RAR3 extended timestamps are :class:`datetime.datetime` objects without timezone.
-    RAR5 extended timestamps are :class:`datetime.datetime` objects with UTC timezone.
+    Timestamps as :class:`~datetime.datetime` are without timezone in RAR3,
+    with UTC timezone in RAR5 archives.
 
     Attributes:
 
@@ -513,16 +513,16 @@ class RarInfo:
 
         mtime
             File modification time.  Same value as :attr:`date_time`
-            but as :class:`datetime.datetime` object with extended precision.
+            but as :class:`~datetime.datetime` object with extended precision.
 
         ctime
-            Optional time field: creation time.  As :class:`datetime.datetime` object.
+            Optional time field: creation time.  As :class:`~datetime.datetime` object.
 
         atime
-            Optional time field: last access time.  As :class:`datetime.datetime` object.
+            Optional time field: last access time.  As :class:`~datetime.datetime` object.
 
         arctime
-            Optional time field: archival time.  As :class:`datetime.datetime` object.
+            Optional time field: archival time.  As :class:`~datetime.datetime` object.
             (RAR3-only)
 
         CRC
@@ -783,7 +783,7 @@ class RarFile:
     def read(self, name, pwd=None):
         """Return uncompressed data for archive entry.
 
-        For longer files using :meth:`RarFile.open` may be better idea.
+        For longer files using :meth:`~RarFile.open` may be better idea.
 
         Parameters:
 
