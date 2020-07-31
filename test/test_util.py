@@ -90,6 +90,7 @@ def test_nsdatetime_cmp():
     # mixed lt
     assert d1 < n2 < d3
 
+
 def test_nsdatetime_astimezone():
     nsdatetime = rarfile.nsdatetime
     X1 = timezone(timedelta(hours=1), "X1")

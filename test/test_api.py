@@ -9,7 +9,6 @@ import pytest
 
 import rarfile
 
-
 #
 # test start
 #
@@ -232,6 +231,7 @@ def test_extract_mem(tmp_path):
     rf.extract(inf, str(ex3))
     assert os.path.isfile(str(ex3 / 'stest1.txt')) is False
     assert os.path.isfile(str(ex3 / 'stest2.txt')) is True
+
 
 def get_rftype(h):
     assert h.is_dir() == h.isdir()

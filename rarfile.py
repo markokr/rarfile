@@ -2893,30 +2893,25 @@ def _parse_xtime(flag, data, pos, basetime=None):
         if not basetime:
             basetime, pos = load_dostime(data, pos)
 
-        # load second fractions
+        # load second fractions of 100ns units
         rem = 0
         cnt = flag & 3
         for _ in range(cnt):
             b, pos = load_byte(data, pos)
             rem = (b << 16) | (rem >> 8)
 
-        # convert 100ns units to nanoseconds
-        nsec = rem * 100
-
         # dostime has room for 30 seconds only, correct if needed
         if flag & 4 and basetime.second < 59:
             basetime = basetime.replace(second=basetime.second + 1)
 
-        res = to_nsdatetime(basetime, nsec)
+        res = to_nsdatetime(basetime, rem * 100)
     return res, pos
 
 
 def is_filelike(obj):
     """Filename or file object?
     """
-    filename_types = (bytes, str, Path)
-
-    if isinstance(obj, filename_types):
+    if isinstance(obj, (bytes, str, Path)):
         return False
     res = True
     for a in ("read", "tell", "seek"):
