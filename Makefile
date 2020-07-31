@@ -8,8 +8,9 @@ PACKAGE = $(shell python3 setup.py --name)
 VERSION = $(shell python3 setup.py --version)
 RXVERSION = $(shell python3 setup.py --version | sed 's/\./[.]/g')
 TAG = v$(VERSION)
-TGZ = dist/$(PACKAGE)-$(VERSION).tar.gz
-URL = $(REPO)/releases/download/v$(VERSION)/$(PACKAGE)-$(VERSION).tar.gz
+TGZ = $(PACKAGE)-$(VERSION).tar.gz
+WHEEL = $(PACKAGE)-$(VERSION)-py3-none-any.whl
+URL = $(REPO)/releases/download/$(TAG)
 
 all:
 	pyflakes3 rarfile.py
@@ -48,9 +49,11 @@ release: prepare
 
 upload:
 	mkdir -p dist && rm -f dist/*
-	cd dist && wget -q $(URL)
-	tar tvf $(TGZ)
-	twine upload $(TGZ)
+	cd dist && wget -q $(URL)/$(TGZ)
+	cd dist && wget -q $(URL)/$(WHEEL)
+	tar tvf dist/$(TGZ)
+	unzip -t dist/$(WHEEL)
+	twine upload dist/$(TGZ) dist/$(WHEEL)
 
 shownote:
 	awk -v VER="$(VERSION)" -f doc/note.awk $(NEWS) \
@@ -63,6 +66,6 @@ unrelease:
 dist-test:
 	python3 setup.py sdist
 	rm -rf $(PACKAGE)-$(VERSION)
-	tar xf $(TGZ)
+	tar xf dist/$(TGZ)
 	cd $(PACKAGE)-$(VERSION) && tox
 

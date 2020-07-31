@@ -34,11 +34,14 @@ jobs:
           VERSION=$(python setup.py --version)
           TGZ="${PACKAGE}-${VERSION}.tar.gz"
           test "${{github.ref}}" = "refs/tags/v${VERSION}" || { echo "ERR: tag mismatch"; exit 1; }
-          python setup.py sdist
+          python setup.py sdist bdist_wheel
           test -f "dist/${TGZ}" || { echo "ERR: sdist failed"; exit 1; }
+          WHEEL=$(cd dist && ls *.whl)
+          test -f "dist/${WHEEL}" || { echo "ERR: bdist_wheel failed"; exit 1; }
           echo "::set-env name=PACKAGE::${PACKAGE}"
           echo "::set-env name=VERSION::${VERSION}"
           echo "::set-env name=TGZ::${TGZ}"
+          echo "::set-env name=WHEEL::${WHEEL}"
           echo "::endgroup::"
 
       - name: "Install pandoc"
@@ -67,7 +70,7 @@ jobs:
           draft: false
 
       - name: "Upload source"
-        id: upload
+        id: upload-source
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -76,4 +79,15 @@ jobs:
           asset_path: dist/${{env.TGZ}}
           asset_name: ${{env.TGZ}}
           asset_content_type: application/x-gzip
+
+      - name: "Upload wheel"
+        id: upload-wheel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{steps.release.outputs.upload_url}}
+          asset_path: dist/${{env.WHEEL}}
+          asset_name: ${{env.WHEEL}}
+          asset_content_type: application/octet-stream
 
