@@ -286,7 +286,9 @@ DOS_MODE_READONLY = 0x01
 
 RAR_ID = b"Rar!\x1a\x07\x00"
 RAR5_ID = b"Rar!\x1a\x07\x01\x00"
-BSIZE = 512 * 1024 if sys.platform == "win32" else 64 * 1024
+
+WIN32 = sys.platform == "win32"
+BSIZE = 512 * 1024 if WIN32 else 64 * 1024
 
 SFX_MAX_SIZE = 2 * 1024 * 1024
 RAR_V3 = 3
@@ -893,7 +895,7 @@ class RarFile:
 
     def _extract_one(self, info, path, pwd, set_attrs):
         fname = sanitize_filename(
-            info.filename, os.path.sep, sys.platform == "win32"
+            info.filename, os.path.sep, WIN32
         )
 
         if path is None:
@@ -956,7 +958,7 @@ class RarFile:
             os.chmod(dstfn, info.mode & 0o777)
         elif info.host_os in (RAR_OS_WIN32, RAR_OS_MSDOS):
             # only keep R/O attr, except for dirs on win32
-            if info.mode & DOS_MODE_READONLY and (info.is_file() or sys.platform != "win32"):
+            if info.mode & DOS_MODE_READONLY and (info.is_file() or not WIN32):
                 st = os.stat(dstfn)
                 new_mode = st.st_mode & ~0o222
                 os.chmod(dstfn, new_mode)
@@ -3162,10 +3164,7 @@ def to_nsecs(dt):
 def custom_popen(cmd):
     """Disconnect cmd from parent fds, read only from stdout.
     """
-    creationflags = 0
-    if sys.platform == "win32":
-        creationflags = 0x08000000   # CREATE_NO_WINDOW
-
+    creationflags = 0x08000000 if WIN32 else 0  # CREATE_NO_WINDOW
     try:
         p = Popen(cmd, bufsize=0, stdout=PIPE, stderr=STDOUT, stdin=DEVNULL,
                   creationflags=creationflags)
