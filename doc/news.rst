@@ -37,7 +37,8 @@ New features:
   Old method kept as alias.
   [`#44 <https://github.com/markokr/rarfile/issues/44>`_]
 * New :meth:`RarInfo.is_file` and :meth:`RarInfo.is_symlink`
-  methods. Only one of ``is_file/is_dir/is_symlink`` will be True.
+  methods. Only one of :meth:`~RarInfo.is_file`, :meth:`~RarInfo.is_dir`
+  or :meth:`~RarInfo.is_symlink` can be True.
 * :meth:`RarFile.printdir` has ``file`` argument for output.
 * :meth:`RarFile.__iter__` loops over :class:`RarInfo` entries.
 * RAR3: throw :exc:`NeedFirstVolume` exception with current volume number,
