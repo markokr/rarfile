@@ -82,6 +82,7 @@ disable=bad-continuation,
 	len-as-condition,
 	redefined-builtin,
 	import-outside-toplevel,
+	duplicate-code,
 	unnecessary-pass
 
 # Enable the message, report, category or checker with the given id(s). You can

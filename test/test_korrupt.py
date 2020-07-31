@@ -16,7 +16,7 @@ def try_read(tmpfn):
         return
     for fn in rf.namelist():
         try:
-            data = rf.read(fn)
+            rf.read(fn)
         except rarfile.Error:
             pass
 

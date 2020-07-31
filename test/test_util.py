@@ -87,6 +87,8 @@ def test_nsdatetime_cmp():
     assert not d2 > n3
     assert not n2 > d3
 
+    # mixed lt
+    assert d1 < n2 < d3
 
 def test_nsdatetime_astimezone():
     nsdatetime = rarfile.nsdatetime

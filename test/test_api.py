@@ -254,6 +254,7 @@ def test_infocb():
         (rarfile.RAR_BLOCK_FILE, False, "F--", False),
         (rarfile.RAR_BLOCK_FILE, False, "F--", False),
         (rarfile.RAR_BLOCK_ENDARC, False, "---", False)]
+    rf.close()
 
     infos = []
     rf = rarfile.RarFile('test/files/rar5-solid-qo.rar', info_callback=info_cb)
@@ -265,6 +266,7 @@ def test_infocb():
         (rarfile.RAR_BLOCK_FILE, False, "F--", True),
         (rarfile.RAR_BLOCK_SUB, False, "---", False),
         (rarfile.RAR_BLOCK_ENDARC, False, "---", False)]
+    rf.close()
 
 
 # pylint: disable=singleton-comparison
