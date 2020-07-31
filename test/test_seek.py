@@ -7,7 +7,7 @@ import pytest
 
 import rarfile
 
-ARC = 'test/files/seektest.rar'
+ARC = "test/files/seektest.rar"
 
 _WHENCE = 0
 
@@ -42,9 +42,9 @@ def do_seek(f, pos, lim, size=None):
     assert got == exp
     ln = f.read(4)
     if got == fsize and ln:
-        raise Exception('unexpected read')
+        raise Exception("unexpected read")
     if not ln and got < fsize:
-        raise Exception('unexpected read failure')
+        raise Exception("unexpected read failure")
     if ln:
         spos = int(ln)
         assert spos * 4 == got
@@ -76,7 +76,7 @@ def run_seek(rf, fn):
 
 
 def run_arc(arc, desc):
-    files = ['stest1.txt', 'stest2.txt']
+    files = ["stest1.txt", "stest2.txt"]
     rf = rarfile.RarFile(arc)
     for fn in files:
         run_seek(rf, fn)

@@ -9,9 +9,9 @@ import rarfile
 
 def try_read(tmpfn):
     try:
-        rf = rarfile.RarFile(tmpfn, errors='strict')
+        rf = rarfile.RarFile(tmpfn, errors="strict")
         if rf.needs_password():
-            rf.setpassword('password')
+            rf.setpassword("password")
     except rarfile.Error:
         return
     for fn in rf.namelist():
@@ -28,9 +28,9 @@ def process_rar(rarfn, quick=False):
         bad = data[:n]
         try_read(io.BytesIO(bad))
 
-    crap = b'\x00\xff\x01\x80\x7f'
+    crap = b"\x00\xff\x01\x80\x7f"
     if quick:
-        crap = b'\xff'
+        crap = b"\xff"
     for n in range(1, len(data)):
         for i in range(len(crap)):
             c = crap[i:i + 1]
@@ -47,12 +47,12 @@ def test_corrupt_quick_rar5():
 
 
 def test_corrupt_all():
-    test_rar_list = glob.glob('test/files/*.rar')
+    test_rar_list = glob.glob("test/files/*.rar")
     test_rar_list = []
     for rar in test_rar_list:
         process_rar(rar)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_corrupt_quick_rar5()
 

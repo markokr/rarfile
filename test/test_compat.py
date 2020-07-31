@@ -59,7 +59,7 @@ def compare(rmaincls, zmaincls):
     for name, zval in znames.items():
         if not inspect.isroutine(zval) or name[0] == "_" or name in _ignore:
             continue
-        assert name in rnames, "member not found: '%s'" % name
+        assert name in rnames, "member not found: \"%s\"" % name
 
         rval = rnames[name]
         zsig = inspect.signature(zval)
