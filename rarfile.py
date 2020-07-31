@@ -47,7 +47,6 @@ by :meth:`RarFile.open`::
                 print(ln.strip())
 
 For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
-
 """
 
 import errno
@@ -89,11 +88,6 @@ class AES_CBC_Decrypt:
         else:
             ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
             self.decrypt = ciph.decryptor().update
-
-
-def tohex(data):
-    """Return hex string."""
-    return hexlify(data).decode("ascii")
 
 
 __version__ = "4.0a1"
@@ -2705,7 +2699,7 @@ class Blake2SP:
 
     def hexdigest(self):
         """Hexadecimal digest."""
-        return tohex(self.digest())
+        return hexlify(self.digest()).decode("ascii")
 
 
 class Rar3Sha1:

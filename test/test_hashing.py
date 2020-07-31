@@ -2,10 +2,15 @@
 """
 
 import hashlib
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 
 import rarfile
-from rarfile import Blake2SP, CRC32Context, NoHashContext, Rar3Sha1, tohex
+from rarfile import Blake2SP, CRC32Context, NoHashContext, Rar3Sha1
+
+
+def tohex(data):
+    """Return hex string."""
+    return hexlify(data).decode("ascii")
 
 
 def test_nohash():

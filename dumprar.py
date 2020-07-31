@@ -2,6 +2,7 @@
 
 """Dump archive contents, test extraction."""
 
+import binascii
 import getopt
 import io
 import sys
@@ -180,6 +181,11 @@ def xprint(m, *args):
     if args:
         m = m % args
     print(m)
+
+
+def tohex(data):
+    """Return hex string."""
+    return binascii.hexlify(data).decode("ascii")
 
 
 def render_flags(flags, bit_list):
@@ -362,7 +368,7 @@ def show_item_v5(h):
         if h.CRC is not None:
             xprint("  crc=0x%08x (%d)", h.CRC, h.CRC)
         if h.blake2sp_hash is not None:
-            xprint("  blake2sp=%s", rf.tohex(h.blake2sp_hash))
+            xprint("  blake2sp=%s", tohex(h.blake2sp_hash))
         if h.date_time is not None:
             xprint("  date_time=%s", fmt_time(h.date_time))
         if h.mtime:
@@ -378,8 +384,8 @@ def show_item_v5(h):
             algo_name = "AES256" if enc_algo == rf.RAR5_XENC_CIPHER_AES256 else "UnknownAlgo"
             xprint("  algo=%d:%s enc_flags=%04x:%s kdf_lg=%d kdf_count=%d salt=%s iv=%s checkval=%s",
                    enc_algo, algo_name, enc_flags, render_flags(enc_flags, r5_file_enc_flags),
-                   kdf_count, 1 << kdf_count, rf.tohex(salt), rf.tohex(iv),
-                   checkval and rf.tohex(checkval) or "-")
+                   kdf_count, 1 << kdf_count, tohex(salt), tohex(iv),
+                   checkval and tohex(checkval) or "-")
         if h.file_redir:
             redir_type, redir_flags, redir_name = h.file_redir
             xprint("  redir: type=%s flags=%d:%s destination=%s",
@@ -402,7 +408,7 @@ def show_item_v5(h):
         xprint("  algo=%d:%s flags=0x%04x:%s", h.encryption_algo, algo_name, h.flags,
                render_flags(h.encryption_flags, r5_enc_flags))
         xprint("  kdf_lg=%d kdf_count=%d", h.encryption_kdf_count, 1 << h.encryption_kdf_count)
-        xprint("  salt=%s", rf.tohex(h.encryption_salt))
+        xprint("  salt=%s", tohex(h.encryption_salt))
     else:
         xprint("  - missing info -")
 
