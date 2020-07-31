@@ -4,8 +4,15 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Unreleased
-----------
+Version 4.0 (2020-07-31)
+------------------------
+
+Main goals are:
+
+* Increased ``zipfile``-compatibility, thus also achieving smaller
+  difference between RAR3 and RAR5 archives.
+* Removing dependency on ``unrar`` for extract, thus making maintenance
+  of alternative backends more manageable.
 
 Breaking changes:
 
