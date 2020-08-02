@@ -14,7 +14,7 @@
 {
     if (good) {
         # also remove sphinx syntax
-        print gensub(/:(\w+):`([^`]+)`/, "``\\2``", "g")
+        print gensub(/:(\w+):`~?([^`]+)`/, "``\\2``", "g")
     }
 }
 
