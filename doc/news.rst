@@ -11,8 +11,11 @@ Main goals are:
 
 * Increased ``zipfile``-compatibility, thus also achieving smaller
   difference between RAR3 and RAR5 archives.
-* Removing dependency on ``unrar`` for extract, thus making maintenance
-  of alternative backends more manageable.
+* Implement :meth:`RarFile.extract` on top of :meth:`RarFile.open` instead
+  using ``unrar x`` directly, thus making maintenance of alternative backends
+  more manageable.  Negative aspect of that is that there are features that
+  internal extract code does not support - hard links, NTFS streams and
+  junctions.
 
 Breaking changes:
 
