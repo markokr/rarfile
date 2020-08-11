@@ -32,6 +32,6 @@ Links:
 - `Git`_ repo
 
 .. _Git: https://github.com/markokr/rarfile
-.. _Downloads: https://pypi.org/project/rarfile/
+.. _Downloads: https://pypi.org/project/rarfile/#files
 .. _Documentation: https://rarfile.readthedocs.io/
 
