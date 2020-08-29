@@ -93,7 +93,7 @@ class AES_CBC_Decrypt:
 __version__ = "4.1a1"
 
 # export only interesting items
-__all__ = ["is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile"]
+__all__ = ["get_rar_version", "is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile"]
 
 ##
 ## Module configuration.  Can be tuned after importing.
@@ -299,18 +299,6 @@ RC_BAD_CHARS_UNIX = re.compile(r"[%s]" % _BAD_CHARS)
 RC_BAD_CHARS_WIN32 = re.compile(r"[%s:^\\]" % _BAD_CHARS)
 
 
-def _get_rar_version(xfile):
-    """Check quickly whether file is rar archive.
-    """
-    with XFile(xfile) as fd:
-        buf = fd.read(len(RAR5_ID))
-    if buf.startswith(RAR_ID):
-        return RAR_V3
-    elif buf.startswith(RAR5_ID):
-        return RAR_V5
-    return 0
-
-
 def _find_sfx_header(xfile):
     sig = RAR_ID[:-1]
     buf = io.BytesIO()
@@ -340,10 +328,27 @@ def _find_sfx_header(xfile):
 ## Public interface
 ##
 
+
+def get_rar_version(xfile):
+    """Check quickly whether file is rar archive.
+    """
+    with XFile(xfile) as fd:
+        buf = fd.read(len(RAR5_ID))
+    if buf.startswith(RAR_ID):
+        return RAR_V3
+    elif buf.startswith(RAR5_ID):
+        return RAR_V5
+    return 0
+
+
 def is_rarfile(xfile):
     """Check quickly whether file is rar archive.
     """
-    return _get_rar_version(xfile) > 0
+    try:
+        return get_rar_version(xfile) > 0
+    except OSError:
+        # File not found or not accessible, ignore
+        return False
 
 
 def is_rarfile_sfx(xfile):
