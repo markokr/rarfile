@@ -2841,10 +2841,15 @@ def load_windowstime(buf, pos):
 def _next_newvol(volfile):
     """New-style next volume
     """
+    name, ext = os.path.splitext(volfile)
+    if ext.lower() in ("", ".exe", ".sfx"):
+        volfile = name + ".rar"
     i = len(volfile) - 1
     while i >= 0:
-        if volfile[i] >= "0" and volfile[i] <= "9":
-            return _inc_volname(volfile, i)
+        if "0" <= volfile[i] <= "9":
+            return _inc_volname(volfile, i, False)
+        if volfile[i] in ("/", os.sep):
+            break
         i -= 1
     raise BadRarName("Cannot construct volume name: " + volfile)
 
@@ -2852,22 +2857,34 @@ def _next_newvol(volfile):
 def _next_oldvol(volfile):
     """Old-style next volume
     """
-    # rar -> r00
-    if volfile[-4:].lower() == ".rar":
-        return volfile[:-2] + "00"
-    return _inc_volname(volfile, len(volfile) - 1)
+    name, ext = os.path.splitext(volfile)
+    if ext.lower() in ("", ".exe", ".sfx"):
+        ext = ".rar"
+    sfx = ext[2:]
+    if sfx.isascii() and sfx.isdigit():
+        ext = _inc_volname(ext, len(ext) - 1, True)
+    else:
+        # .rar -> .r00
+        ext = ext[:2] + "00"
+    return name + ext
 
 
-def _inc_volname(volfile, i):
+def _inc_volname(volfile, i, inc_chars):
     """increase digits with carry, otherwise just increment char
     """
     fn = list(volfile)
     while i >= 0:
-        if fn[i] != "9":
+        if fn[i] == "9":
+            fn[i] = "0"
+            i -= 1
+            if i < 0:
+                fn.insert(0, "1")
+        elif "0" <= fn[i] < "9" or inc_chars:
             fn[i] = chr(ord(fn[i]) + 1)
             break
-        fn[i] = "0"
-        i -= 1
+        else:
+            fn.insert(i + 1, "1")
+            break
     return "".join(fn)
 
 

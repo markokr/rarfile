@@ -233,6 +233,10 @@ def test_rar5_times():
 
 
 def test_oldvols():
+    assert rarfile._next_oldvol("archive") == "archive.r00"
+    assert rarfile._next_oldvol("archive.rar/foo") == "archive.rar/foo.r00"
+    assert rarfile._next_oldvol("archive.arr") == "archive.a00"
+    assert rarfile._next_oldvol("archive.brar") == "archive.b00"
     assert rarfile._next_oldvol("qq00.part0.rar") == "qq00.part0.r00"
     assert rarfile._next_oldvol("qq00.part0.r00") == "qq00.part0.r01"
     assert rarfile._next_oldvol("qq00.part0.r29") == "qq00.part0.r30"
@@ -242,7 +246,17 @@ def test_oldvols():
 def test_newvols():
     assert rarfile._next_newvol("qq00.part0.rar") == "qq00.part1.rar"
     assert rarfile._next_newvol("qq00.part09.rar") == "qq00.part10.rar"
-    assert rarfile._next_newvol("qq00.part99.rar") == "qq00.paru00.rar"
+    assert rarfile._next_newvol("qq00.part99.rar") == "qq00.part100.rar"
+    assert rarfile._next_newvol("part20") == "part21.rar"
+    assert rarfile._next_newvol("qq00.part3.exe") == "qq00.part4.rar"
+    assert rarfile._next_newvol("qq00.part5.sfx") == "qq00.part6.rar"
+    assert rarfile._next_newvol("qq00.part6.bin") == "qq00.part7.bin"
+    assert rarfile._next_newvol("99") == "100.rar"
+    assert rarfile._next_newvol("dir/99.rar") == "dir/100.rar"
+    with pytest.raises(rarfile.BadRarName):
+        rarfile._next_newvol("qq00.part7.rar/foo")
+    with pytest.raises(rarfile.BadRarName):
+        rarfile._next_newvol("foo")
 
 
 def test_newvols_err():
