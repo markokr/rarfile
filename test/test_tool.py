@@ -2,10 +2,20 @@
 """
 
 import sys
+import os
 
 import pytest
 
 import rarfile
+
+
+def have_tool(name):
+    for dn in os.get_exec_path():
+        if os.path.isfile(os.path.join(dn, name)):
+            return True
+        if os.path.isfile(os.path.join(dn, name + ".exe")):
+            return True
+    return False
 
 
 def install_unar_tool():
@@ -33,6 +43,7 @@ def test_read_rar3_old():
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="unar not available on Windows")
+@pytest.mark.skipif(not have_tool(rarfile.UNAR_TOOL), reason="unar not installed")
 def test_unar_tool():
     install_unar_tool()
     try:
@@ -42,6 +53,7 @@ def test_unar_tool():
         uninstall_alt_tool()
 
 
+@pytest.mark.skipif(not have_tool(rarfile.BSDTAR_TOOL), reason="bsdtar not installed")
 def test_bsdtar_tool():
     install_bsdtar_tool()
     try:
