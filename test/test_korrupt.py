@@ -8,6 +8,9 @@ import rarfile
 
 
 def try_read(tmpfn):
+    if not rarfile.is_rarfile(tmpfn):
+        return
+    rarfile.RarFile(tmpfn, errors="stop")
     try:
         rf = rarfile.RarFile(tmpfn, errors="strict")
         if rf.needs_password():
@@ -25,8 +28,10 @@ def process_rar(rarfn, quick=False):
     with open(rarfn, "rb") as f:
         data = f.read()
     for n in range(len(data)):
-        bad = data[:n]
-        try_read(io.BytesIO(bad))
+        bad = io.BytesIO(data[:n])
+        if not rarfile.is_rarfile(bad):
+            return
+        try_read(bad)
 
     crap = b"\x00\xff\x01\x80\x7f"
     if quick:

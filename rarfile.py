@@ -1384,6 +1384,9 @@ class RAR3Parser(CommonParser):
         buf = fd.read(S_BLK_HDR.size)
         if not buf:
             return None
+        if len(buf) < S_BLK_HDR.size:
+            self._set_error("Unexpected EOF when reading header")
+            return None
         t = S_BLK_HDR.unpack_from(buf)
         h.header_crc, h.type, h.flags, h.header_size = t
 
@@ -1781,8 +1784,17 @@ class RAR5Parser(CommonParser):
         """
         header_offset = fd.tell()
 
-        preload = 4 + 3
+        preload = 4 + 1
         start_bytes = fd.read(preload)
+        if len(start_bytes) < preload:
+            self._set_error("Unexpected EOF when reading header")
+            return None
+        while start_bytes[-1] & 0x80:
+            b = fd.read(1)
+            if not b:
+                self._set_error("Unexpected EOF when reading header")
+                return None
+            start_bytes += b
         header_crc, pos = load_le32(start_bytes, 0)
         hdrlen, pos = load_vint(start_bytes, pos)
         if hdrlen > 2 * 1024 * 1024:
