@@ -1048,7 +1048,7 @@ class CommonParser:
         try:
             return self._info_map[fname]
         except KeyError:
-            raise NoRarEntry("No such file: %s" % fname)
+            raise NoRarEntry("No such file: %s" % fname) from None
 
     def parse(self):
         """Process file."""
@@ -3190,9 +3190,9 @@ def custom_popen(cmd):
                   creationflags=creationflags)
     except OSError as ex:
         if ex.errno == errno.ENOENT:
-            raise RarCannotExec("Unrar not installed?")
+            raise RarCannotExec("Unrar not installed?") from None
         if ex.errno == errno.EACCES or ex.errno == errno.EPERM:
-            raise RarCannotExec("Cannot execute unrar")
+            raise RarCannotExec("Cannot execute unrar") from None
         raise
     return p
 
