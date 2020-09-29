@@ -36,6 +36,16 @@ def test_bad_errs():
         rarfile.RarFile("test/files/rar3-comment-plain.rar", "r", errors="foo")
 
 
+def test_errors_param():
+    with open("test/files/rar3-comment-plain.rar", "rb") as f:
+        data = f.read()
+    buf = io.BytesIO(data[:17])
+    with rarfile.RarFile(buf, "r", errors="stop") as rf:
+        assert rf.namelist() == []
+    with pytest.raises(rarfile.BadRarFile):
+        rarfile.RarFile(buf, "r", errors="strict")
+
+
 def test_bad_open_mode_w():
     rf = rarfile.RarFile("test/files/rar3-comment-plain.rar")
     with pytest.raises(NotImplementedError):
@@ -102,6 +112,16 @@ def test_detection():
 
     assert rarfile.is_rarfile(Path("test/files/rar5-crc.rar")) is True
 
+    assert rarfile.is_rarfile("test/files/_missing_.rar") is False
+
+
+def test_getinfo():
+    with rarfile.RarFile("test/files/rar5-crc.rar") as rf:
+        inf = rf.getinfo("stest1.txt")
+        assert isinstance(inf, rarfile.RarInfo)
+        assert rf.getinfo(inf) is inf
+        with pytest.raises(rarfile.NoRarEntry):
+            rf.getinfo("missing.txt")
 
 def test_signature_error():
     with pytest.raises(rarfile.NotRarFile):
@@ -271,6 +291,17 @@ def test_infocb():
 
 # pylint: disable=singleton-comparison
 def test_rarextfile():
+    with rarfile.RarFile("test/files/seektest.rar") as rf:
+        for fn in ("stest1.txt", "stest2.txt"):
+            with rf.open(fn) as f:
+                assert f.tell() == 0
+                assert f.writable() == False
+                assert f.seekable() == True
+                assert f.readable() == True
+                assert f.readall() == rf.read(fn)
+
+
+def test_is_rarfile():
     with rarfile.RarFile("test/files/seektest.rar") as rf:
         for fn in ("stest1.txt", "stest2.txt"):
             with rf.open(fn) as f:
