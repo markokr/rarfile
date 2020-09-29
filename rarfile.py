@@ -2838,6 +2838,13 @@ def load_windowstime(buf, pos):
     return dt, pos
 
 
+#
+# volume numbering
+#
+
+_rc_num = re.compile('^[0-9]+$')
+
+
 def _next_newvol(volfile):
     """New-style next volume
     """
@@ -2854,6 +2861,7 @@ def _next_newvol(volfile):
     raise BadRarName("Cannot construct volume name: " + volfile)
 
 
+
 def _next_oldvol(volfile):
     """Old-style next volume
     """
@@ -2861,7 +2869,7 @@ def _next_oldvol(volfile):
     if ext.lower() in ("", ".exe", ".sfx"):
         ext = ".rar"
     sfx = ext[2:]
-    if sfx.isascii() and sfx.isdigit():
+    if _rc_num.match(sfx):
         ext = _inc_volname(ext, len(ext) - 1, True)
     else:
         # .rar -> .r00
