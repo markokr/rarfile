@@ -2795,7 +2795,7 @@ def load_le32(buf, pos):
     end = pos + 4
     if end > len(buf):
         raise BadRarFile("cannot load le32")
-    return S_LONG.unpack_from(buf, pos)[0], pos + 4
+    return S_LONG.unpack_from(buf, pos)[0], end
 
 
 def load_bytes(buf, num, pos):
