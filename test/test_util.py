@@ -19,7 +19,7 @@ def test_load_vint():
 def test_to_datetime():
     assert rarfile.to_datetime((2020, 0, 0, 0, 0, 0)) == datetime(2020, 1, 1, 0, 0, 0)
     assert rarfile.to_datetime((2020, 60, 60, 60, 60, 60)) == datetime(2020, 12, 31, 23, 59, 59)
-    assert rarfile.to_datetime((2020, 2, 30, 60, 60, 60)) == datetime(2020, 2, 29, 23, 59, 59)
+    assert rarfile.to_datetime((2020, 2, 30, 60, 60, 60)) == datetime(2020, 2, 28, 23, 59, 59)
     assert rarfile.to_datetime((2021, 2, 30, 60, 60, 60)) == datetime(2021, 2, 28, 23, 59, 59)
 
 
