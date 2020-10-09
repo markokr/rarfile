@@ -91,7 +91,7 @@ jobs:
         run: |
           brew install unrar unar libarchive
           mkdir -p bin
-          echo "::add-path::${GITHUB_WORKSPACE}/bin"
+          echo "${GITHUB_WORKSPACE}/bin" >> $GIHUB_PATH
 
       - name: "Download unrar"
         if: matrix.pick.DL_UNRAR
@@ -138,8 +138,8 @@ jobs:
         shell: cmd
         run: |
           echo "temp add MSYS to PATH"
-          echo ::set-env name=OLDP::%PATH%
-          echo ::add-path::C:\msys64\usr\bin
+          echo OLDP=%PATH% >> %GITHUB_ENV%
+          echo C:\msys64\usr\bin >> %GITHUB_PATH%
 
       - name: "Install unrar, bsdtar"
         shell: bash
@@ -149,7 +149,7 @@ jobs:
           install -m 755 /c/msys64/usr/bin/unrar.exe bin/
           install -m 755 /c/msys64/usr/bin/bsdtar.exe bin/
           # reset PATH
-          echo "::add-path::${OLDP}"
+          echo "${OLDP}" >> $GIHUB_PATH
 
       - name: "Download unrar"
         if: matrix.pick.DL_UNRAR
@@ -157,7 +157,7 @@ jobs:
         run: |
           curl -sS -o "unrarw32.exe" "https://www.rarlab.com/rar/unrarw32.exe"
           7z x "unrarw32.exe"
-          echo "::add-path::${GITHUB_WORKSPACE}\\rar"
+          echo "${GITHUB_WORKSPACE}\\rar" >> $GITHUB_PATH
 
       # need at least unar >= 1.10
       - name: "Download unar"
@@ -166,7 +166,7 @@ jobs:
         run: |
           curl -sS -o "unarWindows.zip" "https://cdn.theunarchiver.com/downloads/unarWindows.zip"
           unzip -q -d unar "unarWindows.zip"
-          echo "::add-path::${GITHUB_WORKSPACE}\\unar"
+          echo "${GITHUB_WORKSPACE}\\unar" >> $GITHUB_PATH
 
       - name: "Install tox"
         shell: cmd
