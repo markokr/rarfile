@@ -91,7 +91,7 @@ jobs:
         run: |
           brew install unrar unar libarchive
           mkdir -p bin
-          echo "${GITHUB_WORKSPACE}/bin" >> $GIHUB_PATH
+          echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
       - name: "Download unrar"
         if: matrix.pick.DL_UNRAR
@@ -134,22 +134,11 @@ jobs:
         with:
           python-version: ${{matrix.pick.PY}}
 
-      - name: "Setup MSYS"
+      - name: "Install unrar, bsdtar"
         shell: cmd
         run: |
-          echo "temp add MSYS to PATH"
-          echo OLDP=%PATH% >> %GITHUB_ENV%
-          echo C:\msys64\usr\bin >> %GITHUB_PATH%
-
-      - name: "Install unrar, bsdtar"
-        shell: bash
-        run: |
+          set "PATH=c:\msys64\usr\bin;%PATH%"
           pacman -S --noconfirm --needed unrar bsdtar
-          mkdir bin
-          install -m 755 /c/msys64/usr/bin/unrar.exe bin/
-          install -m 755 /c/msys64/usr/bin/bsdtar.exe bin/
-          # reset PATH
-          echo "${OLDP}" >> $GIHUB_PATH
 
       - name: "Download unrar"
         if: matrix.pick.DL_UNRAR
@@ -178,5 +167,6 @@ jobs:
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
+          set "PATH=%PATH%;c:\msys64\usr\bin"
           python -m tox -r -- --color=yes -n auto
 

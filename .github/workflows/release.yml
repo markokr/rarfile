@@ -33,11 +33,11 @@ jobs:
           if echo "${VERSION}" | grep -qE '(dev)'; then DRAFT="true"; PRERELEASE="true"; fi
           test "${{github.ref}}" = "refs/tags/v${VERSION}" || { echo "ERR: tag mismatch"; exit 1; }
           test -f "dist/${TGZ}" || { echo "ERR: sdist failed"; exit 1; }
-          echo "::set-env name=PACKAGE::${PACKAGE}"
-          echo "::set-env name=VERSION::${VERSION}"
-          echo "::set-env name=TGZ::${TGZ}"
-          echo "::set-env name=PRERELEASE::${PRERELEASE}"
-          echo "::set-env name=DRAFT::${DRAFT}"
+          echo "PACKAGE=${PACKAGE}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "TGZ=${TGZ}" >> $GITHUB_ENV
+          echo "PRERELEASE=${PRERELEASE}" >> $GITHUB_ENV
+          echo "DRAFT=${DRAFT}" >> $GITHUB_ENV
           sudo -nH apt-get -u -y install pandoc
           pandoc --version
           mkdir -p tmp
