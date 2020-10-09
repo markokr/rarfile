@@ -3068,17 +3068,12 @@ def to_datetime(t):
         pass
 
     # sanitize invalid values
-    mday = (0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    mday = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
     mon = max(1, min(mon, 12))
     day = max(1, min(day, mday[mon]))
     h = min(h, 23)
     m = min(m, 59)
     s = min(s, 59)
-    if mon == 2 and day == 29:
-        try:
-            return datetime(year, mon, day, h, m, s)
-        except ValueError:
-            day = 28
     return datetime(year, mon, day, h, m, s)
 
 
