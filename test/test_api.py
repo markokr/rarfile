@@ -311,3 +311,33 @@ def test_is_rarfile():
                 assert f.readable() == True
                 assert f.readall() == rf.read(fn)
 
+
+def test_part_only():
+    info_list = []
+    def info_cb(info):
+        info_list.append(info)
+
+    with pytest.raises(rarfile.NeedFirstVolume):
+        with rarfile.RarFile("test/files/rar3-vols.part2.rar") as rf:
+            pass
+    with rarfile.RarFile("test/files/rar3-vols.part2.rar", part_only=True, info_callback=info_cb) as rf:
+        assert len(info_list) == 3
+
+    with pytest.raises(rarfile.NeedFirstVolume):
+        with rarfile.RarFile("test/files/rar5-vols.part2.rar") as rf:
+            pass
+    info_list = []
+    with rarfile.RarFile("test/files/rar5-vols.part2.rar", part_only=True, info_callback=info_cb) as rf:
+        assert len(info_list) == 5
+
+
+def test_volume_info():
+    info_list = []
+    def info_cb(info):
+        info_list.append(info)
+    with rarfile.RarFile("test/files/rar3-vols.part1.rar", info_callback=info_cb) as rf:
+        assert len(info_list) == 10
+    info_list = []
+    with rarfile.RarFile("test/files/rar5-vols.part1.rar", info_callback=info_cb) as rf:
+        assert len(info_list) == 16
+

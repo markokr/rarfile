@@ -648,7 +648,7 @@ class RarFile:
     comment = None
 
     def __init__(self, file, mode="r", charset=None, info_callback=None,
-                 crc_check=True, errors="stop"):
+                 crc_check=True, errors="stop", part_only=False):
         """Open and parse a RAR archive.
 
         Parameters:
@@ -666,6 +666,9 @@ class RarFile:
             errors
                 Either "stop" to quietly stop parsing on errors,
                 or "strict" to raise errors.  Default is "stop".
+            part_only
+                If True, read only single file and allow it to be middle-part
+                of multi-volume archive.
         """
         if is_filelike(file):
             self.filename = getattr(file, "name", None)
@@ -678,6 +681,7 @@ class RarFile:
         self._charset = charset or DEFAULT_CHARSET
         self._info_callback = info_callback
         self._crc_check = crc_check
+        self._part_only = part_only
         self._password = None
         self._file_parser = None
 
@@ -885,12 +889,12 @@ class RarFile:
         if ver == RAR_V3:
             p3 = RAR3Parser(self._rarfile, self._password, self._crc_check,
                             self._charset, self._strict, self._info_callback,
-                            sfx_ofs)
+                            sfx_ofs, self._part_only)
             self._file_parser = p3  # noqa
         elif ver == RAR_V5:
             p5 = RAR5Parser(self._rarfile, self._password, self._crc_check,
                             self._charset, self._strict, self._info_callback,
-                            sfx_ofs)
+                            sfx_ofs, self._part_only)
             self._file_parser = p5  # noqa
         else:
             raise NotRarFile("Not a RAR file")
@@ -989,7 +993,8 @@ class CommonParser:
     _password = None
     comment = None
 
-    def __init__(self, rarfile, password, crc_check, charset, strict, info_cb, sfx_offset):
+    def __init__(self, rarfile, password, crc_check, charset, strict,
+                 info_cb, sfx_offset, part_only):
         self._rarfile = rarfile
         self._password = password
         self._crc_check = crc_check
@@ -1000,6 +1005,7 @@ class CommonParser:
         self._info_map = {}
         self._vol_list = []
         self._sfx_offset = sfx_offset
+        self._part_only = part_only
 
     def has_header_encryption(self):
         """Returns True if headers are encrypted
@@ -1085,7 +1091,7 @@ class CommonParser:
                 if raise_need_first_vol:
                     # did not find ENDARC with VOLNR
                     raise NeedFirstVolume("Need to start from first volume", None)
-                if more_vols:
+                if more_vols and not self._part_only:
                     volume += 1
                     fd.close()
                     try:
@@ -1110,7 +1116,7 @@ class CommonParser:
 
             if h.type == RAR_BLOCK_MAIN and not self._main:
                 self._main = h
-                if volume == 0 and (h.flags & RAR_MAIN_NEWNUMBERING):
+                if volume == 0 and (h.flags & RAR_MAIN_NEWNUMBERING) and not self._part_only:
                     # RAR 2.x does not set FIRSTVOLUME,
                     # so check it only if NEWNUMBERING is used
                     if (h.flags & RAR_MAIN_FIRSTVOLUME) == 0:
@@ -1142,7 +1148,8 @@ class CommonParser:
                     more_vols = True
                 # RAR 2.x does not set RAR_MAIN_FIRSTVOLUME
                 if volume == 0 and h.flags & RAR_FILE_SPLIT_BEFORE:
-                    raise_need_first_vol = True
+                    if not self._part_only:
+                        raise_need_first_vol = True
 
             if h.needs_password():
                 self._needs_password = True
