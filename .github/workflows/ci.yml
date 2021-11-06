@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         pick:
-          - {OS: "20.04", PY: "3.8", TOXENV: "lint,docs"}
+          - {OS: "20.04", PY: "3.10", TOXENV: "lint,docs"}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -48,6 +48,8 @@ jobs:
           - {OS: "18.04", PY: "3.7", PYNAME: "Python 3.7", TOXENV: "py37-cryptography"}
           - {OS: "20.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38-cryptography"}
           - {OS: "20.04", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39"}
+          - {OS: "20.04", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310"}
+          
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
