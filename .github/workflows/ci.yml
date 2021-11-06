@@ -49,7 +49,6 @@ jobs:
           - {OS: "20.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38-cryptography"}
           - {OS: "20.04", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39"}
           - {OS: "20.04", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310"}
-          
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
