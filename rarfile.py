@@ -1109,6 +1109,7 @@ class CommonParser:
                     endarc = False
                     self._vol_list.append(volfile)
                     self._main = None
+                    self._hdrenc_main = None
                     continue
                 break
             h.volume = volume
