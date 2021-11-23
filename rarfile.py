@@ -50,6 +50,7 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 """
 
 import errno
+import hashlib
 import io
 import os
 import re
@@ -279,6 +280,8 @@ DOS_MODE_DIR = 0x10
 DOS_MODE_SYSTEM = 0x04
 DOS_MODE_HIDDEN = 0x02
 DOS_MODE_READONLY = 0x01
+
+RAR5_PW_CHECK_SIZE = 8
 
 ##
 ## internal constants
@@ -1936,15 +1939,40 @@ class RAR5Parser(CommonParser):
             h.flags |= RAR_ENDARC_NEXT_VOLUME
         return h
 
+    def _check_password(self, h):
+        if len(h.encryption_check_value) != 12:
+            return
+        pwd = self._password
+        if isinstance(pwd, str):
+            pwd = pwd.encode("utf8")
+        pwd_check = bytearray(
+            pbkdf2_hmac("sha256", pwd, h.encryption_salt, (1 << h.encryption_kdf_count) + 32))
+        for i, v in enumerate(pwd_check[RAR5_PW_CHECK_SIZE:]):
+            pwd_check[i & (RAR5_PW_CHECK_SIZE - 1)] ^= v
+        pwd_check = pwd_check[:RAR5_PW_CHECK_SIZE]
+
+        def sha256(b):
+            m = hashlib.sha256()
+            m.update(b)
+            return m.digest()
+
+        if sha256(h.encryption_check_value[:8])[:4] != h.encryption_check_value[8:]:
+            return
+        if pwd_check != h.encryption_check_value[:8]:
+            raise RarWrongPassword()
+
+
     def _parse_encryption_block(self, h, hdata, pos):
         h.encryption_algo, pos = load_vint(hdata, pos)
         h.encryption_flags, pos = load_vint(hdata, pos)
         h.encryption_kdf_count, pos = load_byte(hdata, pos)
         h.encryption_salt, pos = load_bytes(hdata, 16, pos)
         if h.encryption_flags & RAR5_ENC_FLAG_HAS_CHECKVAL:
-            h.encryption_check_value = load_bytes(hdata, 12, pos)
+            h.encryption_check_value, pos = load_bytes(hdata, 12, pos)
         if h.encryption_algo != RAR5_XENC_CIPHER_AES256:
             raise BadRarFile("Unsupported header encryption cipher")
+        if h.encryption_check_value and self._password:
+            self._check_password(h)
         self._hdrenc_main = h
         return h
 
