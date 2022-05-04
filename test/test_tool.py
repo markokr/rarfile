@@ -128,5 +128,5 @@ def test_cli_extract(capsys, tmp_path):
 def test_cli_help(capsys):
     assert cli("--help") == 0
     res = capsys.readouterr()
-    assert "optional" in res.out
+    assert "option" in res.out
 
