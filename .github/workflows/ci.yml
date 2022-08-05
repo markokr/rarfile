@@ -2,6 +2,9 @@
 # https://docs.github.com/en/actions
 # https://github.com/actions
 #
+# https://formulae.brew.sh/
+# https://packages.msys2.org/
+#
 
 name: CI
 
@@ -12,12 +15,12 @@ on:
 jobs:
 
   lint:
-    name: "Lint - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
+    name: "Lint - ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
       matrix:
         pick:
-          - {OS: "22.04", PY: "3.10", TOXENV: "lint,docs"}
+          - {OS: "ubuntu-latest", PY: "3.10", TOXENV: "lint,docs"}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -37,18 +40,22 @@ jobs:
         run: |
           python -m tox -r -- --color=yes
 
-  linux:
-    name: "Test - Ubuntu ${{matrix.pick.OS}} / ${{matrix.pick.PYNAME}}"
-    runs-on: ubuntu-${{matrix.pick.OS}}
+  test:
+    name: "Test - ${{matrix.pick.OS}} / ${{matrix.pick.PYNAME}}"
+    runs-on: ${{matrix.pick.OS}}
     strategy:
       matrix:
         pick:
-          - {OS: "18.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38-cryptography"}
-          - {OS: "20.04", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39"}
-          - {OS: "22.04", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
-          - {OS: "latest", PY: "pypy3.7", PYNAME: "PyPy3.7", TOXENV: "pypy37"}
-          - {OS: "latest", PY: "pypy3.8", PYNAME: "PyPy3.8", TOXENV: "pypy38"}
-          - {OS: "latest", PY: "pypy3.9", PYNAME: "PyPy3.9", TOXENV: "pypy39-cryptography"}
+          - {OS: "ubuntu-18.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38"}
+          - {OS: "ubuntu-20.04", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
+          - {OS: "ubuntu-22.04", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
+          - {OS: "ubuntu-latest", PY: "pypy3.7", PYNAME: "PyPy3.7", TOXENV: "pypy37"}
+          - {OS: "ubuntu-latest", PY: "pypy3.8", PYNAME: "PyPy3.8", TOXENV: "pypy38"}
+          - {OS: "ubuntu-latest", PY: "pypy3.9", PYNAME: "PyPy3.9", TOXENV: "pypy39-cryptography"}
+          - {OS: "macos-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
+          - {OS: "macos-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
+          - {OS: "windows-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39" }
+          - {OS: "windows-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography" }
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -58,115 +65,38 @@ jobs:
         with:
           python-version: ${{matrix.pick.PY}}
 
-      - name: "Install archivers"
+      - name: "Install archivers (linux)"
+        if: ${{runner.os == 'Linux'}}
         run: sudo -nH apt-get -qqy install unrar unar libarchive-tools
+
+      - name: "Install archivers (macos)"
+        if: ${{runner.os == 'macOS'}}
+        run: brew install rar unar libarchive
+
+      - name: "Install archivers (windows)"
+        if: ${{runner.os == 'Windows'}}
+        shell: cmd
+        run: |
+          set "PATH=c:\msys64\usr\bin;%PATH%"
+          pacman -S --noconfirm --needed unrar bsdtar
 
       - name: "Install tox"
         run: |
           python --version
           python -m pip install tox wheel
 
-      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+      - name: "Run tox - ${{matrix.pick.TOXENV}} - (linux/macos)"
+        if: ${{runner.os == 'Linux' || runner.os == 'macOS'}}
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
           python -m tox -r -- --color=yes -n auto
 
-  macos:
-    name: "Test - MacOS ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
-    runs-on: macos-${{matrix.pick.OS}}
-    strategy:
-      matrix:
-        pick:
-          - {OS: "latest", PY: "3.10", TOXENV: "py310-cryptography", DL_UNRAR: false, DL_UNAR: false}
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-
-      - name: "Setup Python ${{matrix.pick.PY}}"
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{matrix.pick.PY}}
-
-      - name: "Install archivers"
-        run: |
-          brew install rar unar libarchive
-          mkdir -p bin
-          echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
-
-      - name: "Download unrar"
-        if: matrix.pick.DL_UNRAR
-        run: |
-          curl -sS -o "rarosx.tgz" "https://www.rarlab.com/rar/rarosx-5.9.1.tar.gz"
-          tar xvf "rarosx.tgz" "rar/unrar"
-
-      - name: "Download unar"
-        if: matrix.pick.DL_UNAR
-        run: |
-          curl -sS -o "unarMac.zip" "https://cdn.theunarchiver.com/downloads/unarMac.zip"
-          unzip "unarMac.zip" "unar"
-          install -m 755 unar ./bin/
-          rm unar
-
-      - name: "Install tox"
-        run: |
-          python -m pip install tox wheel
-
-      - name: "Run tox - ${{matrix.pick.TOXENV}}"
+      - name: "Run tox - ${{matrix.pick.TOXENV}} - (windows)"
+        if: ${{runner.os == 'Windows'}}
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
-        run: |
-          python -m tox -r -- --color=yes -n auto
-
-  windows:
-    name: "Test - Windows ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
-    runs-on: windows-${{matrix.pick.OS}}
-    strategy:
-      matrix:
-        pick:
-          - {OS: "latest", PY: "3.9", TOXENV: "py39", DL_UNRAR: false, DL_UNAR: false}
-          - {OS: "latest", PY: "3.10", TOXENV: "py310-cryptography", DL_UNRAR: false, DL_UNAR: false}
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-
-      - name: "Setup Python ${{matrix.pick.PY}}"
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{matrix.pick.PY}}
-
-      - name: "Install unrar, bsdtar"
         shell: cmd
-        run: |
-          set "PATH=c:\msys64\usr\bin;%PATH%"
-          pacman -S --noconfirm --needed unrar bsdtar
-
-      - name: "Download unrar"
-        if: matrix.pick.DL_UNRAR
-        shell: bash
-        run: |
-          curl -sS -o "unrarw32.exe" "https://www.rarlab.com/rar/unrarw32.exe"
-          7z x "unrarw32.exe"
-          echo "${GITHUB_WORKSPACE}\\rar" >> $GITHUB_PATH
-
-      # need at least unar >= 1.10
-      - name: "Download unar"
-        if: matrix.pick.DL_UNAR
-        shell: bash
-        run: |
-          curl -sS -o "unarWindows.zip" "https://cdn.theunarchiver.com/downloads/unarWindows.zip"
-          unzip -q -d unar "unarWindows.zip"
-          echo "${GITHUB_WORKSPACE}\\unar" >> $GITHUB_PATH
-
-      - name: "Install tox"
-        shell: cmd
-        run: |
-          python -m pip install tox wheel
-
-      - name: "Run tox - ${{matrix.pick.TOXENV}}"
-        shell: cmd
-        env:
-          TOXENV: ${{matrix.pick.TOXENV}}
         run: |
           set "PATH=%PATH%;c:\msys64\usr\bin"
           python -m tox -r -- --color=yes -n auto
