@@ -13,7 +13,7 @@ WHEEL = $(PACKAGE)-$(VERSION)-py3-none-any.whl
 URL = $(REPO)/releases/download/$(TAG)
 
 all:
-	pyflakes3 rarfile.py
+	pyflakes rarfile.py
 	tox -e lint
 	tox -e py38-cryptography -- -n auto
 
