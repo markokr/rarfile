@@ -65,6 +65,8 @@ from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
 
+AES = None
+
 # only needed for encrypted headers
 try:
     try:
