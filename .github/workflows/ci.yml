@@ -15,6 +15,7 @@ jobs:
     name: "Lint - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
+      fail-fast: false
       matrix:
         pick:
           - {OS: "20.04", PY: "3.10", TOXENV: "lint,docs"}
