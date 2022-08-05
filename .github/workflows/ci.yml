@@ -15,7 +15,6 @@ jobs:
     name: "Lint - Ubuntu ${{matrix.pick.OS}} / Python ${{matrix.pick.PY}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
-      fail-fast: false
       matrix:
         pick:
           - {OS: "20.04", PY: "3.10", TOXENV: "lint,docs"}
@@ -42,6 +41,7 @@ jobs:
     name: "Test - Ubuntu ${{matrix.pick.OS}} / ${{matrix.pick.PYNAME}}"
     runs-on: ubuntu-${{matrix.pick.OS}}
     strategy:
+      fail-fast: false
       matrix:
         pick:
           - {OS: "18.04", PY: "pypy3", PYNAME: "PyPy3", TOXENV: "pypy3"}
