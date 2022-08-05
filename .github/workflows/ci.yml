@@ -92,7 +92,7 @@ jobs:
 
       - name: "Install archivers"
         run: |
-          brew install unrar unar libarchive
+          brew install unar libarchive  # unrar
           mkdir -p bin
           echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
