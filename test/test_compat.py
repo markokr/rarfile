@@ -49,7 +49,7 @@ def load_cls_names(maincls):
 def cleansig(sig):
     res = str(sig).replace(", /", "")
     if "*" in res:
-        res = res.split(", *")[0] + ")"
+        res = res.split(", *", 1)[0] + ")"
     return res
 
 

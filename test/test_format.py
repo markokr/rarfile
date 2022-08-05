@@ -19,9 +19,9 @@ def render_date(dt):
 
 def mkitem(**kwargs):
     res = {}
-    for k in kwargs:
-        if kwargs[k] is not None:
-            res[k] = kwargs[k]
+    for k, v in kwargs.items():
+        if v is not None:
+            res[k] = v
     return res
 
 

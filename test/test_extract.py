@@ -55,7 +55,7 @@ def checktime(fn, exp_mtime):
 
 
 def checkfile(fn, data, mtime):
-    with open(fn, "r") as f:
+    with open(fn, "r", encoding="utf8") as f:
         got = f.read()
         assert got.strip() == data
 

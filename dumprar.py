@@ -601,7 +601,7 @@ def main():
     args2 = []
     for a in args:
         if a[0] == "@":
-            for ln in open(a[1:], "r"):
+            for ln in open(a[1:], "r", encoding="utf8"):
                 fn = ln[:-1]
                 args2.append(fn)
         else:
