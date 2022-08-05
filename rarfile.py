@@ -3121,7 +3121,7 @@ class nsdatetime(datetime):
     __slots__ = ("nanosecond",)
     nanosecond: int     #: Number of nanoseconds, 0 <= nanosecond < 999999999
 
-    def __new__(cls, year, month, day, hour=0, minute=0, second=0,
+    def __new__(cls, year, month=None, day=None, hour=0, minute=0, second=0,
                 microsecond=0, tzinfo=None, *, fold=0, nanosecond=0):
         usec, mod = divmod(nanosecond, 1000) if nanosecond else (microsecond, 0)
         if mod == 0:
