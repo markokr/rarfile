@@ -3305,7 +3305,10 @@ class ToolSetup:
             if not isinstance(pwd, str):
                 pwd = pwd.decode("utf8")
             args = self.setup["password"]
-            if isinstance(args, str):
+            if args is None:
+                tool = self.setup["open_cmd"][0]
+                raise RarCannotExec(f"{tool} does not support passwords")
+            elif isinstance(args, str):
                 cmdline.append(args + pwd)
             else:
                 cmdline.extend(args)
