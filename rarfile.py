@@ -1331,7 +1331,7 @@ class CommonParser:
         # not giving filename avoids encoding related problems
         fn = None
         if not tmpfile or force_file:
-            fn = inf.filename
+            fn = inf.filename.replace("/", os.path.sep)
 
         # read from unrar pipe
         cmd = setup.open_cmdline(pwd, rarfile, fn)
