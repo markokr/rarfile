@@ -42,9 +42,9 @@ def do_seek(f, pos, lim, size=None):
     assert got == exp
     ln = f.read(4)
     if got == fsize and ln:
-        raise Exception("unexpected read")
+        raise ValueError("unexpected read")
     if not ln and got < fsize:
-        raise Exception("unexpected read failure")
+        raise ValueError("unexpected read failure")
     if ln:
         spos = int(ln)
         assert spos * 4 == got

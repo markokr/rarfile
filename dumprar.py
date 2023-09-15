@@ -596,7 +596,7 @@ def main():
         elif o == "-C":
             cf_charset = v
         else:
-            raise Exception("unhandled switch: " + o)
+            raise ValueError("unhandled switch: " + o)
 
     args2 = []
     for a in args:
