@@ -110,6 +110,12 @@ UNAR_TOOL = "unar"
 #: executable for bsdtar tool
 BSDTAR_TOOL = "bsdtar"
 
+#: executable for p7zip/7z tool
+SEVENZIP_TOOL = "7z"
+
+#: executable for alternative 7z tool
+SEVENZIP2_TOOL = "7zz"
+
 #: default fallback charset
 DEFAULT_CHARSET = "windows-1252"
 
@@ -3307,6 +3313,8 @@ class ToolSetup:
     def get_cmdline(self, key, pwd, nodash=False):
         cmdline = list(self.setup[key])
         cmdline[0] = globals()[cmdline[0]]
+        if key == "check_cmd":
+            return cmdline
         self.add_password_arg(cmdline, pwd)
         if not nodash:
             cmdline.append("--")
@@ -3369,10 +3377,30 @@ BSDTAR_CONFIG = {
     "errmap": [None],
 }
 
+SEVENZIP_CONFIG = {
+    "open_cmd": ("SEVENZIP_TOOL", "e", "-so", "-bb0"),
+    "check_cmd": ("SEVENZIP_TOOL", "i"),
+    "password": "-p",
+    "no_password": ("-p",),
+    "errmap": [None,
+               RarWarning, RarFatalError, None, None,           # 1..4
+               None, None, RarUserError, RarMemoryError]        # 5..8
+}
+
+SEVENZIP2_CONFIG = {
+    "open_cmd": ("SEVENZIP2_TOOL", "e", "-so", "-bb0"),
+    "check_cmd": ("SEVENZIP2_TOOL", "i"),
+    "password": "-p",
+    "no_password": ("-p",),
+    "errmap": [None,
+               RarWarning, RarFatalError, None, None,           # 1..4
+               None, None, RarUserError, RarMemoryError]        # 5..8
+}
+
 CURRENT_SETUP = None
 
 
-def tool_setup(unrar=True, unar=True, bsdtar=True, force=False):
+def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, sevenzip2=True, force=False):
     """Pick a tool, return cached ToolSetup.
     """
     global CURRENT_SETUP
@@ -3385,6 +3413,10 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, force=False):
         lst.append(UNRAR_CONFIG)
     if unar:
         lst.append(UNAR_CONFIG)
+    if sevenzip:
+        lst.append(SEVENZIP_CONFIG)
+    if sevenzip2:
+        lst.append(SEVENZIP2_CONFIG)
     if bsdtar:
         lst.append(BSDTAR_CONFIG)
 

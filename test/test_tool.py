@@ -18,12 +18,25 @@ def have_tool(name):
     return False
 
 
+def tool_setup(unrar=False, unar=False, bsdtar=False, sevenzip=False, sevenzip2=False):
+    rarfile.tool_setup(unrar=unrar, unar=unar, bsdtar=bsdtar,
+                       sevenzip=sevenzip, sevenzip2=sevenzip2,
+                       force=True)
+
 def install_unar_tool():
-    rarfile.tool_setup(unrar=False, unar=True, bsdtar=False, force=True)
+    tool_setup(unar=True)
 
 
 def install_bsdtar_tool():
-    rarfile.tool_setup(unrar=False, unar=False, bsdtar=True, force=True)
+    tool_setup(bsdtar=True)
+
+
+def install_7z_tool():
+    tool_setup(sevenzip=True)
+
+
+def install_7zz_tool():
+    tool_setup(sevenzip2=True)
 
 
 def uninstall_alt_tool():
@@ -73,6 +86,36 @@ def test_bsdtar_tool():
             with rarfile.RarFile("test/files/rar3-comment-psw.rar") as rf:
                 rf.setpassword("password")
                 rf.read("file1.txt")
+    finally:
+        uninstall_alt_tool()
+
+
+@pytest.mark.skipif(not have_tool(rarfile.SEVENZIP_TOOL), reason="7z not installed")
+def test_7z_tool():
+    install_7z_tool()
+    try:
+        with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
+            rf.read("file1.txt")
+            rf.read("file2.txt")
+
+        with rarfile.RarFile("test/files/rar3-comment-psw.rar") as rf:
+            rf.setpassword("password")
+            rf.read("file1.txt")
+    finally:
+        uninstall_alt_tool()
+
+
+@pytest.mark.skipif(not have_tool(rarfile.SEVENZIP2_TOOL), reason="7zz not installed")
+def test_7zz_tool():
+    install_7zz_tool()
+    try:
+        with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
+            rf.read("file1.txt")
+            rf.read("file2.txt")
+
+        with rarfile.RarFile("test/files/rar3-comment-psw.rar") as rf:
+            rf.setpassword("password")
+            rf.read("file1.txt")
     finally:
         uninstall_alt_tool()
 

@@ -21,6 +21,7 @@ switches:
   -x         write read files out
   -c         show archive comment
   -h         show usage
+  -bTOOL     set backend tool (unrar, unar, bsdtar, 7z, 7zz)
   --         stop switch parsing
 """.strip()
 
@@ -567,11 +568,12 @@ def main():
     global cf_extract, cf_test_read, cf_test_unrar
     global cf_test_memory
 
+    cf_backend = None
     pwd = None
 
     # parse args
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "p:C:hvcxtRM")
+        opts, args = getopt.getopt(sys.argv[1:], "p:C:hvcxtRMb:")
     except getopt.error as ex:
         print(str(ex), file=sys.stderr)
         sys.exit(1)
@@ -596,6 +598,8 @@ def main():
             cf_test_memory = 1
         elif o == "-C":
             cf_charset = v
+        elif o == "-b":
+            cf_backend = v
         else:
             raise ValueError("unhandled switch: " + o)
 
@@ -611,6 +615,13 @@ def main():
 
     if not args:
         xprint(usage)
+
+    if cf_backend:
+        cf_backend = {"7z": "sevenzip", "7zz": "sevenzip2"}.get(cf_backend, cf_backend)
+        conf = {"unrar": False, "unar": False, "bsdtar": False, "sevenzip": False, "sevenzip2": False}
+        assert cf_backend in conf, f"unknown backend: {cf_backend}"
+        conf[cf_backend] = True
+        rf.tool_setup(force=True, **conf)
 
     for fn in args:
         test(fn, pwd)
