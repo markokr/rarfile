@@ -4,6 +4,42 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 4.1 (xxxx-xx-xx)
+------------------------
+
+Features:
+
+* Support 7zip/p7zip as decompression backend.
+  [`#71 <https://github.com/markokr/rarfile/issues/71>`_]
+* RAR5: check password before trying to read file (chigusa)
+  [`#79 <https://github.com/markokr/rarfile/pull/79>`_]
+
+New APIs:
+
+* Make get_rar_version a public function (Safihre)
+  [`#63 <https://github.com/markokr/rarfile/pull/63>`_]
+* New option: ``part_only`` for :class:`RarFile`,
+  to read only single file and allow it to be middle-part
+  of multi-volume archive.
+* Add :meth:`RarFile.printdir`, use it in dumprar.  Needed to examine
+  FILE_COPY or HARD_LINK entries that do not contain data.
+
+Fixes:
+
+* adapt to Python 3.10 argparse (MeggyCal)
+  [`#85 <https://github.com/markokr/rarfile/pull/85>`_]
+* Reset _hdrenc_main before processing a new volume.
+  [`#80 <https://github.com/markokr/rarfile/pull/80>`_]
+* SFX: Handle volume numbering special cases better.
+* nsdatetime: support pypy internal use
+* Throw error if backend does not support passwords.
+
+Cleanups:
+
+* ci: Add Python 3.10 to the testing (Christian Clauss)
+  [`#76 <https://github.com/markokr/rarfile/pull/76>`_]
+* Avoid isascii, not in 3.6
+
 Version 4.0 (2020-07-31)
 ------------------------
 
