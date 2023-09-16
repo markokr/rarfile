@@ -751,6 +751,14 @@ class RarFile:
         """
         return self._file_parser.getinfo(name)
 
+    def getinfo_orig(self, name):
+        """Return RarInfo for file source.
+
+        RAR5: if name is hard-linked or copied file,
+        returns original entry with original filename.
+        """
+        return self._file_parser.getinfo_orig(name)
+
     def open(self, name, mode="r", pwd=None):
         """Returns file-like object (:class:`RarExtFile`) from where the data can be read.
 
@@ -1057,6 +1065,15 @@ class CommonParser:
             return self._info_map[fname]
         except KeyError:
             raise NoRarEntry("No such file: %s" % fname) from None
+
+    def getinfo_orig(self, member):
+        inf = self.getinfo(member)
+        if inf.file_redir:
+            redir_type, redir_flags, redir_name = inf.file_redir
+            # cannot leave to unrar as it expects copied file to exist
+            if redir_type in (RAR5_XREDIR_FILE_COPY, RAR5_XREDIR_HARD_LINK):
+                inf = self.getinfo(redir_name)
+        return inf
 
     def parse(self):
         """Process file."""

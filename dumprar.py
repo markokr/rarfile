@@ -444,6 +444,7 @@ def test_read_long(r, inf):
     """
     md_class = inf._md_class or rf.NoHashContext
     bctx = md_class()
+    inf_orig = r.getinfo_orig(inf.filename)
     f = r.open(inf.filename)
     total = 0
     while 1:
@@ -455,10 +456,10 @@ def test_read_long(r, inf):
     if total != inf.file_size:
         xprint("\n *** %s has corrupt file: %s ***", r.rarfile, inf.filename)
         xprint(" *** short read: got=%d, need=%d ***\n", total, inf.file_size)
-    check_crc(f, inf, "read")
+    check_crc(f, inf_orig, "read")
     bhash = bctx.hexdigest()
     if cf_verbose > 1:
-        if f._md_context.digest() == inf._md_expect:
+        if f._md_context.digest() == inf_orig._md_expect:
             #xprint("  checkhash: %r", bhash)
             pass
         else:
