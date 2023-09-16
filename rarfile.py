@@ -650,6 +650,25 @@ class RarInfo:
 
 class RarFile:
     """Parse RAR structure, provide access to files in archive.
+
+    Parameters:
+
+        file
+            archive file name or file-like object.
+        mode
+            only "r" is supported.
+        charset
+            fallback charset to use, if filenames are not already Unicode-enabled.
+        info_callback
+            debug callback, gets to see all archive entries.
+        crc_check
+            set to False to disable CRC checks
+        errors
+            Either "stop" to quietly stop parsing on errors,
+            or "strict" to raise errors.  Default is "stop".
+        part_only
+            If True, read only single file and allow it to be middle-part
+            of multi-volume archive.
     """
 
     #: File name, if available.  Unicode string or None.
@@ -660,27 +679,6 @@ class RarFile:
 
     def __init__(self, file, mode="r", charset=None, info_callback=None,
                  crc_check=True, errors="stop", part_only=False):
-        """Open and parse a RAR archive.
-
-        Parameters:
-
-            file
-                archive file name or file-like object.
-            mode
-                only "r" is supported.
-            charset
-                fallback charset to use, if filenames are not already Unicode-enabled.
-            info_callback
-                debug callback, gets to see all archive entries.
-            crc_check
-                set to False to disable CRC checks
-            errors
-                Either "stop" to quietly stop parsing on errors,
-                or "strict" to raise errors.  Default is "stop".
-            part_only
-                If True, read only single file and allow it to be middle-part
-                of multi-volume archive.
-        """
         if is_filelike(file):
             self.filename = getattr(file, "name", None)
         else:
