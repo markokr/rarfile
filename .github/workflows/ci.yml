@@ -23,16 +23,15 @@ jobs:
           - {OS: "ubuntu-latest", PY: "3.10", TOXENV: "lint,docs"}
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Setup Python ${{matrix.pick.PY}}"
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.pick.PY}}
 
-      - name: "Install tox"
-        run: |
-          python -m pip install tox wheel
+      - name: "Install build tools"
+        run: python -m pip install -r etc/requirements.build.txt --disable-pip-version-check
 
       - name: "Run tox - ${{matrix.pick.TOXENV}}"
         env:
@@ -46,21 +45,20 @@ jobs:
     strategy:
       matrix:
         pick:
-          - {OS: "ubuntu-18.04", PY: "3.7", PYNAME: "Python 3.7", TOXENV: "py37"}
-          - {OS: "ubuntu-20.04", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38"}
-          - {OS: "ubuntu-20.04", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
-          - {OS: "ubuntu-22.04", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
-          - {OS: "ubuntu-22.04", PY: "3.11-dev", PYNAME: "Python 3.11-dev", TOXENV: "py311"}
-          - {OS: "ubuntu-latest", PY: "pypy3.7", PYNAME: "PyPy3.7", TOXENV: "pypy37"}
-          - {OS: "ubuntu-latest", PY: "pypy3.8", PYNAME: "PyPy3.8", TOXENV: "pypy38"}
+          - {OS: "ubuntu-20.04", PY: "3.7", PYNAME: "Python 3.7", TOXENV: "py37-cryptography"}
+          - {OS: "ubuntu-latest", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38"}
+          - {OS: "ubuntu-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
+          - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
+          - {OS: "ubuntu-latest", PY: "3.11", PYNAME: "Python 3.11", TOXENV: "py311-cryptography"}
           - {OS: "ubuntu-latest", PY: "pypy3.9", PYNAME: "PyPy3.9", TOXENV: "pypy39-cryptography"}
+          - {OS: "ubuntu-latest", PY: "pypy3.10", PYNAME: "PyPy3.10", TOXENV: "pypy310-cryptography"}
           - {OS: "macos-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
           - {OS: "macos-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
-          - {OS: "windows-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39" }
+          - {OS: "windows-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-cryptography" }
           - {OS: "windows-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography" }
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Setup ${{matrix.pick.PYNAME}}"
         uses: actions/setup-python@v4
@@ -69,30 +67,28 @@ jobs:
 
       - name: "Install archivers (linux)"
         if: ${{runner.os == 'Linux'}}
-        run: sudo -nH apt-get -qqy install unrar unar libarchive-tools
+        run: sudo -nH apt-get -qqy install unrar unar libarchive-tools p7zip-rar
 
       - name: "Install archivers (macos)"
         if: ${{runner.os == 'macOS'}}
-        run: brew install rar unar libarchive
+        run: brew install rar unar libarchive sevenzip
 
       - name: "Install archivers (windows)"
         if: ${{runner.os == 'Windows'}}
         shell: cmd
         run: |
           set "PATH=c:\msys64\usr\bin;%PATH%"
-          pacman -S --noconfirm --needed unrar bsdtar
+          pacman -S --noconfirm --needed unrar bsdtar p7zip
 
-      - name: "Install tox"
-        run: |
-          python --version
-          python -m pip install tox wheel
+      - name: "Install tools"
+        run: python -m pip install -r etc/requirements.build.txt --disable-pip-version-check
 
       - name: "Run tox - ${{matrix.pick.TOXENV}} - (linux/macos)"
         if: ${{runner.os == 'Linux' || runner.os == 'macOS'}}
         env:
           TOXENV: ${{matrix.pick.TOXENV}}
         run: |
-          python -m tox -r -- --color=yes -n auto
+          python -m tox -r -- --color=yes -n auto -v
 
       - name: "Run tox - ${{matrix.pick.TOXENV}} - (windows)"
         if: ${{runner.os == 'Windows'}}
@@ -101,5 +97,5 @@ jobs:
         shell: cmd
         run: |
           set "PATH=%PATH%;c:\msys64\usr\bin"
-          python -m tox -r -- --color=yes -n auto
+          python -m tox -r -- --color=yes -n auto -v
 

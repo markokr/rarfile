@@ -1,0 +1,4 @@
+setuptools>=67
+wheel>=0.41
+twine==4.0.2
+tox==4.8.0
