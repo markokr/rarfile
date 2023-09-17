@@ -19,6 +19,7 @@ def have_tool(name):
 
 
 def tool_setup(unrar=False, unar=False, bsdtar=False, sevenzip=False, sevenzip2=False):
+    rarfile.FORCE_TOOL = True
     rarfile.tool_setup(unrar=unrar, unar=unar, bsdtar=bsdtar,
                        sevenzip=sevenzip, sevenzip2=sevenzip2,
                        force=True)
@@ -40,6 +41,7 @@ def install_7zz_tool():
 
 
 def uninstall_alt_tool():
+    rarfile.FORCE_TOOL = False
     rarfile.tool_setup(force=True)
 
 
@@ -49,10 +51,16 @@ def test_read_rar3():
             rf.read(fn)
 
 
-def test_read_rar3_old():
+def test_read_vols():
     with rarfile.RarFile("test/files/rar3-old.rar") as rf:
         for fn in rf.namelist():
-            rf.read(fn)
+            rf.read(fn) # old
+    with rarfile.RarFile("test/files/rar3-vols.part1.rar") as rf:
+        for fn in rf.namelist():
+            rf.read(fn) # rar3-new
+    with rarfile.RarFile("test/files/rar5-vols.part1.rar") as rf:
+        for fn in rf.namelist():
+            rf.read(fn) # rar5
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="unar not available on Windows")
@@ -61,7 +69,7 @@ def test_unar_tool():
     install_unar_tool()
     try:
         test_read_rar3()
-        test_read_rar3_old()
+        test_read_vols()
 
         with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
             rf.read("file1.txt")
@@ -78,6 +86,9 @@ def test_unar_tool():
 def test_bsdtar_tool():
     install_bsdtar_tool()
     try:
+        #test_read_rar3()
+        #test_read_vols()
+
         with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
             rf.read("file1.txt")
             rf.read("file2.txt")
@@ -94,6 +105,9 @@ def test_bsdtar_tool():
 def test_7z_tool():
     install_7z_tool()
     try:
+        #test_read_rar3()
+        test_read_vols()
+
         with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
             rf.read("file1.txt")
             rf.read("file2.txt")
@@ -109,6 +123,9 @@ def test_7z_tool():
 def test_7zz_tool():
     install_7zz_tool()
     try:
+        #test_read_rar3()
+        test_read_vols()
+
         with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
             rf.read("file1.txt")
             rf.read("file2.txt")
