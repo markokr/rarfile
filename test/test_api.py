@@ -166,6 +166,48 @@ def test_readline():
     assert v1 == v2
 
 
+def run_parallel(rfile, entry):
+    buf1, buf2 = [], []
+    rf = rarfile.RarFile(rfile)
+    count = 0
+    with rf.open(entry) as f1:
+        with rf.open(entry) as f2:
+            for _ in range(10000):
+                res1 = f1.read(10)
+                res2 = f2.read(10)
+                if res1:
+                    buf1.append(res1)
+                    count += len(res1)
+                if res2:
+                    buf2.append(res2)
+                    count += len(res2)
+                if not res1 and not res2:
+                    break
+
+    assert buf1
+    assert buf1 == buf2
+
+
+def test_parallel_file_compressed():
+    run_parallel("test/files/seektest.rar", "stest1.txt")
+
+
+def test_parallel_file_direct():
+    run_parallel("test/files/seektest.rar", "stest2.txt")
+
+
+def test_parallel_fd_compressed():
+    with open("test/files/seektest.rar", "rb") as f:
+        memfile = io.BytesIO(f.read())
+    run_parallel(memfile, "stest1.txt")
+
+
+def test_parallel_fd_direct():
+    with open("test/files/seektest.rar", "rb") as f:
+        memfile = io.BytesIO(f.read())
+    run_parallel(memfile, "stest2.txt")
+
+
 def test_printdir(capsys):
     rf = rarfile.RarFile("test/files/seektest.rar")
     rf.printdir()
