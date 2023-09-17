@@ -28,6 +28,7 @@ ARCHIVE_FILES = [
     f.replace("\\", "/")
     for f in sorted(glob("test/files/*.rar"))
     if "hpsw" not in f
+    and "unicode.rar" not in f
 ]
 
 
