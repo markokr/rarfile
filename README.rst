@@ -45,6 +45,7 @@ Backends:
 |             |                      | * Requires ``p7zip-rar`` package on Debian/Ubuntu.  |
 +-------------+----------------------+-----------------------------------------------------+
 | bsdtar_     | Supported            | * Not recommended: limited RAR format support.      |
+|             |                      | * Does not support multi-volume archives.           |
 |             |                      | * Does not support solid archives.                  |
 |             |                      | * Does not support password-protected archives.     |
 |             |                      | * Does not support RARVM-based compression filters. |
