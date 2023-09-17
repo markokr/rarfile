@@ -205,3 +205,23 @@ def test_symlink_win(tmp_path):
         assert os.path.islink(tmp_path / "links/dir_link")
         assert os.path.islink(tmp_path / "links/file_link")
 
+@pytest.mark.parametrize("fn", [
+    "test/files/rar3-old.rar",
+    "test/files/rar3-vols.part1.rar",
+    "test/files/rar5-vols.part1.rar",
+])
+def test_vols(fn, tmp_path):
+    with rarfile.RarFile(fn) as rf:
+        rarfile.FORCE_TOOL = True
+        try:
+            rf.extractall(str(tmp_path))
+        finally:
+            rarfile.FORCE_TOOL = False
+
+
+        assert sorted(os.listdir(tmp_path)) == ["vols"]
+        assert sorted(os.listdir(tmp_path / "vols")) == ["bigfile.txt", "smallfile.txt"]
+
+        assert os.path.isfile(tmp_path / "vols" / "bigfile.txt")
+        assert os.path.isfile(tmp_path / "vols" / "smallfile.txt")
+

@@ -309,6 +309,8 @@ _BAD_CHARS = r"""\x00-\x1F<>|"?*"""
 RC_BAD_CHARS_UNIX = re.compile(r"[%s]" % _BAD_CHARS)
 RC_BAD_CHARS_WIN32 = re.compile(r"[%s:^\\]" % _BAD_CHARS)
 
+FORCE_TOOL = False
+
 
 def _find_sfx_header(xfile):
     sig = RAR_ID[:-1]
@@ -1280,6 +1282,8 @@ class CommonParser:
             return self._open_unrar(self._rarfile, inf, pwd)
 
     def _open_clear(self, inf):
+        if FORCE_TOOL:
+            return self._open_unrar(self._rarfile, inf)
         return DirectReader(self, inf)
 
     def _open_hack_core(self, inf, pwd, prefix, suffix):
