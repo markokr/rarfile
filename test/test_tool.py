@@ -24,6 +24,11 @@ def tool_setup(unrar=False, unar=False, bsdtar=False, sevenzip=False, sevenzip2=
                        sevenzip=sevenzip, sevenzip2=sevenzip2,
                        force=True)
 
+
+def install_unrar_tool():
+    tool_setup(unrar=True)
+
+
 def install_unar_tool():
     tool_setup(unar=True)
 
@@ -61,6 +66,23 @@ def test_read_vols():
     with rarfile.RarFile("test/files/rar5-vols.part1.rar") as rf:
         for fn in rf.namelist():
             rf.read(fn) # rar5
+
+
+def test_unrar_tool():
+    install_unar_tool()
+    try:
+        test_read_rar3()
+        test_read_vols()
+
+        with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
+            rf.read("file1.txt")
+            rf.read("file2.txt")
+
+        with rarfile.RarFile("test/files/rar3-comment-psw.rar") as rf:
+            rf.setpassword("password")
+            rf.read("file1.txt")
+    finally:
+        uninstall_alt_tool()
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="unar not available on Windows")
