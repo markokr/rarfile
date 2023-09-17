@@ -2240,6 +2240,7 @@ class RarExtFile(io.RawIOBase):
     _remain = 0
     _returncode = 0
     _md_context = None
+    _seeking = False
 
     def _open_extfile(self, parser, inf):
         self.name = inf.filename
@@ -2248,7 +2249,10 @@ class RarExtFile(io.RawIOBase):
 
         if self._fd:
             self._fd.close()
-        md_class = self._inf._md_class or NoHashContext
+        if self._seeking:
+            md_class = NoHashContext
+        else:
+            md_class = self._inf._md_class or NoHashContext
         self._md_context = md_class()
         self._fd = None
         self._remain = self._inf.file_size
@@ -2339,7 +2343,9 @@ class RarExtFile(io.RawIOBase):
         """
 
         # disable crc check when seeking
-        self._md_context = NoHashContext()
+        if not self._seeking:
+            self._md_context = NoHashContext()
+            self._seeking = True
 
         fsize = self._inf.file_size
         cur_ofs = self.tell()

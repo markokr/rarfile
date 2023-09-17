@@ -104,3 +104,31 @@ def test_seek_ioopen():
     with io.open(ARC, "rb") as f:
         run_arc(f, "io.open")
 
+
+def run_seek_middle(fn, entry):
+    rar = rarfile.RarFile(fn)
+    file = rar.open(entry)
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"\n"
+    file.read()
+
+    file.seek(0)
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"\n"
+    file.read()
+
+    file.seek(2)
+    assert file.read(1) == b"0"
+    assert file.read(1) == b"\n"
+    file.read()
+
+def test_seek_middle1():
+    run_seek_middle("test/files/seektest.rar", "stest1.txt")
+
+def test_seek_middle2():
+    run_seek_middle("test/files/seektest.rar", "stest2.txt")
+
