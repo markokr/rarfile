@@ -671,6 +671,8 @@ class RarFile:
         part_only
             If True, read only single file and allow it to be middle-part
             of multi-volume archive.
+
+            .. versionadded:: 4.0
     """
 
     #: File name, if available.  Unicode string or None.
@@ -765,6 +767,8 @@ class RarFile:
 
         RAR5: if name is hard-linked or copied file,
         returns original entry with original filename.
+
+        .. versionadded:: 4.1
         """
         return self._file_parser.getinfo_orig(name)
 
