@@ -50,7 +50,6 @@ For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 """
 
 import errno
-import hashlib
 import io
 import os
 import re
@@ -60,7 +59,7 @@ import sys
 import warnings
 from binascii import crc32, hexlify
 from datetime import datetime, timezone
-from hashlib import blake2s, pbkdf2_hmac, sha1
+from hashlib import blake2s, pbkdf2_hmac, sha1, sha256
 from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
@@ -290,6 +289,7 @@ DOS_MODE_HIDDEN = 0x02
 DOS_MODE_READONLY = 0x01
 
 RAR5_PW_CHECK_SIZE = 8
+RAR5_PW_SUM_SIZE = 4
 
 ##
 ## internal constants
@@ -1793,14 +1793,18 @@ class RAR5Parser(CommonParser):
     # AES encrypted headers
     _last_aes256_key = (-1, None, None)   # (kdf_count, salt, key)
 
+    def _get_utf8_password(self):
+        pwd = self._password
+        if isinstance(pwd, str):
+            return pwd.encode("utf8")
+        return pwd
+
     def _gen_key(self, kdf_count, salt):
         if self._last_aes256_key[:2] == (kdf_count, salt):
             return self._last_aes256_key[2]
         if kdf_count > 24:
             raise BadRarFile("Too large kdf_count")
-        pwd = self._password
-        if isinstance(pwd, str):
-            pwd = pwd.encode("utf8")
+        pwd = self._get_utf8_password()
         key = pbkdf2_hmac("sha256", pwd, salt, 1 << kdf_count)
         self._last_aes256_key = (kdf_count, salt, key)
         return key
@@ -1963,28 +1967,27 @@ class RAR5Parser(CommonParser):
             h.flags |= RAR_ENDARC_NEXT_VOLUME
         return h
 
-    def _check_password(self, h):
-        if len(h.encryption_check_value) != 12:
+    def _check_password(self, check_value, kdf_count_shift, salt):
+        if len(check_value) != RAR5_PW_CHECK_SIZE + RAR5_PW_SUM_SIZE:
             return
-        pwd = self._password
-        if isinstance(pwd, str):
-            pwd = pwd.encode("utf8")
-        pwd_check = bytearray(
-            pbkdf2_hmac("sha256", pwd, h.encryption_salt, (1 << h.encryption_kdf_count) + 32))
-        for i, v in enumerate(pwd_check[RAR5_PW_CHECK_SIZE:]):
-            pwd_check[i & (RAR5_PW_CHECK_SIZE - 1)] ^= v
-        pwd_check = pwd_check[:RAR5_PW_CHECK_SIZE]
 
-        def sha256(b):
-            m = hashlib.sha256()
-            m.update(b)
-            return m.digest()
-
-        if sha256(h.encryption_check_value[:8])[:4] != h.encryption_check_value[8:]:
+        hdr_check = check_value[:RAR5_PW_CHECK_SIZE]
+        hdr_sum = check_value[RAR5_PW_CHECK_SIZE:]
+        sum_hash = sha256(hdr_check).digest()
+        if sum_hash[:RAR5_PW_SUM_SIZE] != hdr_sum:
             return
-        if pwd_check != h.encryption_check_value[:8]:
+
+        kdf_count = (1 << kdf_count_shift) + 32
+        pwd = self._get_utf8_password()
+        pwd_hash = pbkdf2_hmac("sha256", pwd, salt, kdf_count)
+
+        pwd_check = bytearray(RAR5_PW_CHECK_SIZE)
+        len_mask = RAR5_PW_CHECK_SIZE - 1
+        for i, v in enumerate(pwd_hash):
+            pwd_check[i & len_mask] ^= v
+
+        if pwd_check != hdr_check:
             raise RarWrongPassword()
-
 
     def _parse_encryption_block(self, h, hdata, pos):
         h.encryption_algo, pos = load_vint(hdata, pos)
@@ -1996,7 +1999,7 @@ class RAR5Parser(CommonParser):
         if h.encryption_algo != RAR5_XENC_CIPHER_AES256:
             raise BadRarFile("Unsupported header encryption cipher")
         if h.encryption_check_value and self._password:
-            self._check_password(h)
+            self._check_password(h.encryption_check_value, h.encryption_kdf_count, h.encryption_salt)
         self._hdrenc_main = h
         return h
 
