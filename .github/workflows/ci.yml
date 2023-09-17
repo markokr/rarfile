@@ -67,11 +67,22 @@ jobs:
 
       - name: "Install archivers (linux)"
         if: ${{runner.os == 'Linux'}}
-        run: sudo -nH apt-get -qqy install unrar unar libarchive-tools p7zip-rar
+        run: |
+          sudo -nH apt-get -qqy install unrar unar libarchive-tools p7zip-rar
+          unrar
+          unar -h
+          bsdtar -h
+          7z i
 
       - name: "Install archivers (macos)"
         if: ${{runner.os == 'macOS'}}
-        run: brew install rar unar libarchive sevenzip
+        run: |
+          brew install rar unar libarchive sevenzip
+          unrar
+          unar -h
+          bsdtar -h
+          7z i
+          7zz i
 
       - name: "Install archivers (windows)"
         if: ${{runner.os == 'Windows'}}
@@ -79,6 +90,9 @@ jobs:
         run: |
           set "PATH=c:\msys64\usr\bin;%PATH%"
           pacman -S --noconfirm --needed unrar bsdtar p7zip
+          unrar
+          bsdtar -h
+          7z i
 
       - name: "Install tools"
         run: python -m pip install -r etc/requirements.build.txt --disable-pip-version-check
