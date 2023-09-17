@@ -26,16 +26,28 @@ New APIs:
 
 Fixes:
 
-* adapt to Python 3.10 argparse (MeggyCal)
-  [`#85 <https://github.com/markokr/rarfile/pull/85>`_]
+* Use OS separator to access filename.  Should fix
+  subdirectory entry access on Windows.
+  [`#96 <https://github.com/markokr/rarfile/pull/96>`_]
+* DirectReader: check seek position on each read.
+  Fixes read reading from multiple entries in parallel
+  on RarFile backed by file object.
+  [`#81 <https://github.com/markokr/rarfile/pull/81>`_]
+* DirectReader: properly disable CRC check when seeking.
+  [`#73 <https://github.com/markokr/rarfile/issues/73>`_]
 * Reset _hdrenc_main before processing a new volume.
+  Fixes CRC checks on multi-volume reads.
   [`#80 <https://github.com/markokr/rarfile/pull/80>`_]
+* Adapt to Python 3.10 argparse (MeggyCal)
+  [`#85 <https://github.com/markokr/rarfile/pull/85>`_]
 * SFX: Handle volume numbering special cases better.
 * nsdatetime: support pypy internal use
 * Throw error if backend does not support passwords.
 
 Cleanups:
 
+* ci: Use proper unrar on Windows.  MingW one is tolaretes
+  paths with ``/`` better than upstream build.
 * ci: Add Python 3.10 to the testing (Christian Clauss)
   [`#76 <https://github.com/markokr/rarfile/pull/76>`_]
 * Avoid isascii, not in 3.6
