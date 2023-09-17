@@ -2521,7 +2521,7 @@ class DirectReader(RarExtFile):
         """Read from potentially multi-volume archive."""
 
         pos = self._fd.tell()
-        need = self._inf.data_offset + self._cur.add_size - self._cur_avail
+        need = self._cur.data_offset + self._cur.add_size - self._cur_avail
         if pos != need:
             self._fd.seek(need, 0)
 
