@@ -69,7 +69,7 @@ def test_read_vols():
 
 
 def test_unrar_tool():
-    install_unar_tool()
+    install_unrar_tool()
     try:
         test_read_rar3()
         test_read_vols()
