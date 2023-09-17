@@ -4,7 +4,7 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Version 4.1 (xxxx-xx-xx)
+Version 4.1 (2023-09-17)
 ------------------------
 
 Features:
@@ -46,7 +46,7 @@ Fixes:
 
 Cleanups:
 
-* ci: Use proper unrar on Windows.  MingW one is tolaretes
+* ci: Use proper unrar on Windows.  MingW one tolaretes
   paths with ``/`` better than upstream build.
 * ci: Add Python 3.10 to the testing (Christian Clauss)
   [`#76 <https://github.com/markokr/rarfile/pull/76>`_]
