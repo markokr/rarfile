@@ -124,6 +124,11 @@ Fixes:
 Version 3.2 (2020-07-19)
 ------------------------
 
+Breaking change:
+
+* Top-level function ``custom_check()`` is removed as part
+  of tool discovery refactor.
+
 New features:
 
 * Support ``unar`` as decompression backend.  It has much better
