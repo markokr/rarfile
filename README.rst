@@ -50,9 +50,9 @@ Backends:
 |             |                      | * Does not support password-protected archives.     |
 |             |                      | * Does not support RARVM-based compression filters. |
 +-------------+----------------------+-----------------------------------------------------+
-| unrar-free_ | Not supported        | * Unusable: Does not support output to stdout.      |
+| unrar-free_ | Supported            | * Supports output to stdout (v0.2.0).               |
 |             |                      | * Based on libarchive so similar format support     |
-|             |                      |   as ``bsdtar``.                                    |
+|             |                      |   as ``bsdtar`` but supports multi-volume (v0.3.0). |
 +-------------+----------------------+-----------------------------------------------------+
 
 .. _p7zip: https://sourceforge.net/projects/p7zip/
