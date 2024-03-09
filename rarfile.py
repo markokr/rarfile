@@ -3393,7 +3393,7 @@ class ToolSetup:
 
 UNRAR_CONFIG = {
     "open_cmd": ("UNRAR_TOOL", "p", "-inul"),
-    "check_cmd": ("UNRAR_TOOL", "-inul"),
+    "check_cmd": ("UNRAR_TOOL", "-inul", "-?"),
     "password": "-p",
     "no_password": ("-p-",),
     # map return code to exception class, codes from rar.txt
