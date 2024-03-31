@@ -4,6 +4,28 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 4.2 (xxxx-xx-xx)
+------------------------
+
+Features:
+
+* Support ``unrar-free`` >= 0.2.0.
+  [`#103 <https://github.com/markokr/rarfile/pull/103>`_]
+* Add :meth:`RarFile.is_solid` to check if archive uses
+  solid compression.
+  [`#101 <https://github.com/markokr/rarfile/issues/101>`_]
+
+Fixes:
+
+* Support old multi-volume archives better where ENDARC
+  does not contain NEXTVOL.
+  [`#97 <https://github.com/markokr/rarfile/issues/97>`_]
+
+Cleanups:
+
+* ci: Drop Python 3.7, add 3.12
+* ci: upgrade actions
+
 Version 4.1 (2023-09-17)
 ------------------------
 
