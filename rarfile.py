@@ -741,6 +741,8 @@ class RarFile:
 
     def is_solid(self):
         """Returns True if archive uses solid compression.
+
+        .. versionadded:: 4.2
         """
         return self._file_parser.is_solid()
 
