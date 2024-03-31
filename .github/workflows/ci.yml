@@ -90,8 +90,8 @@ jobs:
         run: |
           set "PATH=c:\msys64\usr\bin;%PATH%"
           pacman -S --noconfirm --needed bsdtar p7zip
-          curl -sS -o unrarw32.exe https://www.rarlab.com/rar/unrarw32.exe
-          7z x unrarw32.exe
+          curl -sS -o unrarw64.exe https://www.rarlab.com/rar/unrarw64.exe
+          7z x unrarw64.exe
           unrar
           bsdtar -h
           7z i
