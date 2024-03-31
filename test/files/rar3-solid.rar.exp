@@ -1,0 +1,13 @@
+Archive: test/files/rar3-solid.rar
+FILE: hdrlen=44 datlen=92 is=F--
+  flags=0x9080:EXTTIME,LONG,D1024
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=3 cmp=92 dec=2048 vol=0
+  crc=0xc5b7e6a2 (3317163682) date_time=2011-06-12 12:53:33
+  name=stest1.txt
+  mtime=2011-06-12T12:53:33
+FILE: hdrlen=44 datlen=14 is=F--
+  flags=0x9090:SOLID,EXTTIME,LONG,D1024
+  os=3:UNIX ver=29 mode=-rw-r--r-- meth=3 cmp=14 dec=2048 vol=0
+  crc=0xc5b7e6a2 (3317163682) date_time=2011-06-12 12:53:33
+  name=stest2.txt
+  mtime=2011-06-12T12:53:33

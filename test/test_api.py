@@ -383,3 +383,14 @@ def test_volume_info():
     with rarfile.RarFile("test/files/rar5-vols.part1.rar", info_callback=info_cb) as rf:
         assert len(info_list) == 16
 
+
+def test_is_solid():
+    with rarfile.RarFile("test/files/rar3-comment-plain.rar") as rf:
+        assert not rf.is_solid()
+    with rarfile.RarFile("test/files/rar3-solid.rar") as rf:
+        assert rf.is_solid()
+    with rarfile.RarFile("test/files/rar5-crc.rar") as rf:
+        assert not rf.is_solid()
+    with rarfile.RarFile("test/files/rar5-solid.rar") as rf:
+        assert rf.is_solid()
+

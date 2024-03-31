@@ -739,6 +739,11 @@ class RarFile:
         """
         return self._file_parser.needs_password()
 
+    def is_solid(self):
+        """Returns True if archive uses solid compression.
+        """
+        return self._file_parser.is_solid()
+
     def namelist(self):
         """Return list of filenames in archive.
         """
@@ -1029,6 +1034,14 @@ class CommonParser:
         self._vol_list = []
         self._sfx_offset = sfx_offset
         self._part_only = part_only
+
+    def is_solid(self):
+        """Returns True if archive uses solid compression.
+        """
+        if self._main:
+            if self._main.flags & RAR_MAIN_SOLID:
+                return True
+        return False
 
     def has_header_encryption(self):
         """Returns True if headers are encrypted
