@@ -45,11 +45,11 @@ jobs:
     strategy:
       matrix:
         pick:
-          - {OS: "ubuntu-20.04", PY: "3.7", PYNAME: "Python 3.7", TOXENV: "py37-cryptography"}
           - {OS: "ubuntu-latest", PY: "3.8", PYNAME: "Python 3.8", TOXENV: "py38"}
           - {OS: "ubuntu-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
           - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.10", TOXENV: "py310-cryptography"}
           - {OS: "ubuntu-latest", PY: "3.11", PYNAME: "Python 3.11", TOXENV: "py311-cryptography"}
+          - {OS: "ubuntu-latest", PY: "3.12", PYNAME: "Python 3.12", TOXENV: "py312-cryptography"}
           - {OS: "ubuntu-latest", PY: "pypy3.9", PYNAME: "PyPy3.9", TOXENV: "pypy39-cryptography"}
           - {OS: "ubuntu-latest", PY: "pypy3.10", PYNAME: "PyPy3.10", TOXENV: "pypy310-cryptography"}
           - {OS: "macos-latest", PY: "3.9", PYNAME: "Python 3.9", TOXENV: "py39-pycryptodome"}
