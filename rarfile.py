@@ -1180,7 +1180,9 @@ class CommonParser:
                     if not self._password:
                         break
             elif h.type == RAR_BLOCK_ENDARC:
-                more_vols = (h.flags & RAR_ENDARC_NEXT_VOLUME) > 0
+                # use flag, but also allow RAR 2.x logic below to trigger
+                if h.flags & RAR_ENDARC_NEXT_VOLUME:
+                    more_vols = True
                 endarc = True
                 if raise_need_first_vol and (h.flags & RAR_ENDARC_VOLNR) > 0:
                     raise NeedFirstVolume(
