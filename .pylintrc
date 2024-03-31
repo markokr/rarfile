@@ -82,6 +82,7 @@ disable=bare-except,
 	redefined-builtin,
 	import-outside-toplevel,
 	duplicate-code,
+        consider-using-min-builtin,
 	unnecessary-pass
 
 # Enable the message, report, category or checker with the given id(s). You can
