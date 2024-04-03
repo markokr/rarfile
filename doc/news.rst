@@ -4,7 +4,7 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Version 4.2 (xxxx-xx-xx)
+Version 4.2 (2024-04-03)
 ------------------------
 
 Features:
