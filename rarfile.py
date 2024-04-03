@@ -2358,8 +2358,8 @@ class RarExtFile(io.RawIOBase):
         """Seek in data.
 
         On uncompressed files, the seeking works by actual
-        seeks so it's fast.  On compresses files its slow
-        - forward seeking happends by reading ahead,
+        seeks so it's fast.  On compressed files its slow
+        - forward seeking happens by reading ahead,
         backwards by re-opening and decompressing from the start.
         """
 
@@ -3131,7 +3131,7 @@ def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=N
 
 
 def sanitize_filename(fname, pathsep, is_win32):
-    """Simulate unrar sanitization.
+    """Make filename safe for write access.
     """
     if is_win32:
         if len(fname) > 1 and fname[1] == ":":
@@ -3203,12 +3203,12 @@ def parse_dos_time(stamp):
 class nsdatetime(datetime):
     """Datetime that carries nanoseconds.
 
-    Arithmetic not supported, will lose nanoseconds.
+    Arithmetic operations will lose nanoseconds.
 
     .. versionadded:: 4.0
     """
     __slots__ = ("nanosecond",)
-    nanosecond: int     #: Number of nanoseconds, 0 <= nanosecond < 999999999
+    nanosecond: int     #: Number of nanoseconds, 0 <= nanosecond <= 999999999
 
     def __new__(cls, year, month=None, day=None, hour=0, minute=0, second=0,
                 microsecond=0, tzinfo=None, *, fold=0, nanosecond=0):
