@@ -210,6 +210,9 @@ RAR_M3 = 0x33   #: Compression level `-m3`.
 RAR_M4 = 0x34   #: Compression level `-m4`.
 RAR_M5 = 0x35   #: Compression level `-m5` - Maximum compression.
 
+RAR_MAX_PASSWORD = 127  #: Max number of utf-16 chars in passwords.
+RAR_MAX_KDF_SHIFT = 24  #: Max power-of-2 for KDF count
+
 #
 # RAR5 constants
 #
@@ -1827,10 +1830,10 @@ class RAR5Parser(CommonParser):
     def _gen_key(self, kdf_count, salt):
         if self._last_aes256_key[:2] == (kdf_count, salt):
             return self._last_aes256_key[2]
-        if kdf_count > 24:
+        if kdf_count > RAR_MAX_KDF_SHIFT:
             raise BadRarFile("Too large kdf_count")
         pwd = self._get_utf8_password()
-        key = pbkdf2_hmac("sha256", pwd, salt, 1 << kdf_count)
+        key = rar5_s2k(pwd, salt, 1 << kdf_count)
         self._last_aes256_key = (kdf_count, salt, key)
         return key
 
@@ -1995,6 +1998,8 @@ class RAR5Parser(CommonParser):
     def _check_password(self, check_value, kdf_count_shift, salt):
         if len(check_value) != RAR5_PW_CHECK_SIZE + RAR5_PW_SUM_SIZE:
             return
+        if kdf_count_shift > RAR_MAX_KDF_SHIFT:
+            raise BadRarFile("Too large kdf_count")
 
         hdr_check = check_value[:RAR5_PW_CHECK_SIZE]
         hdr_sum = check_value[RAR5_PW_CHECK_SIZE:]
@@ -2004,7 +2009,7 @@ class RAR5Parser(CommonParser):
 
         kdf_count = (1 << kdf_count_shift) + 32
         pwd = self._get_utf8_password()
-        pwd_hash = pbkdf2_hmac("sha256", pwd, salt, kdf_count)
+        pwd_hash = rar5_s2k(pwd, salt, kdf_count)
 
         pwd_check = bytearray(RAR5_PW_CHECK_SIZE)
         len_mask = RAR5_PW_CHECK_SIZE - 1
@@ -3061,12 +3066,23 @@ def is_filelike(obj):
     return True
 
 
+def rar5_s2k(pwd, salt, kdf_count):
+    """String-to-key hash for RAR5.
+    """
+    if not isinstance(pwd, str):
+        pwd = pwd.decode("utf8")
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
+    ustr = wstr.decode("utf-16le").encode("utf8")
+    return pbkdf2_hmac("sha256", ustr, salt, kdf_count)
+
+
 def rar3_s2k(pwd, salt):
     """String-to-key hash for RAR3.
     """
     if not isinstance(pwd, str):
         pwd = pwd.decode("utf8")
-    seed = bytearray(pwd.encode("utf-16le") + salt)
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
+    seed = bytearray(wstr + salt)
     h = Rar3Sha1(rarbug=True)
     iv = b""
     for i in range(16):
