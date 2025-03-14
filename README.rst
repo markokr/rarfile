@@ -39,7 +39,7 @@ Backends:
 |             |                      | * Does not support RAR2 locked files.               |
 |             |                      | * Does not support RAR5 Blake2 hash checking.       |
 +-------------+----------------------+-----------------------------------------------------+
-| 7zip_       | Supported            | * RAR support not available on Debian/Ubuntu repos. |
+| 7zip_       | Supported            | * Requires ``7zip-rar`` package on Debian/Ubuntu.   |
 +-------------+----------------------+-----------------------------------------------------+
 | p7zip_      | Supported            | * Unmaintained?                                     |
 |             |                      | * Requires ``p7zip-rar`` package on Debian/Ubuntu.  |
