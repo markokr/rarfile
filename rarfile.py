@@ -110,6 +110,9 @@ UNAR_TOOL = "unar"
 #: executable for bsdtar tool
 BSDTAR_TOOL = "bsdtar"
 
+#: executable for tar.exe tool (bsdtar on Windows)
+TAREXE_TOOL = "tar.exe"
+
 #: executable for p7zip/7z tool
 SEVENZIP_TOOL = "7z"
 
@@ -3414,9 +3417,31 @@ def membuf_tempfile(memfile):
 class ToolSetup:
     def __init__(self, setup):
         self.setup = setup
+        self.executable = None
 
     def check(self):
+        if "executables" in self.setup:
+            for varname in self.setup["executables"]:
+                tool = globals().get(varname)
+                if tool is None:
+                    continue
+                cmdline = [tool] + list(self.setup["check_cmd"])
+                try:
+                    p = custom_popen(cmdline)
+                    out, _ = p.communicate()
+                    if p.returncode != 0:
+                        continue
+                    pattern = self.setup.get("check_output")
+                    if pattern and not re.search(pattern, out.decode("utf8", errors="replace")):
+                        continue
+                    self.executable = tool
+                    return True
+                except RarCannotExec:
+                    continue
+            return False
+        # Legacy single-executable path
         cmdline = self.get_cmdline("check_cmd", None)
+        self.executable = cmdline[0]
         try:
             p = custom_popen(cmdline)
             out, _ = p.communicate()
@@ -3435,8 +3460,11 @@ class ToolSetup:
         return self.setup["errmap"]
 
     def get_cmdline(self, key, pwd, nodash=False):
-        cmdline = list(self.setup[key])
-        cmdline[0] = globals()[cmdline[0]]
+        if "executables" in self.setup:
+            cmdline = [self.executable] + list(self.setup[key])
+        else:
+            cmdline = list(self.setup[key])
+            cmdline[0] = globals()[cmdline[0]]
         if key == "check_cmd":
             return cmdline
         self.add_password_arg(cmdline, pwd)
@@ -3455,7 +3483,7 @@ class ToolSetup:
                 pwd = pwd.decode("utf8")
             args = self.setup["password"]
             if args is None:
-                tool = self.setup["open_cmd"][0]
+                tool = self.executable or self.setup["open_cmd"][0]
                 raise RarCannotExec(f"{tool} does not support passwords")
             elif isinstance(args, str):
                 cmdline.append(args + pwd)
@@ -3494,26 +3522,19 @@ UNAR_CONFIG = {
 # - Does not support password-protected archives.
 # - Does not support RARVM-based compression filters.
 BSDTAR_CONFIG = {
-    "open_cmd": ("BSDTAR_TOOL", "-x", "--to-stdout", "-f"),
-    "check_cmd": ("BSDTAR_TOOL", "--version"),
+    "executables": ("BSDTAR_TOOL", "TAREXE_TOOL"),
+    "open_cmd": ("-x", "--to-stdout", "-f"),
+    "check_cmd": ("--version",),
+    "check_output": "bsdtar|libarchive",
     "password": None,
     "no_password": (),
     "errmap": [None],
 }
 
 SEVENZIP_CONFIG = {
-    "open_cmd": ("SEVENZIP_TOOL", "e", "-so", "-bb0"),
-    "check_cmd": ("SEVENZIP_TOOL", "i"),
-    "password": "-p",
-    "no_password": ("-p",),
-    "errmap": [None,
-               RarWarning, RarFatalError, None, None,           # 1..4
-               None, None, RarUserError, RarMemoryError]        # 5..8
-}
-
-SEVENZIP2_CONFIG = {
-    "open_cmd": ("SEVENZIP2_TOOL", "e", "-so", "-bb0"),
-    "check_cmd": ("SEVENZIP2_TOOL", "i"),
+    "executables": ("SEVENZIP_TOOL", "SEVENZIP2_TOOL"),
+    "open_cmd": ("e", "-so", "-bb0"),
+    "check_cmd": ("i",),
     "password": "-p",
     "no_password": ("-p",),
     "errmap": [None,
@@ -3524,7 +3545,7 @@ SEVENZIP2_CONFIG = {
 CURRENT_SETUP = None
 
 
-def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, sevenzip2=True, force=False):
+def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, force=False):
     """Pick a tool, return cached ToolSetup.
     """
     global CURRENT_SETUP
@@ -3539,8 +3560,6 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, sevenzip2=True
         lst.append(UNAR_CONFIG)
     if sevenzip:
         lst.append(SEVENZIP_CONFIG)
-    if sevenzip2:
-        lst.append(SEVENZIP2_CONFIG)
     if bsdtar:
         lst.append(BSDTAR_CONFIG)
 
