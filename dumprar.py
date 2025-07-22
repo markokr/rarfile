@@ -629,8 +629,8 @@ def main():
         xprint(usage)
 
     if cf_backend:
-        cf_backend = {"7z": "sevenzip", "7zz": "sevenzip2"}.get(cf_backend, cf_backend)
-        conf = {"unrar": False, "unar": False, "bsdtar": False, "sevenzip": False, "sevenzip2": False}
+        cf_backend = {"7z": "sevenzip", "7zz": "sevenzip", "tar.exe": "bsdtar"}.get(cf_backend, cf_backend)
+        conf = {"unrar": False, "unar": False, "bsdtar": False, "sevenzip": False}
         assert cf_backend in conf, f"unknown backend: {cf_backend}"
         conf[cf_backend] = True
         rf.tool_setup(force=True, **conf)
