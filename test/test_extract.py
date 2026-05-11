@@ -225,3 +225,28 @@ def test_vols(fn, tmp_path):
         assert os.path.isfile(tmp_path / "vols" / "bigfile.txt")
         assert os.path.isfile(tmp_path / "vols" / "smallfile.txt")
 
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink semantics differ on Windows")
+def test_symlink_chained_traversal_blocked(tmp_path):
+    """Regression test for symlink-chained zip-slip (CWE-22 + CWE-59).
+
+    The fixture rar5-evil-symlink-traversal.rar contains two members:
+      1. up           -- symlink whose target is the relative path '..'
+      2. up/pwned.txt -- regular file whose extraction path traverses
+                         the symlink above and lands outside the extract dir.
+
+    Without the realpath containment check in _extract_one, extractall
+    silently writes pwned.txt outside the extraction directory (in
+    tmp_path rather than tmp_path/extract).
+    """
+    extract = tmp_path / "extract"
+    extract.mkdir()
+
+    fn = "test/files/rar5-evil-symlink-traversal.rar"
+    with rarfile.RarFile(fn) as rf:
+        with pytest.raises(rarfile.BadRarFile, match="escapes destination"):
+            rf.extractall(str(extract))
+
+    # The second member would land at tmp_path/pwned.txt without the guard.
+    assert not (tmp_path / "pwned.txt").exists()

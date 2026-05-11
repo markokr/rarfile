@@ -946,6 +946,17 @@ class RarFile:
             path = os.fspath(path)
         dstfn = os.path.join(path, fname)
 
+        # Reject members whose destination escapes `path` once symlinks
+        # already created on disk are resolved.  Without this, a symlink
+        # member can point outside `path` and a later file/dir member
+        # named through it will be written outside the extraction root.
+        real_path = os.path.realpath(path)
+        real_dst = os.path.realpath(dstfn)
+        if real_dst != real_path and not real_dst.startswith(real_path + os.sep):
+            raise BadRarFile(
+                "Refusing to extract entry that escapes destination: %r" % info.filename
+            )
+
         dirname = os.path.dirname(dstfn)
         if dirname and dirname != ".":
             os.makedirs(dirname, exist_ok=True)
