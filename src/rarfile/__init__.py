@@ -64,6 +64,7 @@ from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
+from . import _rarfile
 
 AES = None
 
@@ -2891,52 +2892,6 @@ class Blake2SP:
         return hexlify(self.digest()).decode("ascii")
 
 
-class Rar3Sha1:
-    """Emulate buggy SHA1 from RAR3.
-    """
-    digest_size = 20
-    block_size = 64
-
-    _BLK_BE = struct.Struct(b">16L")
-    _BLK_LE = struct.Struct(b"<16L")
-
-    __slots__ = ("_nbytes", "_md", "_rarbug")
-
-    def __init__(self, data=b"", rarbug=False):
-        self._md = sha1()
-        self._nbytes = 0
-        self._rarbug = rarbug
-        self.update(data)
-
-    def update(self, data):
-        """Process more data."""
-        self._md.update(data)
-        bufpos = self._nbytes & 63
-        self._nbytes += len(data)
-
-        if self._rarbug and len(data) > 64:
-            dpos = self.block_size - bufpos
-            while dpos + self.block_size <= len(data):
-                self._corrupt(data, dpos)
-                dpos += self.block_size
-
-    def digest(self):
-        """Return final state."""
-        return self._md.digest()
-
-    def hexdigest(self):
-        """Return final state as hex string."""
-        return self._md.hexdigest()
-
-    def _corrupt(self, data, dpos):
-        """Corruption from SHA1 core."""
-        ws = list(self._BLK_BE.unpack_from(data, dpos))
-        for t in range(16, 80):
-            tmp = ws[(t - 3) & 15] ^ ws[(t - 8) & 15] ^ ws[(t - 14) & 15] ^ ws[(t - 16) & 15]
-            ws[t & 15] = ((tmp << 1) | (tmp >> (32 - 1))) & 0xFFFFFFFF
-        self._BLK_LE.pack_into(data, dpos, *ws)
-
-
 ##
 ## Utility functions
 ##
@@ -3150,18 +3105,13 @@ def rar3_s2k(pwd, salt):
         pwd = pwd.decode("utf8")
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
     seed = bytearray(wstr + salt)
-    h = Rar3Sha1(rarbug=True)
-    iv = b""
+    h = sha1()
+    iv = bytearray(16)
     for i in range(16):
-        for j in range(0x4000):
-            cnt = S_LONG.pack(i * 0x4000 + j)
-            h.update(seed)
-            h.update(cnt[:3])
-            if j == 0:
-                iv += h.digest()[19:20]
+        iv[i] = _rarfile.rar3_sha1_loop(h, seed, i << 14)
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
-    return key_le, iv
+    return key_le, bytes(iv)
 
 
 def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=None):

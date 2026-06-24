@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version", "description", "readme"]
+name = "rarfile"
+requires-python = ">=3.10"
+authors = [
+    {name = "Marko Kreen", email = "markokr@gmail.com"},
+]
+license = "ISC"
+license-files = ["LICENSE"]
+keywords = ['rar', 'unrar', 'archive']
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    'Programming Language :: C',
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Archiving :: Compression",
+]
+
+[project.urls]
+Homepage = "https://github.com/markokr/rarfile"
+Source = "https://github.com/markokr/rarfile"
+Issues = "https://github.com/markokr/rarfile/issues"
+Documentation = "https://rarfile.readthedocs.io"
+
+[project.optional-dependencies]
+cryptography = [
+    "cryptography",
+]
+pycryptodome = [
+    "pycryptodome",
+]
+
+[dependency-groups]
+test = [
+    "coverage",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+]
+docs = [
+    "sphinx==7.2.6",
+    "docutils==0.20.1",
+]
+lint = [
+    "pylint==3.1.0",
+    "pyflakes==3.2.0",
+]
+
+# Dev/test-only pins - applied by uv during lock/sync, not published in
+# package metadata. The two markers are exact complements so uv is forced
+# to fork instead of unifying everything on the old PyPy-compatible version.
+[tool.uv]
+constraint-dependencies = [
+    # cryptography > 45.0.7 dropped PyPy 3.10
+    "cryptography<=45.0.7; python_version == '3.10' and platform_python_implementation == 'PyPy'",
+    # cryptography >= 46 is the first with 3.14/3.14t wheels
+    "cryptography>=46.0.0; python_version != '3.10' or platform_python_implementation != 'PyPy'",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "rarfile.__version__"}

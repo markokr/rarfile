@@ -1,11 +1,10 @@
 """Hashing tests.
 """
 
-import hashlib
 from binascii import hexlify, unhexlify
 
 import rarfile
-from rarfile import Blake2SP, CRC32Context, NoHashContext, Rar3Sha1
+from rarfile import Blake2SP, CRC32Context, NoHashContext
 
 
 def tohex(data):
@@ -66,28 +65,6 @@ def test_blake2sp():
     assert xblake2sp_slow(long2) == "24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3"
 
 
-def test_rar3_sha1():
-    for n in range(0, 200):
-        data = bytearray(range(n))
-        h1 = hashlib.sha1(data).hexdigest()
-        h2 = Rar3Sha1(data).hexdigest()
-        assert h1 == h2
-
-    data = bytearray([(i & 255) for i in range(2000)])
-    x1 = hashlib.sha1()
-    x2 = Rar3Sha1()
-    for step in (3, 17, 67, 128, 157):
-        pos = 0
-        while pos < len(data):
-            pos2 = pos + step
-            if pos2 > len(data):
-                pos2 = len(data)
-            x1.update(data[pos:pos2])
-            x2.update(data[pos:pos2])
-            assert x1.hexdigest() == x2.hexdigest()
-            pos = pos2
-
-
 def test_rar3_s2k():
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
     key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
@@ -100,5 +77,9 @@ def test_rar3_s2k():
     assert (tohex(key), tohex(iv)) == exp
     exp = ("306cafde28f1ea78c9427c3ec642c0db", "173ecdf574c0bfe9e7c23bdfd96fa435")
     key, iv = rarfile.rar3_s2k("p" * 29, unhexlify("1122334455667788"))
+    assert (tohex(key), tohex(iv)) == exp
+
+    exp = ("b1bc223609af7d4f3b70e5a254ac2501", "302c97945530d7ffa7c551eb2dd21a90")
+    key, iv = rarfile.rar3_s2k("p" * 127, unhexlify("1122334455667788"))
     assert (tohex(key), tohex(iv)) == exp
 
