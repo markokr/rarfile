@@ -16,7 +16,7 @@ Features:
 * Archive parsing and non-compressed files are handled in pure Python code.
 * Compressed files are extracted by executing external tool:
   unrar_ (preferred), unar_, 7zip_ or bsdtar_.
-* Works with Python 3.6+.
+* Works with Python 3.10+.
 
 .. _RAR: https://en.wikipedia.org/wiki/RAR_%28file_format%29
 .. _zipfile: https://docs.python.org/3/library/zipfile.html
