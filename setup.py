@@ -23,7 +23,7 @@ setup(
     url="https://github.com/markokr/rarfile",
     py_modules=['rarfile'],
     keywords=['rar', 'unrar', 'archive'],
-    python_requires=">=3.6",
+    python_requires=">=3.10",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
