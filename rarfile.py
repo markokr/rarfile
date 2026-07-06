@@ -2334,6 +2334,8 @@ class RarExtFile(io.RawIOBase):
             n -= len(data)
         data = b"".join(buf)
         if n > 0:
+            if self._returncode:
+                check_returncode(self._returncode, "", tool_setup().get_errmap())
             raise BadRarFile("Failed the read enough data: req=%d got=%d" % (orig, len(data)))
 
         # done?
