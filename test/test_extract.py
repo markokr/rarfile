@@ -158,29 +158,27 @@ def test_symlink(fn, tmp_path):
         assert get_props(rf, "data_link") == "--L"
         assert get_props(rf, "random_link") == "--L"
 
-        rf.extractall(tmp_path)
+        rf.extract('data.txt', tmp_path)
+        rf.extract('data_link', tmp_path)
+        with pytest.raises(rarfile.BadSymLinkError):
+            rf.extract('random_link', tmp_path)
 
-        assert sorted(os.listdir(tmp_path)) == ["data.txt", "data_link", "random_link"]
+        assert sorted(os.listdir(tmp_path)) == ["data.txt", "data_link"]
 
         data = rf.getinfo("data.txt")
         data_link = rf.getinfo("data_link")
-        random_link = rf.getinfo("random_link")
 
         assert not data.is_symlink()
         assert data_link.is_symlink()
-        assert random_link.is_symlink()
 
         assert rf.read(data) == b"data\n"
         assert rf.read(data_link) == b"data.txt"
-        assert rf.read(random_link) == b"../random123"
 
         assert os.path.isfile(tmp_path / "data.txt")
         assert os.path.islink(tmp_path / "data_link")
-        assert os.path.islink(tmp_path / "random_link")
 
         # str - work around pypy3 bug
         assert os.readlink(str(tmp_path / "data_link")) == "data.txt"
-        assert os.readlink(str(tmp_path / "random_link")) == "../random123"
 
 
 def test_symlink_win(tmp_path):
@@ -195,13 +193,20 @@ def test_symlink_win(tmp_path):
         assert get_props(rf, "links/file_link") == "--L"
 
         with pytest.warns(rarfile.UnsupportedWarning):
-            rf.extractall(tmp_path)
+            rf.extract('content/dir1', tmp_path)
+            rf.extract('content/dir2', tmp_path)
+            rf.extract('content/file.txt', tmp_path)
+            rf.extract('links/dir_junction', tmp_path)
+            rf.extract('links/dir_link', tmp_path)
+            rf.extract('links/file_link', tmp_path)
+
+        with pytest.raises(rarfile.BadSymLinkError):
+            rf.extract('links/bad_link', tmp_path)
 
         assert sorted(os.listdir(tmp_path)) == ["content", "links"]
         assert sorted(os.listdir(tmp_path / "content")) == ["dir1", "dir2", "file.txt"]
-        assert sorted(os.listdir(tmp_path / "links")) == ["bad_link", "dir_link", "file_link"]
+        assert sorted(os.listdir(tmp_path / "links")) == ["dir_link", "file_link"]
 
-        assert os.path.islink(tmp_path / "links/bad_link")
         assert os.path.islink(tmp_path / "links/dir_link")
         assert os.path.islink(tmp_path / "links/file_link")
 
@@ -245,8 +250,17 @@ def test_symlink_chained_traversal_blocked(tmp_path):
 
     fn = "test/files/rar5-evil-symlink-traversal.rar"
     with rarfile.RarFile(fn) as rf:
-        with pytest.raises(rarfile.BadRarFile, match="escapes destination"):
+        with pytest.raises(rarfile.BadSymLinkError):
             rf.extractall(str(extract))
+
+    # test if pre-existing symlink is detected
+    up = extract / "up"
+    up.symlink_to('..')
+    assert str(up.readlink()) == '..'
+
+    with pytest.raises(rarfile.BadRarFile):
+        rf.extract('up/pwned.txt', extract)
 
     # The second member would land at tmp_path/pwned.txt without the guard.
     assert not (tmp_path / "pwned.txt").exists()
+

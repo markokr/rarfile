@@ -399,6 +399,10 @@ class PasswordRequired(Error):
     """File requires password"""
 
 
+class BadSymLinkError(Error):
+    """Invalid symbolic link"""
+
+
 class NeedFirstVolume(Error):
     """Need to start from first volume.
 
@@ -966,7 +970,7 @@ class RarFile:
         if info.is_dir():
             return self._make_dir(info, dstfn, pwd, set_attrs)
         if info.is_symlink():
-            return self._make_symlink(info, dstfn, pwd, set_attrs)
+            return self._make_symlink(info, dstfn, pwd, set_attrs, path)
         return None
 
     def _create_helper(self, name, flags, info):
@@ -988,10 +992,10 @@ class RarFile:
             self._set_attrs(info, dstfn)
         return dstfn
 
-    def _make_symlink(self, info, dstfn, pwd, set_attrs):
+    def _make_symlink(self, info, dstfn, pwd, set_attrs, top):
         target_is_directory = False
         if info.host_os == RAR_OS_UNIX:
-            link_name = self.read(info, pwd)
+            link_name = self.read(info, pwd).decode("utf8", "replace")
             target_is_directory = (info.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         elif info.file_redir:
             redir_type, redir_flags, link_name = info.file_redir
@@ -1002,6 +1006,18 @@ class RarFile:
         else:
             warnings.warn(f"Unsupported link type - {info.filename}", UnsupportedWarning)
             return None
+
+        # disallow abs paths
+        target = os.path.normpath(link_name)
+        if os.path.isabs(target) or os.path.splitdrive(target)[0]:
+            raise BadSymLinkError('Absolute links not allowed')
+
+        # disallow ../ traversal
+        dest_abs = os.path.realpath(top)
+        target_base = os.path.dirname(dstfn)
+        target_abs = os.path.realpath(os.path.join(target_base, target))
+        if os.path.commonpath([target_abs, dest_abs]) != dest_abs:
+            raise BadSymLinkError('Link to outside not allowed')
 
         os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
         return dstfn
