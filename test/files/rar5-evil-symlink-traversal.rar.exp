@@ -1,0 +1,20 @@
+Archive: test/files/rar5-evil-symlink-traversal.rar
+R5_FILE: hdrlen=42 datlen=0 hdr_extra=18 is=--L
+  block_flags=0x0003:EXTRA,DATA
+  name=up
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=lrwxr-xr-x cmp=0 dec=0 vol=0
+  crc=0x00000000 (0)
+  date_time=2026-05-11 21:59:26
+  mtime=2026-05-11T21:59:26.388379155+00:00
+  redir: type=UNIX_SYMLINK flags=1:DIR destination=..
+R5_FILE: hdrlen=47 datlen=23 hdr_extra=11 is=F--
+  block_flags=0x0003:EXTRA,DATA
+  name=up/pwned.txt
+  file_flags=0x0004:CRC32
+  cmp_algo=0 cmp_meth=0 dict=0 solid=False
+  os=1:UNIX mode=-rw-r--r-- cmp=23 dec=23 vol=0
+  crc=0xc0327d47 (3224534343)
+  date_time=2026-05-11 21:59:26
+  mtime=2026-05-11T21:59:26.388813228+00:00
