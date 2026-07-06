@@ -15,7 +15,7 @@ URL = $(REPO)/releases/download/$(TAG)
 all:
 	pyflakes rarfile.py
 	tox -e lint
-	tox -e py38-cryptography -- -n auto
+	tox -e py310-cryptography -- -n auto
 
 install:
 	python setup.py install --prefix=$(prefix)
@@ -32,7 +32,7 @@ toxclean: clean
 	rm -rf .tox
 
 ack:
-	for fn in test/files/*.py38-cryptography; do \
+	for fn in test/files/*.py310-cryptography; do \
 		cp $$fn `echo $$fn | sed 's/[.]py.*/.exp/'` || exit 1; \
 	done
 
