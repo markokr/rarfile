@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: {python-version: "3.11"}
       - run: python3 -m pip install -r etc/requirements.build.txt --disable-pip-version-check
       - run: python3 setup.py sdist
@@ -28,7 +28,7 @@ jobs:
     needs: [sdist]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: {python-version: "3.11"}
 
       - run: python3 -m pip install -r etc/requirements.build.txt --disable-pip-version-check
