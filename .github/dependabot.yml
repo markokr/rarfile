@@ -10,7 +10,6 @@ updates:
     versioning-strategy: "increase-if-necessary"
     directories:
       - "/"
-      - "/etc"
     schedule:
       interval: "monthly"
     cooldown:
