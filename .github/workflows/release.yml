@@ -9,33 +9,67 @@ on:
     tags: ["v[0-9]*"]
 
 jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }} ${{ matrix.linux_arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: windows-11-arm
+          - os: macos-latest
+          - os: ubuntu-latest
+            linux_arch: x86_64
+          - os: ubuntu-24.04-arm
+            linux_arch: aarch64
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build regular wheels
+        uses: pypa/cibuildwheel@v4.1.0
+        env:
+          CIBW_BUILD: "cp310-*"
+      - name: Build abi3 wheels
+        uses: pypa/cibuildwheel@v4.1.0
+        env:
+          CIBW_BUILD: "cp311-*"
+          CIBW_ENVIRONMENT: ABI3=1
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          path: ./wheelhouse/*.whl
+          name: dist-wheels-${{ matrix.os }}-${{ matrix.linux_arch }}
+
   sdist:
     name: "Build source package"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
-        with: {python-version: "3.11"}
-      - run: python3 -m pip install -r etc/requirements.build.txt --disable-pip-version-check
-      - run: python3 setup.py sdist
-      - run: python3 setup.py bdist_wheel
-      - uses: actions/upload-artifact@v7
-        with: {name: "dist", path: "dist"}
+        with: {python-version: "3.14"}
+      - run: |
+          pip install build
+          python -m build --sdist
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          path: ./dist/*.tar.gz
+          name: dist-sdist
 
   publish:
     name: "Publish"
     runs-on: ubuntu-latest
-    needs: [sdist]
+    needs: [build_wheels, sdist]
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with: {python-version: "3.11"}
-
-      - run: python3 -m pip install -r etc/requirements.build.txt --disable-pip-version-check
 
       - name: "Get files"
         uses: actions/download-artifact@v8
-        with: {name: "dist", path: "dist"}
+        with:
+          path: dist/
+          merge-multiple: true
 
       - name: "Install pandoc"
         run: |
@@ -44,9 +78,10 @@ jobs:
 
       - name: "Prepare"
         run: |
-          PACKAGE=$(python3 setup.py --name)
-          VERSION=$(python3 setup.py --version)
-          TGZ="${PACKAGE}-${VERSION}.tar.gz"
+          PKG_INFO=$(tar -xzOf dist/*.tar.gz --wildcards --no-wildcards-match-slash '*/PKG-INFO')
+          PACKAGE=$(echo "${PKG_INFO}" | sed -n 's/^Name: //p' | head -1)
+          VERSION=$(echo "${PKG_INFO}" | sed -n 's/^Version: //p' | head -1)
+          TGZ=$(basename dist/*.tar.gz)
 
           # default - gh:release, pypi
           # PRERELEASE -  gh:prerelease, pypi
@@ -58,7 +93,7 @@ jobs:
           esac
 
           test "${{github.ref}}" = "refs/tags/v${VERSION}" || { echo "ERR: tag mismatch"; exit 1; }
-          test -f "dist/${TGZ}" || { echo "ERR: sdist failed"; exit 1; }
+          test -f "dist/${TGZ}" || { echo "ERR: sdist missing"; exit 1; }
           echo "PACKAGE=${PACKAGE}" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TGZ=${TGZ}" >> $GITHUB_ENV
@@ -80,17 +115,13 @@ jobs:
           gh release create "v${VERSION}" "dist/${TGZ}" --title="${title}" ${ghf}
 
       - name: "Upload to PYPI"
-        id: pypi_upload
-        env:
-          PYPI_TOKEN: ${{secrets.PYPI_TOKEN}}
-          PYPI_TEST_TOKEN: ${{secrets.PYPI_TEST_TOKEN}}
-        run: |
-          ls -l dist
-          if test "${DRAFT}" = "false"; then
-            python -m twine upload -u __token__ -p ${PYPI_TOKEN} \
-              --repository pypi --disable-progress-bar dist/*
-          else
-            python -m twine upload -u __token__ -p ${PYPI_TEST_TOKEN} \
-              --repository testpypi --disable-progress-bar dist/*
-          fi
+        if: env.DRAFT == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
+      - name: "Upload to Test PYPI"
+        if: env.DRAFT == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
