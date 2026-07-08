@@ -1,4 +1,4 @@
-setuptools==68
+setuptools==78.1.1
 wheel==0.41
 twine==5.1.1
 tox==4.8.0
