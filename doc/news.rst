@@ -4,7 +4,7 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
-Version 4.3.dev1 (2026-07-08)
+Version 4.3.dev2 (2026-07-08)
 -----------------------------
 
 * Test release path.
