@@ -4,6 +4,21 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 4.3 (2026-07-08)
+------------------------
+
+Fixes
+
+* Disallow extraction outside extraction path,
+  in case of existing symlink.
+  [`#114 <https://github.com/markokr/rarfile/pull/114>`_]
+
+* Disallow creating symlinks to outside of extraction path.
+  [`#118 <https://github.com/markokr/rarfile/pull/118>`_]
+
+* Apply length limit to passwords, so too long password
+  give same result as for unrar.
+
 Version 4.2 (2024-04-03)
 ------------------------
 

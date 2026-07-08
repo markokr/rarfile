@@ -1,6 +1,6 @@
 # rarfile.py
 #
-# Copyright (c) 2005-2024  Marko Kreen <markokr@gmail.com>
+# Copyright (c) 2005-2026  Marko Kreen <markokr@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -92,7 +92,7 @@ class AES_CBC_Decrypt:
             self.decrypt = ciph.decryptor().update
 
 
-__version__ = "4.2"
+__version__ = "4.3"
 
 # export only interesting items
 __all__ = ["get_rar_version", "is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile"]
