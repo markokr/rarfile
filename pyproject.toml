@@ -72,3 +72,12 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "rarfile.__version__"}
+
+[tool.cibuildwheel]
+skip = ["*_i686", "*_ppc64le", "*_s390x"]
+
+[tool.cibuildwheel.macos]
+archs = ["universal2"]
+
+[tool.cibuildwheel.windows]
+archs = ["native"]

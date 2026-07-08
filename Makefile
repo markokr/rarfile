@@ -18,18 +18,13 @@ else
 ABI3_ENV = ABI3=1
 endif
 
-REPO = https://github.com/markokr/rarfile
 NEWS = doc/news.rst
 
-PACKAGE = rarfile
 VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.py)
 RXVERSION = $(shell echo '$(VERSION)' | sed 's/\./[.]/g')
 TAG = v$(VERSION)
-TGZ = $(PACKAGE)-$(VERSION).tar.gz
-WHEEL = $(PACKAGE)-$(VERSION)-py3-none-any.whl
-URL = $(REPO)/releases/download/$(TAG)
 
-.PHONY: all test test-all lint docs clean ack prepare release upload shownote unrelease
+.PHONY: all test test-all lint docs clean ack prepare release shownote unrelease
 
 all: lint docs test
 
@@ -85,14 +80,6 @@ prepare:
 release: prepare
 	git tag $(TAG)
 	git push github $(TAG):$(TAG)
-
-upload:
-	mkdir -p dist && rm -f dist/*
-	cd dist && wget -q $(URL)/$(TGZ)
-	cd dist && wget -q $(URL)/$(WHEEL)
-	tar tvf dist/$(TGZ)
-	unzip -t dist/$(WHEEL)
-	twine upload dist/$(TGZ) dist/$(WHEEL)
 
 shownote:
 	awk -v VER="$(VERSION)" -f doc/note.awk $(NEWS) \
