@@ -22,7 +22,7 @@ jobs:
           - {OS: "ubuntu-latest", PY: "3.14", TOXENV: "lint,docs"}
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: "Setup Python ${{matrix.pick.PY}}"
         uses: actions/setup-python@v6
@@ -55,7 +55,7 @@ jobs:
           - {OS: "windows-latest", PY: "3.14", PYNAME: "Python 3.14", TOXENV: "py310-cryptography" }
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: "Setup ${{matrix.pick.PYNAME}}"
         uses: actions/setup-python@v6
