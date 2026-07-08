@@ -115,6 +115,13 @@ def test_detection():
     assert rarfile.is_rarfile("test/files/_missing_.rar") is False
 
 
+def test_restore_pos():
+    with open('test/files/rar5-crc.rar', 'rb') as fd:
+        fd.seek(3)
+        assert rarfile.is_rarfile(fd) is True
+        assert fd.tell() == 3
+
+
 def test_getinfo():
     with rarfile.RarFile("test/files/rar5-crc.rar") as rf:
         inf = rf.getinfo("stest1.txt")
