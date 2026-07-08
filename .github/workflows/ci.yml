@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Setup Python ${{matrix.pick.PY}}"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{matrix.pick.PY}}
 
@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Setup ${{matrix.pick.PYNAME}}"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{matrix.pick.PY}}
 
