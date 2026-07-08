@@ -337,6 +337,7 @@ def _find_sfx_header(xfile):
                 if curdata[pos:pos + len(RAR5_ID)] == RAR5_ID:
                     return RAR_V5, pos
                 findpos = pos + len(sig)
+        fd.restore_pos()
     return 0, 0
 
 
@@ -350,6 +351,7 @@ def get_rar_version(xfile):
     """
     with XFile(xfile) as fd:
         buf = fd.read(len(RAR5_ID))
+        fd.restore_pos()
     if buf.startswith(RAR_ID):
         return RAR_V3
     elif buf.startswith(RAR5_ID):
@@ -2716,16 +2718,26 @@ class HeaderDecrypt:
 class XFile:
     """Input may be filename or file object.
     """
-    __slots__ = ("_fd", "_need_close")
+    __slots__ = ("_fd", "_need_close", "_initial_pos")
 
     def __init__(self, xfile, bufsize=1024):
         if is_filelike(xfile):
+            self._initial_pos = xfile.tell()
             self._need_close = False
             self._fd = xfile
             self._fd.seek(0)
         else:
+            self._initial_pos = None
             self._need_close = True
             self._fd = open(xfile, "rb", bufsize)
+
+    def restore_pos(self):
+        if self._initial_pos is None:
+            return
+        try:
+            self._fd.seek(self._initial_pos)
+        except:
+            pass
 
     def read(self, n=None):
         """Read from file."""
