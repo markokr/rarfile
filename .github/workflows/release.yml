@@ -34,7 +34,7 @@ jobs:
       - run: python3 -m pip install -r etc/requirements.build.txt --disable-pip-version-check
 
       - name: "Get files"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with: {name: "dist", path: "dist"}
 
       - name: "Install pandoc"
