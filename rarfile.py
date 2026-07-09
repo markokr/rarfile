@@ -2049,6 +2049,8 @@ class RAR5Parser(CommonParser):
             raise RarWrongPassword()
 
     def _parse_encryption_block(self, h, hdata, pos):
+        self._hdrenc_main = h
+        self._needs_password = True
         h.encryption_algo, pos = load_vint(hdata, pos)
         h.encryption_flags, pos = load_vint(hdata, pos)
         h.encryption_kdf_count, pos = load_byte(hdata, pos)
@@ -2059,7 +2061,6 @@ class RAR5Parser(CommonParser):
             raise BadRarFile("Unsupported header encryption cipher")
         if h.encryption_check_value and self._password:
             self._check_password(h.encryption_check_value, h.encryption_kdf_count, h.encryption_salt)
-        self._hdrenc_main = h
         return h
 
     def _process_file_extra(self, h, xdata):

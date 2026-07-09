@@ -93,6 +93,10 @@ def test_rar5_header_encryption():
     assert r.comment is None
     assert r.namelist() == []
 
+    with pytest.raises(rarfile.RarWrongPassword):
+        r.setpassword("password222")
+    assert r.needs_password() is True
+
     r.setpassword("password")
     assert r.needs_password() is True
     assert r.namelist() == ["stest1.txt", "stest2.txt"]
