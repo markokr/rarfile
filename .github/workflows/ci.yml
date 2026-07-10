@@ -46,8 +46,8 @@ jobs:
       fail-fast: false
       matrix:
         pick:
-          - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.9", CRYPTO: ""}
-          - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.9", CRYPTO: "pycryptodome"}
+          - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.10", CRYPTO: ""}
+          - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.10", CRYPTO: "pycryptodome"}
           - {OS: "ubuntu-latest", PY: "3.10", PYNAME: "Python 3.10", CRYPTO: "cryptography"}
           - {OS: "ubuntu-latest", PY: "3.11", PYNAME: "Python 3.11", CRYPTO: "cryptography"}
           - {OS: "ubuntu-latest", PY: "3.12", PYNAME: "Python 3.12", CRYPTO: "cryptography"}
