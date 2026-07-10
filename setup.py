@@ -2,6 +2,7 @@
 """
 
 import os
+import sysconfig
 
 from setuptools import setup, Extension
 
@@ -15,7 +16,8 @@ def description_long():
     with open("README.rst") as readme:
         return readme.read().strip()
 
-limited = "ABI3" in os.environ
+# Free-threaded builds have no stable ABI yet (PEP 803)
+limited = "ABI3" in os.environ and not sysconfig.get_config_var("Py_GIL_DISABLED")
 
 setup(
     description=description_short(),

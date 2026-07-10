@@ -1,7 +1,7 @@
 
 PYTHON ?= 3.10
 CRYPTO ?= cryptography
-PYTHONS = 3.10 3.11 3.12 3.13 3.14 pypy3.10 pypy3.11
+PYTHONS = 3.10 3.11 3.12 3.13 3.14 3.14t pypy3.10 pypy3.11
 
 ifneq ($(CRYPTO),)
 CRYPTO_FLAG = --extra $(CRYPTO)
@@ -11,8 +11,8 @@ CRYPTO_FLAG =
 TESTTAG = $(PYTHON)
 endif
 
-# build with Py_LIMITED_API (abi3) on CPython >= 3.11, skip 3.10 and pypy
-ifneq ($(filter $(PYTHON),3.10 $(filter pypy%,$(PYTHON))),)
+# build with Py_LIMITED_API (abi3) on CPython >= 3.11, skip 3.10, pypy and free-threaded builds (no stable ABI there yet)
+ifneq ($(filter $(PYTHON),3.10 $(filter pypy% %t,$(PYTHON))),)
 ABI3_ENV =
 else
 ABI3_ENV = ABI3=1

@@ -28,7 +28,7 @@ jobs:
       - name: Build regular wheels
         uses: pypa/cibuildwheel@v4.1.0
         env:
-          CIBW_BUILD: "cp310-*"
+          CIBW_BUILD: "cp310-* cp314t-*"
       - name: Build abi3 wheels
         uses: pypa/cibuildwheel@v4.1.0
         env:

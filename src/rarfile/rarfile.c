@@ -210,5 +210,12 @@ static struct PyModuleDef rarfile_def = {
 };
 
 PyMODINIT_FUNC PyInit__rarfile(void) {
-    return PyModule_Create(&rarfile_def);
+    PyObject *m = PyModule_Create(&rarfile_def);
+    if (m == NULL) {
+        return NULL;
+    }
+#ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
+    return m;
 }
