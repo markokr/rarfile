@@ -194,6 +194,14 @@ RAR_ENDARC_VOLNR = 0x0008
 RAR_SKIP_IF_UNKNOWN = 0x4000
 RAR_LONG_BLOCK = 0x8000
 
+# Subtypes for RAR_BLOCK_OLD_SUB
+RAR_OLD_SUB_OS2 = 0x100
+RAR_OLD_SUB_UNIX = 0x101
+RAR_OLD_SUB_MAC = 0x102
+RAR_OLD_SUB_BEOS = 0x103
+RAR_OLD_SUB_NT = 0x104
+RAR_OLD_SUB_STREAM = 0x105
+
 # Host OS types
 RAR_OS_MSDOS = 0    #: MSDOS (only in RAR3)
 RAR_OS_OS2 = 1      #: OS2 (only in RAR3)
@@ -1415,6 +1423,8 @@ class Rar3Info(RarInfo):
     endarc_datacrc = None
     endarc_volnr = None
 
+    old_sub_type = None
+
     def _must_disable_hack(self):
         if self.type == RAR_BLOCK_FILE:
             if self.flags & RAR_FILE_PASSWORD:
@@ -1525,6 +1535,16 @@ class RAR3Parser(CommonParser):
         elif h.type == RAR_BLOCK_OLD_EXTRA:
             pos += 7
             crc_pos = pos
+        elif h.type == RAR_BLOCK_OLD_SUB:
+            pos = self._parse_old_subblock(h, hdata, pos)
+
+            # these types do not have their own data CRC,
+            # so data was included in header CRC.
+            if h.old_sub_type in (RAR_OLD_SUB_UNIX, RAR_OLD_SUB_MAC):
+                # skip CRC check, it requires to read data part
+                return h
+
+            crc_pos = h.header_size
         elif h.type == RAR_BLOCK_ENDARC:
             if h.flags & RAR_ENDARC_DATACRC:
                 h.endarc_datacrc, pos = load_le32(hdata, pos)
@@ -1535,12 +1555,8 @@ class RAR3Parser(CommonParser):
         else:
             crc_pos = h.header_size
 
-        # check crc
-        if h.type == RAR_BLOCK_OLD_SUB:
-            crcdat = hdata[2:] + fd.read(h.add_size)
-        else:
-            crcdat = hdata[2:crc_pos]
-
+        # calculate crc
+        crcdat = hdata[2:crc_pos]
         calc_crc = crc32(crcdat) & 0xFFFF
 
         # return good header
@@ -1617,6 +1633,12 @@ class RAR3Parser(CommonParser):
         else:
             h.mtime = h.atime = h.ctime = h.arctime = None
 
+        return pos
+
+    def _parse_old_subblock(self, h, hdata, pos):
+        """Parse RAR2 subblock
+        """
+        h.old_sub_type, _reserved = S_OLD_SUBBLOCK_HDR.unpack_from(hdata, pos)
         return pos
 
     def _parse_subblocks(self, h, hdata, pos):
@@ -2923,7 +2945,7 @@ S_BYTE = Struct("<B")
 S_BLK_HDR = Struct("<HBHH")
 S_FILE_HDR = Struct("<LLBLLBBHL")
 S_COMMENT_HDR = Struct("<HBBH")
-
+S_OLD_SUBBLOCK_HDR = Struct("<HB")
 
 def load_vint(buf, pos):
     """Load RAR5 variable-size int."""

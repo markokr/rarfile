@@ -148,6 +148,14 @@ r5_file_redir_flags = (
     (rf.RAR5_XREDIR_ISDIR, "DIR"),
 )
 
+r2_subblock_types = {
+    rf.RAR_OLD_SUB_OS2: "OS2",
+    rf.RAR_OLD_SUB_UNIX: "UNIX",
+    rf.RAR_OLD_SUB_MAC: "MAC",
+    rf.RAR_OLD_SUB_BEOS: "BEOS",
+    rf.RAR_OLD_SUB_NT: "NT",
+    rf.RAR_OLD_SUB_STREAM: "STREAM",
+}
 
 dos_mode_bits = (
     (0x01, "READONLY"),
@@ -331,6 +339,10 @@ def show_item_v3(h):
             xprint("  volnr=%d", h.endarc_volnr)
     elif h.type == rf.RAR_BLOCK_MARK:
         xprint("  flags=0x%04x:", h.flags)
+    elif h.type == rf.RAR_BLOCK_OLD_SUB:
+        xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, generic_bits))
+        xprint("  sub_type=0x%04x:%s", h.old_sub_type,
+               r2_subblock_types.get(h.old_sub_type, '*UNKNOWN*'))
     else:
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, generic_bits))
 

@@ -1,0 +1,6 @@
+Archive: test/files/rar2-unix-owner.rar
+FILE: hdrlen=40 datlen=17 is=F--
+  flags=0x8080:LONG,D1024
+  os=3:UNIX ver=20 mode=-rw-rw-r-- meth=3 cmp=17 dec=4 vol=0
+  crc=0x7e3265a8 (2117232040) date_time=2026-07-15 22:00:22
+  name=file.txt
