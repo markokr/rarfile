@@ -16,6 +16,11 @@
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "rarfile.h"
+#ifndef RARFILE_H
+#define RARFILE_H
 
-PyObject* rar3_sha1_loop(PyObject *, PyObject *);
+#include <Python.h>
+
+PyObject* rar3_sha1(PyObject *, PyObject *);
+
+#endif //RARFILE_H

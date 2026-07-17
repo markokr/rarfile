@@ -16,7 +16,7 @@
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <Python.h>
+#include "rarfile.h"
 
 /**
  * Emulate one block of the buggy RAR3 SHA1 corruption.
@@ -64,32 +64,26 @@ static void rar3_corrupt_block(unsigned char *p)
 }
 
 /**
- * Process one RAR3 string-to-key outer loop (0x4000 inner iterations).
+ * Run the full RAR3 string-to-key hash (16 outer loops of 0x4000 iterations).
  *
- * Replicates the inner body of rarfile.rar3_s2k together with the buggy
- * rarfile.Rar3Sha1.update behaviour: each iteration feeds `seed` and a 3-byte
- * little-endian counter into the SHA1 `update`, then corrupts `seed` in place
- * for every full 64-byte block (the RAR3 bug), and captures the IV byte
- * (digest()[19]) from the first iteration.
+ * Each iteration feeds `seed` and a 3-byte little-endian counter into the SHA1 `update`,
+ * then corrupts `seed` in place for every full 64-byte block (the RAR3 bug).
  *
- * `sha1` is a hashlib.sha1() object. `base` is `i << 14` for outer index i, which
- * also lets us recompute the running byte count so the corruption offset stays
- * aligned across the 16 separate invocations that make up a full key derivation.
+ * `sha1` is a hashlib.sha1() object; it is mutated in place, so the caller can
+ * read the final key from sha1.digest() afterwards.
  *
  * @param self
- * @param args (sha1, seed, base)
- * @return IV byte for this outer loop as a Python int
+ * @param args (sha1, seed)
+ * @return the 16-byte IV as a Python bytes object
  */
-PyObject* rar3_sha1_loop(PyObject *self, PyObject *args)
+PyObject* rar3_sha1(PyObject *self, PyObject *args)
 {
     PyObject *sha1;
     PyObject *seed;
     PyObject *update = NULL;
     PyObject *digest = NULL;
 
-    unsigned int base;
-
-    if (!PyArg_ParseTuple(args, "OOI", &sha1, &seed, &base))
+    if (!PyArg_ParseTuple(args, "OO", &sha1, &seed))
         return NULL;
 
     /* writable view of the seed so we can emulate the in-place corruption */
@@ -97,23 +91,16 @@ PyObject* rar3_sha1_loop(PyObject *self, PyObject *args)
     if (PyObject_GetBuffer(seed, &seed_view, PyBUF_WRITABLE) < 0)
         return NULL;
 
-    unsigned char *seed_ptr = (unsigned char *)(seed_view.buf);
+    unsigned char *seed_ptr = (unsigned char *)seed_view.buf;
     Py_ssize_t seed_len = seed_view.len;
 
-    /* reusable 3-byte object */
     char cnt[3];
-
-    unsigned char iv = 0;
+    unsigned char iv[16] = {0};
     PyObject *result;
     PyObject *d;
 
-    /*
-     * Total bytes hashed so far. Each inner iteration hashes the seed plus a
-     * 3-byte counter, and `base` counts the iterations completed by previous
-     * outer loops, so this reproduces Rar3Sha1._nbytes continuously across the
-     * 16 separate calls.
-     */
-    unsigned long long nbytes = (unsigned long long)(base) * ((unsigned long long)(seed_len) + 3);
+    // Total bytes hashed so far
+    unsigned long long nbytes = 0;
 
     update = PyObject_GetAttrString(sha1, "update");
     if (!update)
@@ -122,59 +109,60 @@ PyObject* rar3_sha1_loop(PyObject *self, PyObject *args)
     if (!digest)
         goto error;
 
-    for (unsigned int j = 0; j < 0x4000; ++j) {
-        result = PyObject_CallFunctionObjArgs(update, seed, NULL);
-        if (!result)
-            goto error;
-        Py_DECREF(result);
+    for (unsigned int i = 0; i < 16; ++i) {
+        const unsigned int base = i << 14;
 
-        /*
-         * Mirror Rar3Sha1.update: after feeding the data, corrupt each full
-         * 64-byte block that lands inside it (only when len(data) > 64).
-         */
-        unsigned long bufpos = nbytes & 63;
-        nbytes += (unsigned long long)(seed_len);
-        if (seed_len > 64) {
-            Py_ssize_t dpos = 64 - (Py_ssize_t)(bufpos);
-            while (dpos + 64 <= seed_len) {
-                rar3_corrupt_block(seed_ptr + dpos);
-                dpos += 64;
+        for (unsigned int j = 0; j < 0x4000; ++j) {
+            result = PyObject_CallFunctionObjArgs(update, seed, NULL);
+            if (!result)
+                goto error;
+            Py_DECREF(result);
+
+            // Corrupt each full 64-byte block that lands inside it (only when len(data) > 64)
+            unsigned long bufpos = nbytes & 63;
+            nbytes += (unsigned long long)(seed_len);
+            if (seed_len > 64) {
+                Py_ssize_t dpos = 64 - (Py_ssize_t)(bufpos);
+                while (dpos + 64 <= seed_len) {
+                    rar3_corrupt_block(seed_ptr + dpos);
+                    dpos += 64;
+                }
             }
-        }
 
-        const unsigned int x = base + j;
+            const unsigned int x = base + j;
 
-        cnt[0] = x & 0xff;
-        cnt[1] = (x >> 8) & 0xff;
-        cnt[2] = (x >> 16) & 0xff;
+            cnt[0] = x & 0xff;
+            cnt[1] = (x >> 8) & 0xff;
+            cnt[2] = (x >> 16) & 0xff;
 
-        PyObject *pycnt = PyBytes_FromStringAndSize(cnt, 3);
-        if (!pycnt)
-            goto error;
-
-        result = PyObject_CallFunctionObjArgs(update, pycnt, NULL);
-        Py_DECREF(pycnt);
-        if (!result)
-            goto error;
-        Py_DECREF(result);
-
-        /* counter is only 3 bytes, so it never triggers the corruption */
-        nbytes += 3;
-
-        if (j == 0) {
-            d = PyObject_CallFunctionObjArgs(digest, NULL);
-            if (!d)
+            PyObject *pycnt = PyBytes_FromStringAndSize(cnt, 3);
+            if (!pycnt)
                 goto error;
 
-            if (!PyBytes_Check(d) || PyBytes_Size(d) != 20)
-            {
+            result = PyObject_CallFunctionObjArgs(update, pycnt, NULL);
+            Py_DECREF(pycnt);
+            if (!result)
+                goto error;
+            Py_DECREF(result);
+
+            // counter is only 3 bytes, so it never triggers the corruption
+            nbytes += 3;
+
+            if (j == 0) {
+                d = PyObject_CallFunctionObjArgs(digest, NULL);
+                if (!d)
+                    goto error;
+
+                if (!PyBytes_Check(d) || PyBytes_Size(d) != 20)
+                {
+                    Py_DECREF(d);
+                    PyErr_SetString(PyExc_RuntimeError, "digest() did not return SHA1 bytes");
+                    goto error;
+                }
+
+                iv[i] = (unsigned char)PyBytes_AsString(d)[19];
                 Py_DECREF(d);
-                PyErr_SetString(PyExc_RuntimeError, "digest() did not return SHA1 bytes");
-                goto error;
             }
-
-            iv = (unsigned char)(PyBytes_AsString(d)[19]);
-            Py_DECREF(d);
         }
     }
 
@@ -182,7 +170,7 @@ PyObject* rar3_sha1_loop(PyObject *self, PyObject *args)
     Py_DECREF(digest);
     PyBuffer_Release(&seed_view);
 
-    return PyLong_FromUnsignedLong(iv);
+    return PyBytes_FromStringAndSize((char *)iv, 16);
 
     error:
         Py_XDECREF(update);
@@ -193,10 +181,10 @@ PyObject* rar3_sha1_loop(PyObject *self, PyObject *args)
 
 static PyMethodDef rarfile_methods[] = {
     {
-        "rar3_sha1_loop",
-        rar3_sha1_loop,
+        "rar3_sha1",
+        rar3_sha1,
         METH_VARARGS,
-        "rar3_sha1_loop(sha1, seed, base)"
+        "rar3_sha1(sha1, seed)"
     },
   {NULL, NULL, 0, NULL},
 };
