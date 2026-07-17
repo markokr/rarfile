@@ -3106,12 +3106,10 @@ def rar3_s2k(pwd, salt):
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
     seed = bytearray(wstr + salt)
     h = sha1()
-    iv = bytearray(16)
-    for i in range(16):
-        iv[i] = _rarfile.rar3_sha1_loop(h, seed, i << 14)
+    iv = _rarfile.rar3_sha1(h, seed)
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
-    return key_le, bytes(iv)
+    return key_le, iv
 
 
 def rar3_decompress(vers, meth, data, declen=0, flags=0, crc=0, pwd=None, salt=None):
