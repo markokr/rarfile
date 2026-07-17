@@ -64,7 +64,7 @@ def rar3_sha1(seed):
 
             # Corrupt each full 64-byte block
             bufpos = nbytes & 63
-            nbytes += seed_len
+            nbytes += seed_len + 3
             if seed_len > 64:
                 dpos = 64 - bufpos
                 while dpos + 64 <= seed_len:
@@ -73,8 +73,6 @@ def rar3_sha1(seed):
 
             x = base + j
             update(bytes((x & 0xFF, (x >> 8) & 0xFF, (x >> 16) & 0xFF)))
-            # counter is only 3 bytes, so it never triggers the corruption
-            nbytes += 3
 
             if j == 0:
                 iv[i] = digest()[19]

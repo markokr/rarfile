@@ -123,7 +123,7 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
 
             // Corrupt each full 64-byte block that lands inside it (only when len(data) > 64)
             unsigned long bufpos = nbytes & 63;
-            nbytes += (unsigned long long)(seed_len);
+            nbytes += (unsigned long long)(seed_len) + 3;
             if (seed_len > 64) {
                 Py_ssize_t dpos = 64 - (Py_ssize_t)(bufpos);
                 while (dpos + 64 <= seed_len) {
@@ -147,9 +147,6 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
             if (!result)
                 goto error;
             Py_DECREF(result);
-
-            // counter is only 3 bytes, so it never triggers the corruption
-            nbytes += 3;
 
             if (j == 0) {
                 d = PyObject_CallFunctionObjArgs(digest, NULL);
