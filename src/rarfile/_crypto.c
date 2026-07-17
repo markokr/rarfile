@@ -69,27 +69,34 @@ static void rar3_corrupt_block(unsigned char *p)
  * Each iteration feeds `seed` and a 3-byte little-endian counter into the SHA1 `update`,
  * then corrupts `seed` in place for every full 64-byte block (the RAR3 bug).
  *
- * `sha1` is a hashlib.sha1() object; it is mutated in place, so the caller can
- * read the final key from sha1.digest() afterwards.
- *
  * @param self
- * @param args (sha1, seed)
- * @return the 16-byte IV as a Python bytes object
+ * @param args (seed,)
+ * @return (sha1, iv) tuple: the hashlib.sha1() object holding the final key
+ *         state, and the 16-byte IV as a Python bytes object
  */
 PyObject* rar3_sha1(PyObject *self, PyObject *args)
 {
-    PyObject *sha1;
+    PyObject *sha1 = NULL;
     PyObject *seed;
     PyObject *update = NULL;
     PyObject *digest = NULL;
+    PyObject *hashlib = NULL;
 
-    if (!PyArg_ParseTuple(args, "OO", &sha1, &seed))
+    if (!PyArg_ParseTuple(args, "O", &seed))
         return NULL;
 
     /* writable view of the seed so we can emulate the in-place corruption */
     Py_buffer seed_view;
     if (PyObject_GetBuffer(seed, &seed_view, PyBUF_WRITABLE) < 0)
         return NULL;
+
+    hashlib = PyImport_ImportModule("hashlib");
+    if (!hashlib)
+        goto error;
+    sha1 = PyObject_CallMethod(hashlib, "sha1", NULL);
+    Py_CLEAR(hashlib);
+    if (!sha1)
+        goto error;
 
     unsigned char *seed_ptr = (unsigned char *)seed_view.buf;
     Py_ssize_t seed_len = seed_view.len;
@@ -170,9 +177,20 @@ PyObject* rar3_sha1(PyObject *self, PyObject *args)
     Py_DECREF(digest);
     PyBuffer_Release(&seed_view);
 
-    return PyBytes_FromStringAndSize((char *)iv, 16);
+    d = PyBytes_FromStringAndSize((char *)iv, 16);
+    if (!d) {
+        Py_DECREF(sha1);
+        return NULL;
+    }
+
+    result = PyTuple_Pack(2, sha1, d);
+    Py_DECREF(sha1);
+    Py_DECREF(d);
+    return result;
 
     error:
+        Py_XDECREF(hashlib);
+        Py_XDECREF(sha1);
         Py_XDECREF(update);
         Py_XDECREF(digest);
         PyBuffer_Release(&seed_view);
@@ -184,7 +202,7 @@ static PyMethodDef crypto_methods[] = {
         "rar3_sha1",
         rar3_sha1,
         METH_VARARGS,
-        "rar3_sha1(sha1, seed)"
+        "rar3_sha1(seed) -> (sha1, iv)"
     },
   {NULL, NULL, 0, NULL},
 };

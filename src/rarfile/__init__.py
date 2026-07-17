@@ -59,7 +59,7 @@ import sys
 import warnings
 from binascii import crc32, hexlify
 from datetime import datetime, timezone
-from hashlib import blake2s, pbkdf2_hmac, sha1, sha256
+from hashlib import blake2s, pbkdf2_hmac, sha256
 from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
@@ -3108,8 +3108,7 @@ def rar3_s2k(pwd, salt):
         pwd = pwd.decode("utf8")
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
     seed = bytearray(wstr + salt)
-    h = sha1()
-    iv = rar3_sha1(h, seed)
+    h, iv = rar3_sha1(seed)
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
     return key_le, iv
