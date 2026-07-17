@@ -16,7 +16,7 @@
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "rarfile.h"
+#include "_crypto.h"
 
 /**
  * Emulate one block of the buggy RAR3 SHA1 corruption.
@@ -179,7 +179,7 @@ PyObject* rar3_sha1(PyObject *self, PyObject *args)
     return NULL;
 }
 
-static PyMethodDef rarfile_methods[] = {
+static PyMethodDef crypto_methods[] = {
     {
         "rar3_sha1",
         rar3_sha1,
@@ -189,16 +189,16 @@ static PyMethodDef rarfile_methods[] = {
   {NULL, NULL, 0, NULL},
 };
 
-static struct PyModuleDef rarfile_def = {
+static struct PyModuleDef crypto_def = {
   .m_base = PyModuleDef_HEAD_INIT,
-  .m_name = "_rarfile",
+  .m_name = "_crypto",
   .m_doc = "Native accelerations for rarfile",
   .m_size = -1,
-  .m_methods = rarfile_methods,
+  .m_methods = crypto_methods,
 };
 
-PyMODINIT_FUNC PyInit__rarfile(void) {
-    PyObject *m = PyModule_Create(&rarfile_def);
+PyMODINIT_FUNC PyInit__crypto(void) {
+    PyObject *m = PyModule_Create(&crypto_def);
     if (m == NULL) {
         return NULL;
     }
