@@ -64,7 +64,10 @@ from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
-from . import _rarfile
+try:
+    from ._crypto import rar3_sha1
+except ImportError:
+    from .crypto import rar3_sha1
 
 AES = None
 
@@ -3106,7 +3109,7 @@ def rar3_s2k(pwd, salt):
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
     seed = bytearray(wstr + salt)
     h = sha1()
-    iv = _rarfile.rar3_sha1(h, seed)
+    iv = rar3_sha1(h, seed)
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
     return key_le, iv

@@ -16,11 +16,11 @@
 * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef RARFILE_H
-#define RARFILE_H
+#ifndef RARFILE_CRYPTO_H
+#define RARFILE_CRYPTO_H
 
 #include <Python.h>
 
 PyObject* rar3_sha1(PyObject *, PyObject *);
 
-#endif //RARFILE_H
+#endif //RARFILE_CRYPTO_H
