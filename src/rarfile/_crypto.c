@@ -70,20 +70,16 @@ static void rar3_corrupt_block(unsigned char *p)
  * then corrupts `seed` in place for every full 64-byte block (the RAR3 bug).
  *
  * @param self
- * @param args (seed,)
+ * @param seed writable buffer (e.g. bytearray), corrupted in place
  * @return (sha1, iv) tuple: the hashlib.sha1() object holding the final key
  *         state, and the 16-byte IV as a Python bytes object
  */
-PyObject* rar3_sha1(PyObject *self, PyObject *args)
+PyObject* rar3_sha1(PyObject *self, PyObject *seed)
 {
     PyObject *sha1 = NULL;
-    PyObject *seed;
     PyObject *update = NULL;
     PyObject *digest = NULL;
     PyObject *hashlib = NULL;
-
-    if (!PyArg_ParseTuple(args, "O", &seed))
-        return NULL;
 
     /* writable view of the seed so we can emulate the in-place corruption */
     Py_buffer seed_view;
@@ -201,8 +197,8 @@ static PyMethodDef crypto_methods[] = {
     {
         "rar3_sha1",
         rar3_sha1,
-        METH_VARARGS,
-        "rar3_sha1(seed) -> (sha1, iv)"
+        METH_O,
+        "rar3_sha1(seed) -> (sha1, iv)\n\nseed must be a writable buffer (e.g. bytearray); it is corrupted in place."
     },
   {NULL, NULL, 0, NULL},
 };
