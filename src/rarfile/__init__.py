@@ -1,4 +1,4 @@
-# rarfile.py
+# rarfile
 #
 # Copyright (c) 2005-2026  Marko Kreen <markokr@gmail.com>
 #
