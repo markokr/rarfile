@@ -19,6 +19,7 @@
 Used when the C extension could not be built or imported.
 """
 
+from hashlib import sha1
 from struct import pack_into, unpack_from
 
 __all__ = ["rar3_sha1"]
@@ -38,32 +39,30 @@ def _rar3_corrupt_block(seed, pos):
     pack_into("<16L", seed, pos, *w)
 
 
-def rar3_sha1(sha1, seed):
+def rar3_sha1(seed):
     """Run the full RAR3 string-to-key hash (16 outer loops of 0x4000 iterations).
 
     Each iteration feeds ``seed`` and a 3-byte little-endian counter into the
     SHA1 update, then corrupts ``seed`` in place for every full 64-byte block
     (the RAR3 bug).
 
-    ``sha1`` is a hashlib.sha1() object; it is mutated in place, so the caller
-    can read the final key from sha1.digest() afterwards.
-
-    Returns the 16-byte IV.
+    Returns a ``(sha1, iv)`` tuple: the hashlib.sha1() object holding the
+    final key state, and the 16-byte IV.
     """
     seed_len = len(seed)
     iv = bytearray(16)
     nbytes = 0
 
-    update = sha1.update
-    digest = sha1.digest
+    h = sha1()
+    update = h.update
+    digest = h.digest
 
     for i in range(16):
         base = i << 14
         for j in range(0x4000):
             update(seed)
 
-            # Corrupt each full 64-byte block that lands inside it
-            # (only when len(data) > 64)
+            # Corrupt each full 64-byte block
             bufpos = nbytes & 63
             nbytes += seed_len
             if seed_len > 64:
@@ -80,4 +79,4 @@ def rar3_sha1(sha1, seed):
             if j == 0:
                 iv[i] = digest()[19]
 
-    return bytes(iv)
+    return h, bytes(iv)
