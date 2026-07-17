@@ -1,4 +1,3 @@
-
 rarfile - RAR archive reader for Python
 =======================================
 
@@ -68,4 +67,3 @@ Links:
 .. _Git: https://github.com/markokr/rarfile
 .. _Downloads: https://pypi.org/project/rarfile/#files
 .. _Documentation: https://rarfile.readthedocs.io/
-

@@ -3,8 +3,10 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version", "description", "readme"]
+dynamic = ["version"]
 name = "rarfile"
+description = "RAR archive reader for Python"
+readme = "README.rst"
 requires-python = ">=3.10"
 authors = [
     {name = "Marko Kreen", email = "markokr@gmail.com"},
