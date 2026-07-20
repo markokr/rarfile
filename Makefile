@@ -11,13 +11,6 @@ CRYPTO_FLAG =
 TESTTAG = $(PYTHON)
 endif
 
-# build with Py_LIMITED_API (abi3) on CPython >= 3.11, skip 3.10, pypy and free-threaded builds (no stable ABI there yet)
-ifneq ($(filter $(PYTHON),3.10 $(filter pypy% %t,$(PYTHON))),)
-ABI3_ENV =
-else
-ABI3_ENV = ABI3=1
-endif
-
 NEWS = doc/news.rst
 
 VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.py)
@@ -30,7 +23,7 @@ all: lint docs test
 
 test:
 	uv venv --python $(PYTHON) --clear
-	$(ABI3_ENV) uv sync --group test $(CRYPTO_FLAG) --reinstall-package rarfile
+	uv sync --group test $(CRYPTO_FLAG) --reinstall-package rarfile
 	uv run --no-sync pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
 	uv run --no-sync bash test/run_dump.sh python "$(TESTTAG)"
 
