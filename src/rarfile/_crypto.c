@@ -80,6 +80,7 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     PyObject *update = NULL;
     PyObject *digest = NULL;
     PyObject *hashlib = NULL;
+    PyObject *cnt_obj = NULL;
 
     /* writable view of the seed so we can emulate the in-place corruption */
     Py_buffer seed_view;
@@ -97,7 +98,13 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     unsigned char *seed_ptr = (unsigned char *)seed_view.buf;
     Py_ssize_t seed_len = seed_view.len;
 
-    char cnt[3];
+    cnt_obj = PyByteArray_FromStringAndSize(NULL, 3);
+    if (!cnt_obj)
+        goto error;
+    char *cnt_ptr = PyByteArray_AsString(cnt_obj);
+    if (!cnt_ptr)
+        goto error;
+
     unsigned char iv[16] = {0};
     PyObject *result;
     PyObject *d;
@@ -134,16 +141,11 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
 
             const unsigned int x = base + j;
 
-            cnt[0] = x & 0xff;
-            cnt[1] = (x >> 8) & 0xff;
-            cnt[2] = (x >> 16) & 0xff;
+            cnt_ptr[0] = x & 0xff;
+            cnt_ptr[1] = (x >> 8) & 0xff;
+            cnt_ptr[2] = (x >> 16) & 0xff;
 
-            PyObject *pycnt = PyBytes_FromStringAndSize(cnt, 3);
-            if (!pycnt)
-                goto error;
-
-            result = PyObject_CallFunctionObjArgs(update, pycnt, NULL);
-            Py_DECREF(pycnt);
+            result = PyObject_CallFunctionObjArgs(update, cnt_obj, NULL);
             if (!result)
                 goto error;
             Py_DECREF(result);
@@ -169,6 +171,7 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     Py_DECREF(update);
     Py_DECREF(digest);
     PyBuffer_Release(&seed_view);
+    Py_XDECREF(cnt_obj);
 
     d = PyBytes_FromStringAndSize((char *)iv, 16);
     if (!d) {
@@ -187,6 +190,7 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
         Py_XDECREF(update);
         Py_XDECREF(digest);
         PyBuffer_Release(&seed_view);
+        Py_XDECREF(cnt_obj);
     return NULL;
 }
 
