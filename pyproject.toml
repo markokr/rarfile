@@ -20,7 +20,7 @@ classifiers = [
     "Operating System :: OS Independent",
     'Programming Language :: C',
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: Free Threading :: 1 - Unstable",
+    "Programming Language :: Python :: Free Threading :: 3 - Stable",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Archiving :: Compression",
 ]
