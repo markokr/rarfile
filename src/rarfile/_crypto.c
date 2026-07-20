@@ -82,10 +82,13 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     PyObject *hashlib = NULL;
     PyObject *cnt_obj = NULL;
 
-    /* writable view of the seed so we can emulate the in-place corruption */
-    Py_buffer seed_view;
-    if (PyObject_GetBuffer(seed, &seed_view, PyBUF_WRITABLE) < 0)
+    // seed must be a bytearray so we can mutate it in place
+    if (!PyByteArray_Check(seed)) {
+        PyErr_SetString(PyExc_TypeError, "seed must be a bytearray");
         return NULL;
+    }
+    unsigned char *seed_ptr = (unsigned char *)PyByteArray_AsString(seed);
+    Py_ssize_t seed_len = PyByteArray_Size(seed);
 
     hashlib = PyImport_ImportModule("hashlib");
     if (!hashlib)
@@ -94,9 +97,6 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     Py_CLEAR(hashlib);
     if (!sha1)
         goto error;
-
-    unsigned char *seed_ptr = (unsigned char *)seed_view.buf;
-    Py_ssize_t seed_len = seed_view.len;
 
     cnt_obj = PyByteArray_FromStringAndSize(NULL, 3);
     if (!cnt_obj)
@@ -170,7 +170,6 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
 
     Py_DECREF(update);
     Py_DECREF(digest);
-    PyBuffer_Release(&seed_view);
     Py_XDECREF(cnt_obj);
 
     d = PyBytes_FromStringAndSize((char *)iv, 16);
@@ -189,7 +188,6 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
         Py_XDECREF(sha1);
         Py_XDECREF(update);
         Py_XDECREF(digest);
-        PyBuffer_Release(&seed_view);
         Py_XDECREF(cnt_obj);
     return NULL;
 }
