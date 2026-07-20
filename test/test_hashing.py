@@ -3,6 +3,8 @@
 
 from binascii import hexlify, unhexlify
 
+import pytest
+
 import rarfile
 from rarfile import Blake2SP, CRC32Context, NoHashContext
 
@@ -82,4 +84,51 @@ def test_rar3_s2k():
     exp = ("b1bc223609af7d4f3b70e5a254ac2501", "302c97945530d7ffa7c551eb2dd21a90")
     key, iv = rarfile.rar3_s2k("p" * 127, unhexlify("1122334455667788"))
     assert (tohex(key), tohex(iv)) == exp
+
+
+def test_rar3_s2k_pure_python(monkeypatch):
+    """Exercise the pure-Python rar3_sha1 fallback through rar3_s2k.
+
+    The active implementation is the C extension where it is built, so force
+    the pure-Python one to keep the fallback covered everywhere. The 29-char
+    case (66-byte seed) triggers the corruption path; the expensive 127-char
+    multi-block case is covered by test_rar3_s2k on pure-only machines and by
+    test_rar3_sha1_native_matches_pure where the extension is built.
+    """
+    from rarfile.crypto import rar3_sha1 as pure_rar3_sha1
+    monkeypatch.setattr(rarfile, "rar3_sha1", pure_rar3_sha1)
+
+    exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
+    key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
+    assert (tohex(key), tohex(iv)) == exp
+
+    exp = ("306cafde28f1ea78c9427c3ec642c0db", "173ecdf574c0bfe9e7c23bdfd96fa435")
+    key, iv = rarfile.rar3_s2k("p" * 29, unhexlify("1122334455667788"))
+    assert (tohex(key), tohex(iv)) == exp
+
+
+def test_rar3_sha1_native_matches_pure():
+    """The C extension, when built, must match the pure-Python fallback exactly.
+
+    Only runs where the extension is present (otherwise the two names are the
+    same object and there is nothing to compare). The 130-byte seed forces the
+    multi-block branch of the corruption loop.
+    """
+    from rarfile.crypto import rar3_sha1 as pure_rar3_sha1
+    active_rar3_sha1 = rarfile.rar3_sha1
+    if active_rar3_sha1 is pure_rar3_sha1:
+        pytest.skip("C extension not built; active impl is the pure-Python one")
+
+    seeds = (
+        b"p" * 8,     # short, no corruption
+        b"p" * 66,    # >64 bytes, single-block corruption
+        b"p" * 130,   # multi-block corruption
+    )
+    for seed in seeds:
+        a, b = bytearray(seed), bytearray(seed)
+        h_native, iv_native = active_rar3_sha1(a)
+        h_pure, iv_pure = pure_rar3_sha1(b)
+        assert h_native.digest() == h_pure.digest()
+        assert iv_native == iv_pure
+        assert a == b
 
