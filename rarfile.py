@@ -110,8 +110,8 @@ UNAR_TOOL = "unar"
 #: executable for bsdtar tool
 BSDTAR_TOOL = "bsdtar"
 
-#: executable for tar.exe tool (bsdtar on Windows)
-TAREXE_TOOL = "tar.exe"
+#: executable for tar tool (bsdtar on Windows/BSD)
+TAR_TOOL = "tar"
 
 #: executable for p7zip/7z tool
 SEVENZIP_TOOL = "7z"
@@ -3544,7 +3544,7 @@ UNAR_CONFIG = {
 # - Does not support password-protected archives.
 # - Does not support RARVM-based compression filters.
 BSDTAR_CONFIG = {
-    "executables": ("BSDTAR_TOOL", "TAREXE_TOOL"),
+    "executables": ("BSDTAR_TOOL", "TAR_TOOL"),
     "open_cmd": ("-x", "--to-stdout", "-f"),
     "check_cmd": ("--version",),
     "check_output": "bsdtar|libarchive",
@@ -3557,6 +3557,7 @@ SEVENZIP_CONFIG = {
     "executables": ("SEVENZIP_TOOL", "SEVENZIP2_TOOL"),
     "open_cmd": ("e", "-so", "-bb0"),
     "check_cmd": ("i",),
+    "check_output": "Rar3", # rar plugin appears in "Codec" not "Format"
     "password": "-p",
     "no_password": ("-p",),
     "errmap": [None,
