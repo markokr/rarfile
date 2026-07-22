@@ -4,10 +4,25 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 4.4 (2026-07-22)
+------------------------
+
+Security fixes:
+
+* Skip CRC check for some old subblocks.  Previously
+  `rarfile` tried to calculate header CRC by reading
+  data payload for those, but that could cause excessive
+  allocations.
+
+Fixes:
+
+* Reattempt passwords after trying wrong password
+  when header encryption is used.
+
 Version 4.3 (2026-07-08)
 ------------------------
 
-Fixes
+Security fixes:
 
 * Disallow extraction outside extraction path,
   in case of existing symlink.
@@ -15,6 +30,8 @@ Fixes
 
 * Disallow creating symlinks to outside of extraction path.
   [`#118 <https://github.com/markokr/rarfile/pull/118>`_]
+
+Fixes:
 
 * Apply length limit to passwords, so too long password
   give same result as for unrar.
