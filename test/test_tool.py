@@ -99,7 +99,7 @@ def test_unar_tool():
 
 
 @pytest.mark.skipif(
-    not have_tool(rarfile.BSDTAR_TOOL) and not have_tool(rarfile.TAREXE_TOOL),
+    not have_tool(rarfile.BSDTAR_TOOL) and not have_tool(rarfile.TAR_TOOL),
     reason="bsdtar not installed",
 )
 def test_bsdtar_tool():
