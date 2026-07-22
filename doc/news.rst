@@ -16,8 +16,12 @@ Security fixes:
 
 Fixes:
 
-* Reattempt passwords after trying wrong password
+* RAR5: Reattempt passwords after trying wrong password
   when header encryption is used.
+  [`#131 <https://github.com/markokr/rarfile/pull/131>`_]
+
+* Restore fd position in file type detection functions.
+  [`#121 <https://github.com/markokr/rarfile/pull/121>`_]
 
 Version 4.3 (2026-07-08)
 ------------------------
