@@ -1,39 +1,67 @@
 
-prefix = /usr/local
+PYTHON ?= 3.10
+CRYPTO ?= cryptography
+RARFILE_REQUIRE_EXTENSION ?= 1
+PYTHONS = 3.10 3.11 3.12 3.13 3.14 3.14t pypy3.10 pypy3.11
 
-REPO = https://github.com/markokr/rarfile
+ifneq ($(CRYPTO),)
+CRYPTO_FLAG = --extra $(CRYPTO)
+TESTTAG = $(PYTHON)-$(CRYPTO)
+else
+CRYPTO_FLAG =
+TESTTAG = $(PYTHON)
+endif
+
 NEWS = doc/news.rst
 
-PACKAGE = $(shell python3 setup.py --name)
-VERSION = $(shell python3 setup.py --version)
-RXVERSION = $(shell python3 setup.py --version | sed 's/\./[.]/g')
+VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.py)
+RXVERSION = $(shell echo '$(VERSION)' | sed 's/\./[.]/g')
 TAG = v$(VERSION)
-TGZ = $(PACKAGE)-$(VERSION).tar.gz
-WHEEL = $(PACKAGE)-$(VERSION)-py3-none-any.whl
-URL = $(REPO)/releases/download/$(TAG)
 
-all:
-	pyflakes rarfile.py
-	tox -e lint
-	tox -e py310-cryptography -- -n auto
+.PHONY: all test test-all lint docs clean ack prepare release shownote unrelease
 
-install:
-	python setup.py install --prefix=$(prefix)
+all: lint docs test
+
+test:
+	uv venv --python $(PYTHON) --clear
+	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group test $(CRYPTO_FLAG) --reinstall-package rarfile
+	uv run --no-sync pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
+	uv run --no-sync bash test/run_dump.sh python "$(TESTTAG)"
+
+test-all:
+	for py in $(PYTHONS); do \
+		for crypto in "" pycryptodome cryptography; do \
+			$(MAKE) test PYTHON=$$py CRYPTO=$$crypto; \
+		done; \
+	done
+
+lint:
+	uv venv --python $(PYTHON) --clear
+	uv sync --group lint --group test
+	uv run --no-sync pyflakes src
+	uv run --no-sync pylint rarfile dumprar.py test
+
+docs:
+	uv venv --python $(PYTHON) --clear
+	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group docs --reinstall-package rarfile
+	uv run --no-sync sphinx-build -q -W -b html doc doc/_build
 
 clean:
-	rm -rf __pycache__ build dist .tox
+	rm -rf __pycache__ build dist
 	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class test/*.pyc
 	rm -rf doc/_build doc/_static doc/_templates doc/html
 	rm -rf .coverage cover*
-	rm -rf *.egg-info
-	rm -f test/files/*.rar.[pjt]* *.diffs
-
-toxclean: clean
-	rm -rf .tox
+	rm -rf src/*.egg-info
+	rm -f test/files/*.rar.[0-9]* test/files/*.rar.pypy* *.diffs
+	rm -rf tmp
+	rm -rf src/rarfile/__pycache__
+	rm -f src/rarfile/*.so src/rarfile/*.pyd
+	rm -f .coverage.*
+	rm -f uv.lock
 
 ack:
-	for fn in test/files/*.py310-cryptography; do \
-		cp $$fn `echo $$fn | sed 's/[.]py.*/.exp/'` || exit 1; \
+	for fn in test/files/*.rar.$(TESTTAG); do \
+		cp $$fn `echo $$fn | sed 's/[.]rar[.].*/.rar.exp/'` || exit 1; \
 	done
 
 prepare:
@@ -47,14 +75,6 @@ release: prepare
 	git tag $(TAG)
 	git push github $(TAG):$(TAG)
 
-upload:
-	mkdir -p dist && rm -f dist/*
-	cd dist && wget -q $(URL)/$(TGZ)
-	cd dist && wget -q $(URL)/$(WHEEL)
-	tar tvf dist/$(TGZ)
-	unzip -t dist/$(WHEEL)
-	twine upload dist/$(TGZ) dist/$(WHEEL)
-
 shownote:
 	awk -v VER="$(VERSION)" -f doc/note.awk $(NEWS) \
 	| pandoc -f rst -t gfm --wrap=none
@@ -62,10 +82,3 @@ shownote:
 unrelease:
 	git push github :$(TAG)
 	git tag -d $(TAG)
-
-dist-test:
-	python3 setup.py sdist
-	rm -rf $(PACKAGE)-$(VERSION)
-	tar xf dist/$(TGZ)
-	cd $(PACKAGE)-$(VERSION) && tox
-

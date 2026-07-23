@@ -1,3 +1,0 @@
-setuptools==83.0.0
-twine==6.2.0
-tox==4.56.1

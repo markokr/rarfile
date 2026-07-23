@@ -1,37 +1,37 @@
-"""Setup script for rarfile.
-"""
+"""Setup script for rarfile."""
 
-import re
+import os
+import sys
+import sysconfig
 
-from setuptools import setup
+from setuptools import setup, Extension
 
-vrx = r"""^__version__ *= *['"]([^'"]+)['"]"""
-src = open("rarfile.py").read()
-ver = re.search(vrx, src, re.M).group(1)
-
-ldesc = open("README.rst").read().strip()
-sdesc = ldesc.split('\n')[0].split(' - ')[1].strip()
-
-setup(
-    name="rarfile",
-    version=ver,
-    description=sdesc,
-    long_description=ldesc,
-    author="Marko Kreen",
-    license="ISC",
-    author_email="markokr@gmail.com",
-    url="https://github.com/markokr/rarfile",
-    py_modules=['rarfile'],
-    keywords=['rar', 'unrar', 'archive'],
-    python_requires=">=3.10",
-    classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: ISC License (ISCL)",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: System :: Archiving :: Compression",
-    ]
+REQUIRE_CRYPTO_EXTENSION = (
+    os.environ.get("CIBUILDWHEEL") == "1"
+    or os.environ.get("RARFILE_REQUIRE_EXTENSION") == "1"
 )
 
+# Always build against the limited/stable ABI (abi3) so a single build works
+# across CPython versions and source builds exercise the same API surface we
+# ship in CI wheels. The extension only uses stable-ABI symbols available since
+# 3.10 (the project's minimum). The stable ABI does not cover free-threaded
+# builds, so those fall back to a regular version-specific build.
+limited = (
+    sys.version_info >= (3, 10)
+    and not sysconfig.get_config_var("Py_GIL_DISABLED")
+)
+
+setup(
+    ext_modules=[
+        Extension(
+            name="rarfile._crypto",
+            sources=["src/rarfile/_crypto.c"],
+            py_limited_api=limited,
+            define_macros=[("Py_LIMITED_API", "0x030A0000")] if limited else [],
+            # CI wheels must contain the C extension; elsewhere a failed
+            # build falls back to the pure-python rarfile.crypto at runtime
+            optional=not REQUIRE_CRYPTO_EXTENSION,
+        ),
+    ],
+    options={"bdist_wheel": {"py_limited_api": "cp310"} if limited else {}},
+)
