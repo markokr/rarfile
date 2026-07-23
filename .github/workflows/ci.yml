@@ -72,6 +72,7 @@ jobs:
       - name: "Install archivers (linux)"
         if: ${{runner.os == 'Linux'}}
         run: |
+          sudo -nH apt-get -qqy update
           sudo -nH apt-get -qqy install unrar unar libarchive-tools p7zip-rar
           unrar
           unar -h
