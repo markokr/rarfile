@@ -65,9 +65,9 @@ from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
 try:
-    from ._crypto import rar3_sha1
+    from ._crypto import rar3_s2k_core
 except ImportError:
-    from .crypto import rar3_sha1
+    from .crypto import rar3_s2k_core
 
 AES = None
 
@@ -3108,7 +3108,7 @@ def rar3_s2k(pwd, salt):
         pwd = pwd.decode("utf8")
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
     seed = bytearray(wstr + salt)
-    h, iv = rar3_sha1(seed)
+    h, iv = rar3_s2k_core(seed)
     key_be = h.digest()[:16]
     key_le = pack("<LLLL", *unpack(">LLLL", key_be))
     return key_le, iv

@@ -87,16 +87,16 @@ def test_rar3_s2k():
 
 
 def test_rar3_s2k_pure_python(monkeypatch):
-    """Exercise the pure-Python rar3_sha1 fallback through rar3_s2k.
+    """Exercise the pure-Python rar3_s2k_core fallback through rar3_s2k.
 
     The active implementation is the C extension where it is built, so force
     the pure-Python one to keep the fallback covered everywhere. The 29-char
     case (66-byte seed) triggers the corruption path; the expensive 127-char
     multi-block case is covered by test_rar3_s2k on pure-only machines and by
-    test_rar3_sha1_native_matches_pure where the extension is built.
+    test_rar3_s2k_native_matches_pure where the extension is built.
     """
-    from rarfile.crypto import rar3_sha1 as pure_rar3_sha1
-    monkeypatch.setattr(rarfile, "rar3_sha1", pure_rar3_sha1)
+    from rarfile.crypto import rar3_s2k_core as pure_rar3_s2k_core
+    monkeypatch.setattr(rarfile, "rar3_s2k_core", pure_rar3_s2k_core)
 
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
     key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
@@ -107,16 +107,16 @@ def test_rar3_s2k_pure_python(monkeypatch):
     assert (tohex(key), tohex(iv)) == exp
 
 
-def test_rar3_sha1_native_matches_pure():
+def test_rar3_s2k_native_matches_pure():
     """The C extension, when built, must match the pure-Python fallback exactly.
 
     Only runs where the extension is present (otherwise the two names are the
     same object and there is nothing to compare). The 130-byte seed forces the
     multi-block branch of the corruption loop.
     """
-    from rarfile.crypto import rar3_sha1 as pure_rar3_sha1
-    active_rar3_sha1 = rarfile.rar3_sha1
-    if active_rar3_sha1 is pure_rar3_sha1:
+    from rarfile.crypto import rar3_s2k_core as pure_rar3_s2k_core
+    active_rar3_s2k_core = rarfile.rar3_s2k_core
+    if active_rar3_s2k_core is pure_rar3_s2k_core:
         pytest.skip("C extension not built; active impl is the pure-Python one")
 
     seeds = (
@@ -126,8 +126,8 @@ def test_rar3_sha1_native_matches_pure():
     )
     for seed in seeds:
         a, b = bytearray(seed), bytearray(seed)
-        h_native, iv_native = active_rar3_sha1(a)
-        h_pure, iv_pure = pure_rar3_sha1(b)
+        h_native, iv_native = active_rar3_s2k_core(a)
+        h_pure, iv_pure = pure_rar3_s2k_core(b)
         assert h_native.digest() == h_pure.digest()
         assert iv_native == iv_pure
         assert a == b
