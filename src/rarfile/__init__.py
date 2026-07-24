@@ -64,36 +64,12 @@ from pathlib import Path
 from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
+
 try:
     from ._crypto import rar3_s2k_core
 except ImportError:
     from .crypto import rar3_s2k_core
-
-AES = None
-
-# only needed for encrypted headers
-try:
-    try:
-        from cryptography.hazmat.backends import default_backend
-        from cryptography.hazmat.primitives.ciphers import (
-            Cipher, algorithms, modes,
-        )
-        _have_crypto = 1
-    except ImportError:
-        from Crypto.Cipher import AES
-        _have_crypto = 2
-except ImportError:
-    _have_crypto = 0
-
-
-class AES_CBC_Decrypt:
-    """Decrypt API"""
-    def __init__(self, key, iv):
-        if _have_crypto == 2:
-            self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
-        else:
-            ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
-            self.decrypt = ciph.decryptor().update
+from .crypto import AES_CBC_Decrypt, have_crypto as _have_crypto
 
 
 __version__ = "4.4"

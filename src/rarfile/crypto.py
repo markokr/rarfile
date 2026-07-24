@@ -14,15 +14,39 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-"""Pure-python fallback for the rarfile._crypto C extension.
-
-Used when the C extension could not be built or imported.
+"""Low-level crypto helpers.
 """
 
 from hashlib import sha1
 from struct import pack_into, unpack_from
 
-__all__ = ["rar3_s2k_core"]
+__all__ = ("rar3_s2k_core", "AES_CBC_Decrypt", "have_crypto")
+
+
+# optional: only needed for encrypted headers
+AES = None
+try:
+    try:
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import (
+            Cipher, algorithms, modes,
+        )
+        have_crypto = 1
+    except ImportError:
+        from Crypto.Cipher import AES
+        have_crypto = 2
+except ImportError:
+    have_crypto = 0
+
+
+class AES_CBC_Decrypt:
+    """Decrypt API"""
+    def __init__(self, key, iv):
+        if have_crypto == 2:
+            self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
+        else:
+            ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
+            self.decrypt = ciph.decryptor().update
 
 
 def _rar3_corrupt_block(seed, pos):
