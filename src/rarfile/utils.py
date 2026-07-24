@@ -4,7 +4,6 @@
 from datetime import datetime
 from pathlib import Path
 
-
 __all__ = ("is_filelike", "XFile", "UnicodeFilename", "nsdatetime", "to_nsdatetime", "to_nsecs")
 
 
@@ -42,7 +41,7 @@ class XFile:
             return
         try:
             self._fd.seek(self._initial_pos)
-        except:
+        except BaseException:
             pass
 
     def read(self, n=None):
@@ -76,6 +75,7 @@ class XFile:
 class UnicodeFilename:
     """Handle RAR3 unicode filename decompression.
     """
+
     def __init__(self, name, encdata):
         self.std_name = bytearray(name)
         self.encdata = bytearray(encdata)

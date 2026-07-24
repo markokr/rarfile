@@ -7,6 +7,7 @@ from . import RarFile
 
 __all__ = ('main',)
 
+
 def main(args):
     p = argparse.ArgumentParser(description=__doc__,
                                 prog='python3 -m rarfile')
@@ -29,4 +30,3 @@ def main(args):
     elif cmd.extract:
         with RarFile(cmd.extract[0]) as rf:
             rf.extractall(cmd.extract[1])
-

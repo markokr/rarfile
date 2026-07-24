@@ -114,7 +114,7 @@ def test_rar3_s2k_native_matches_pure():
     same object and there is nothing to compare). The 130-byte seed forces the
     multi-block branch of the corruption loop.
     """
-    from rarfile.crypto import rar3_s2k_core_py, rar3_s2k_core
+    from rarfile.crypto import rar3_s2k_core, rar3_s2k_core_py
     if rar3_s2k_core is rar3_s2k_core_py:
         pytest.skip("C extension not built; active impl is the pure-Python one")
 
@@ -130,4 +130,3 @@ def test_rar3_s2k_native_matches_pure():
         assert h_native.digest() == h_pure.digest()
         assert iv_native == iv_pure
         assert a == b
-

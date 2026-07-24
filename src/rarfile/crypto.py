@@ -42,6 +42,7 @@ except ImportError:
 
 class AES_CBC_Decrypt:
     """Decrypt API"""
+
     def __init__(self, key, iv):
         if have_crypto == 2:
             self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
@@ -52,12 +53,16 @@ class AES_CBC_Decrypt:
 
 class NoHashContext:
     """No-op hash function."""
+
     def __init__(self, data=None):
         """Initialize"""
+
     def update(self, data):
         """Update data"""
+
     def digest(self):
         """Final hash"""
+
     def hexdigest(self):
         """Hexadecimal digest."""
 

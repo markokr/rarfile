@@ -4,7 +4,7 @@ import os
 import sys
 import sysconfig
 
-from setuptools import setup, Extension
+from setuptools import Extension, setup
 
 REQUIRE_CRYPTO_EXTENSION = (
     os.environ.get("CIBUILDWHEEL") == "1"

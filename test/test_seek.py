@@ -126,9 +126,10 @@ def run_seek_middle(fn, entry):
     assert file.read(1) == b"\n"
     file.read()
 
+
 def test_seek_middle1():
     run_seek_middle("test/files/seektest.rar", "stest1.txt")
 
+
 def test_seek_middle2():
     run_seek_middle("test/files/seektest.rar", "stest2.txt")
-

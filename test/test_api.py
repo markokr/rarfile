@@ -13,6 +13,7 @@ import rarfile
 # test start
 #
 
+
 def test_not_rar():
     with pytest.raises(rarfile.NotRarFile):
         rarfile.RarFile("src/rarfile/__init__.py", "r")
@@ -129,6 +130,7 @@ def test_getinfo():
         assert rf.getinfo(inf) is inf
         with pytest.raises(rarfile.NoRarEntry):
             rf.getinfo("missing.txt")
+
 
 def test_signature_error():
     with pytest.raises(rarfile.NotRarFile):
@@ -363,6 +365,7 @@ def test_is_rarfile():
 
 def test_part_only():
     info_list = []
+
     def info_cb(info):
         info_list.append(info)
 
@@ -382,6 +385,7 @@ def test_part_only():
 
 def test_volume_info():
     info_list = []
+
     def info_cb(info):
         info_list.append(info)
     with rarfile.RarFile("test/files/rar3-vols.part1.rar", info_callback=info_cb) as rf:
@@ -400,4 +404,3 @@ def test_is_solid():
         assert not rf.is_solid()
     with rarfile.RarFile("test/files/rar5-solid.rar") as rf:
         assert rf.is_solid()
-

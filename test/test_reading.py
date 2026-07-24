@@ -132,4 +132,3 @@ def test_reading_rar5_crc_sfx():
     assert rarfile.is_rarfile("test/files/rar5-crc.sfx") is False
     assert rarfile.is_rarfile_sfx("test/files/rar5-crc.sfx") is True
     run_reading("test/files/rar5-crc.sfx")
-

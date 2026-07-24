@@ -210,6 +210,7 @@ def test_symlink_win(tmp_path):
         assert os.path.islink(tmp_path / "links/dir_link")
         assert os.path.islink(tmp_path / "links/file_link")
 
+
 @pytest.mark.parametrize("fn", [
     "test/files/rar3-old.rar",
     "test/files/rar3-vols.part1.rar",
@@ -223,13 +224,11 @@ def test_vols(fn, tmp_path):
         finally:
             rarfile.FORCE_TOOL = False
 
-
         assert sorted(os.listdir(tmp_path)) == ["vols"]
         assert sorted(os.listdir(tmp_path / "vols")) == ["bigfile.txt", "smallfile.txt"]
 
         assert os.path.isfile(tmp_path / "vols" / "bigfile.txt")
         assert os.path.isfile(tmp_path / "vols" / "smallfile.txt")
-
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlink semantics differ on Windows")
@@ -263,4 +262,3 @@ def test_symlink_chained_traversal_blocked(tmp_path):
 
     # The second member would land at tmp_path/pwned.txt without the guard.
     assert not (tmp_path / "pwned.txt").exists()
-

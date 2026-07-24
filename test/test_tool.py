@@ -1,8 +1,8 @@
 """Alt tool tests
 """
 
-import sys
 import os
+import sys
 
 import pytest
 
@@ -53,13 +53,13 @@ def test_read_rar3():
 def test_read_vols():
     with rarfile.RarFile("test/files/rar3-old.rar") as rf:
         for fn in rf.namelist():
-            rf.read(fn) # old
+            rf.read(fn)  # old
     with rarfile.RarFile("test/files/rar3-vols.part1.rar") as rf:
         for fn in rf.namelist():
-            rf.read(fn) # rar3-new
+            rf.read(fn)  # rar3-new
     with rarfile.RarFile("test/files/rar5-vols.part1.rar") as rf:
         for fn in rf.namelist():
-            rf.read(fn) # rar5
+            rf.read(fn)  # rar5
 
 
 def test_unrar_tool():
@@ -207,4 +207,3 @@ def test_cli_help(capsys):
     assert cli("--help") == 0
     res = capsys.readouterr()
     assert "option" in res.out
-

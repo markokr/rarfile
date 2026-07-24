@@ -85,4 +85,3 @@ def test_cmp_zipextfile():
 @pytest.mark.skipif(_UNSUPPORTED, reason="Unsupported for sig checks")
 def test_cmp_zipinfo():
     compare(rarfile.RarInfo, zipfile.ZipInfo)
-

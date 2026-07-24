@@ -100,4 +100,3 @@ def test_nsdatetime_astimezone():
     assert n2.nanosecond == n1.nanosecond
     assert (n1.year, n1.month, n1.day) == (n2.year, n2.month, n2.day)
     assert (n1.hour, n1.minute, n1.second) == (n2.hour - 1, n2.minute, n2.second)
-

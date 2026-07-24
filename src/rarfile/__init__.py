@@ -65,22 +65,28 @@ from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
 
-from .crypto import NoHashContext, CRC32Context, Blake2SP, AES_CBC_Decrypt, rar3_s2k_core, have_crypto as _have_crypto
+from .crypto import AES_CBC_Decrypt, Blake2SP, CRC32Context, NoHashContext
+from .crypto import have_crypto as _have_crypto
+from .crypto import rar3_s2k_core
 from .errors import (
-    Error, BadRarFile, NotRarFile, BadRarName, NoRarEntry, PasswordRequired, BadSymLinkError,
-    NeedFirstVolume, NoCrypto, RarExecError, RarWarning, RarFatalError, RarCRCError,
-    RarLockedArchiveError, RarWriteError, RarOpenError, RarUserError, RarMemoryError,
-    RarCreateError, RarNoFilesError, RarUserBreak, RarWrongPassword, RarUnknownError,
-    RarSignalExit, RarCannotExec, UnsupportedWarning, __all__ as _errors_all
+    BadRarFile, BadRarName, BadSymLinkError, Error, NeedFirstVolume,
+    NoCrypto, NoRarEntry, NotRarFile, PasswordRequired, RarCannotExec,
+    RarCRCError, RarCreateError, RarExecError, RarFatalError,
+    RarLockedArchiveError, RarMemoryError, RarNoFilesError, RarOpenError,
+    RarSignalExit, RarUnknownError, RarUserBreak, RarUserError,
+    RarWarning, RarWriteError, RarWrongPassword, UnsupportedWarning,
 )
-from .utils import to_nsdatetime, to_nsecs, nsdatetime, XFile, UnicodeFilename, is_filelike
+from .errors import __all__ as _errors_all
+from .utils import (
+    UnicodeFilename, XFile, is_filelike, nsdatetime, to_nsdatetime, to_nsecs,
+)
 
 __version__ = "4.4"
 
 # export only interesting items
 __all__ = ("get_rar_version", "is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile") + _errors_all
 
-assert Error or RarExecError or nsdatetime # avoid flakes warning
+assert Error or RarExecError or nsdatetime  # avoid flakes warning
 
 ##
 ## Module configuration.  Can be tuned after importing.
@@ -2506,6 +2512,7 @@ class DirectReader(RarExtFile):
 
 class HeaderDecrypt:
     """File-like object that decrypts from another file"""
+
     def __init__(self, f, key, iv):
         self.f = f
         self.ciph = AES_CBC_Decrypt(key, iv)
@@ -2547,19 +2554,21 @@ class HeaderDecrypt:
         return res
 
 
-
 ##
 ## Utility functions
 ##
 
+# number formats
 S_LONG = Struct("<L")
 S_SHORT = Struct("<H")
 S_BYTE = Struct("<B")
 
+# structure formats
 S_BLK_HDR = Struct("<HBHH")
 S_FILE_HDR = Struct("<LLBLLBBHL")
 S_COMMENT_HDR = Struct("<HBBH")
 S_OLD_SUBBLOCK_HDR = Struct("<HB")
+
 
 def load_vint(buf, pos):
     """Load RAR5 variable-size int."""
@@ -2654,7 +2663,6 @@ def _next_newvol(volfile):
     raise BadRarName("Cannot construct volume name: " + volfile)
 
 
-
 def _next_oldvol(volfile):
     """Old-style next volume
     """
@@ -2736,7 +2744,7 @@ def rar5_s2k(pwd, salt, kdf_count):
     """
     if not isinstance(pwd, str):
         pwd = pwd.decode("utf8")
-    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
     ustr = wstr.decode("utf-16le").encode("utf8")
     return pbkdf2_hmac("sha256", ustr, salt, kdf_count)
 
@@ -2746,7 +2754,7 @@ def rar3_s2k(pwd, salt):
     """
     if not isinstance(pwd, str):
         pwd = pwd.decode("utf8")
-    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD*2]
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
     seed = bytearray(wstr + salt)
     h, iv = rar3_s2k_core(seed)
     key_be = h.digest()[:16]
@@ -3055,7 +3063,7 @@ SEVENZIP_CONFIG = {
     "executables": ("SEVENZIP_TOOL", "SEVENZIP2_TOOL"),
     "open_cmd": ("e", "-so", "-bb0"),
     "check_cmd": ("i",),
-    "check_output": "Rar3", # rar plugin appears in "Codec" not "Format"
+    "check_output": "Rar3",  # rar plugin appears in "Codec" not "Format"
     "password": "-p",
     "no_password": ("-p",),
     "errmap": [None,
@@ -3092,4 +3100,3 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, force=False):
     if CURRENT_SETUP is None:
         raise RarCannotExec("Cannot find working tool")
     return CURRENT_SETUP
-

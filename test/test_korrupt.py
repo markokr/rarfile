@@ -60,4 +60,3 @@ def test_corrupt_all():
 
 if __name__ == "__main__":
     test_corrupt_quick_rar5()
-

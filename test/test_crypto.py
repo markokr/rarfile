@@ -14,6 +14,7 @@ try:
     from cryptography.hazmat.primitives.ciphers import (
         Cipher, algorithms, modes,
     )
+
     def aes_encrypt(key, iv, data):
         ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
         enc = ciph.encryptor()
@@ -46,4 +47,3 @@ def test_aes256_cbc():
 
     ctx = rarfile.AES_CBC_Decrypt(key, iv)
     assert ctx.decrypt(encdata) == data
-

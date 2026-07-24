@@ -272,4 +272,3 @@ def test_newvols_err():
 def test_versions(fn):
     with rarfile.RarFile(fn) as rf:
         assert rf.namelist() == ["versioned.txt"]
-
