@@ -17,10 +17,11 @@
 """Low-level crypto helpers.
 """
 
-from hashlib import sha1
+from binascii import crc32, hexlify
+from hashlib import blake2s, sha1
 from struct import pack_into, unpack_from
 
-__all__ = ("rar3_s2k_core", "AES_CBC_Decrypt", "have_crypto")
+__all__ = ("rar3_s2k_core", "AES_CBC_Decrypt", "have_crypto", "NoHashContext", "CRC32Context", "Blake2SP")
 
 
 # optional: only needed for encrypted headers
@@ -47,6 +48,104 @@ class AES_CBC_Decrypt:
         else:
             ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
             self.decrypt = ciph.decryptor().update
+
+
+class NoHashContext:
+    """No-op hash function."""
+    def __init__(self, data=None):
+        """Initialize"""
+    def update(self, data):
+        """Update data"""
+    def digest(self):
+        """Final hash"""
+    def hexdigest(self):
+        """Hexadecimal digest."""
+
+
+class CRC32Context:
+    """Hash context that uses CRC32."""
+    __slots__ = ["_crc"]
+
+    def __init__(self, data=None):
+        self._crc = 0
+        if data:
+            self.update(data)
+
+    def update(self, data):
+        """Process data."""
+        self._crc = crc32(data, self._crc)
+
+    def digest(self):
+        """Final hash."""
+        return self._crc
+
+    def hexdigest(self):
+        """Hexadecimal digest."""
+        return "%08x" % self.digest()
+
+
+class Blake2SP:
+    """Blake2sp hash context.
+    """
+    __slots__ = ["_thread", "_buf", "_cur", "_digest"]
+    digest_size = 32
+    block_size = 64
+    parallelism = 8
+
+    def __init__(self, data=None):
+        self._buf = b""
+        self._cur = 0
+        self._digest = None
+        self._thread = []
+
+        for i in range(self.parallelism):
+            ctx = self._blake2s(i, 0, i == (self.parallelism - 1))
+            self._thread.append(ctx)
+
+        if data:
+            self.update(data)
+
+    def _blake2s(self, ofs, depth, is_last):
+        return blake2s(node_offset=ofs, node_depth=depth, last_node=is_last,
+                       depth=2, inner_size=32, fanout=self.parallelism)
+
+    def _add_block(self, blk):
+        self._thread[self._cur].update(blk)
+        self._cur = (self._cur + 1) % self.parallelism
+
+    def update(self, data):
+        """Hash data.
+        """
+        view = memoryview(data)
+        bs = self.block_size
+        if self._buf:
+            need = bs - len(self._buf)
+            if len(view) < need:
+                self._buf += view.tobytes()
+                return
+            self._add_block(self._buf + view[:need].tobytes())
+            view = view[need:]
+        while len(view) >= bs:
+            self._add_block(view[:bs])
+            view = view[bs:]
+        self._buf = view.tobytes()
+
+    def digest(self):
+        """Return final digest value.
+        """
+        if self._digest is None:
+            if self._buf:
+                self._add_block(self._buf)
+                self._buf = b""
+            ctx = self._blake2s(0, 1, True)
+            for t in self._thread:
+                ctx.update(t.digest())
+            self._digest = ctx.digest()
+        return self._digest
+
+    def hexdigest(self):
+        """Hexadecimal digest."""
+        return hexlify(self.digest()).decode("ascii")
 
 
 def _rar3_corrupt_block(seed, pos):
