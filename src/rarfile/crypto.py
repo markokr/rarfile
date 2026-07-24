@@ -162,7 +162,7 @@ def _rar3_corrupt_block(seed, pos):
     pack_into("<16L", seed, pos, *w)
 
 
-def rar3_s2k_core(seed):
+def rar3_s2k_core_py(seed):
     """Run the full RAR3 string-to-key hash (16 outer loops of 0x4000 iterations).
 
     Each iteration feeds ``seed`` and a 3-byte little-endian counter into the
@@ -201,3 +201,10 @@ def rar3_s2k_core(seed):
                 iv[i] = digest()[19]
 
     return h, bytes(iv)
+
+
+# load C version
+try:
+    from ._crypto import rar3_s2k_core
+except ImportError:
+    rar3_s2k_core = rar3_s2k_core_py

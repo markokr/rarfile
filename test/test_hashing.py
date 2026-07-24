@@ -95,8 +95,8 @@ def test_rar3_s2k_pure_python(monkeypatch):
     multi-block case is covered by test_rar3_s2k on pure-only machines and by
     test_rar3_s2k_native_matches_pure where the extension is built.
     """
-    from rarfile.crypto import rar3_s2k_core as pure_rar3_s2k_core
-    monkeypatch.setattr(rarfile, "rar3_s2k_core", pure_rar3_s2k_core)
+    from rarfile.crypto import rar3_s2k_core_py
+    monkeypatch.setattr(rarfile, "rar3_s2k_core", rar3_s2k_core_py)
 
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
     key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
@@ -114,9 +114,8 @@ def test_rar3_s2k_native_matches_pure():
     same object and there is nothing to compare). The 130-byte seed forces the
     multi-block branch of the corruption loop.
     """
-    from rarfile.crypto import rar3_s2k_core as pure_rar3_s2k_core
-    active_rar3_s2k_core = rarfile.rar3_s2k_core
-    if active_rar3_s2k_core is pure_rar3_s2k_core:
+    from rarfile.crypto import rar3_s2k_core_py, rar3_s2k_core
+    if rar3_s2k_core is rar3_s2k_core_py:
         pytest.skip("C extension not built; active impl is the pure-Python one")
 
     seeds = (
@@ -126,8 +125,8 @@ def test_rar3_s2k_native_matches_pure():
     )
     for seed in seeds:
         a, b = bytearray(seed), bytearray(seed)
-        h_native, iv_native = active_rar3_s2k_core(a)
-        h_pure, iv_pure = pure_rar3_s2k_core(b)
+        h_native, iv_native = rar3_s2k_core(a)
+        h_pure, iv_pure = rar3_s2k_core_py(b)
         assert h_native.digest() == h_pure.digest()
         assert iv_native == iv_pure
         assert a == b
