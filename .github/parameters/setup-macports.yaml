@@ -1,0 +1,5 @@
+version: "2.12.5"
+ports:
+  - name: unrar
+  - name: unar
+  - name: 7zip
