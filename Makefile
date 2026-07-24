@@ -26,7 +26,7 @@ test:
 	uv venv --python $(PYTHON) --clear
 	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group test $(CRYPTO_FLAG) --reinstall-package rarfile
 	uv run --no-sync pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
-	uv run --no-sync bash test/run_dump.sh python "$(TESTTAG)"
+	uv run --no-sync bash test/run_dump.sh python "py$(TESTTAG)"
 
 test-all:
 	for py in $(PYTHONS); do \
