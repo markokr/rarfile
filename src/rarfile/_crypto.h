@@ -21,6 +21,6 @@
 
 #include <Python.h>
 
-PyObject* rar3_sha1(PyObject *, PyObject *);
+PyObject* rar3_s2k_core(PyObject *, PyObject *);
 
 #endif //RARFILE_CRYPTO_H

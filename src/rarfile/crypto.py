@@ -22,7 +22,7 @@ Used when the C extension could not be built or imported.
 from hashlib import sha1
 from struct import pack_into, unpack_from
 
-__all__ = ["rar3_sha1"]
+__all__ = ["rar3_s2k_core"]
 
 
 def _rar3_corrupt_block(seed, pos):
@@ -39,7 +39,7 @@ def _rar3_corrupt_block(seed, pos):
     pack_into("<16L", seed, pos, *w)
 
 
-def rar3_sha1(seed):
+def rar3_s2k_core(seed):
     """Run the full RAR3 string-to-key hash (16 outer loops of 0x4000 iterations).
 
     Each iteration feeds ``seed`` and a 3-byte little-endian counter into the

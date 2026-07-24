@@ -70,11 +70,11 @@ static void rar3_corrupt_block(unsigned char *p)
  * then corrupts `seed` in place for every full 64-byte block (the RAR3 bug).
  *
  * @param self
- * @param seed writable buffer (e.g. bytearray), corrupted in place
+ * @param seed bytearray, corrupted in place
  * @return (sha1, iv) tuple: the hashlib.sha1() object holding the final key
  *         state, and the 16-byte IV as a Python bytes object
  */
-PyObject* rar3_sha1(PyObject *self, PyObject *seed)
+PyObject* rar3_s2k_core(PyObject *self, PyObject *seed)
 {
     PyObject *sha1 = NULL;
     PyObject *update = NULL;
@@ -183,21 +183,21 @@ PyObject* rar3_sha1(PyObject *self, PyObject *seed)
     Py_DECREF(d);
     return result;
 
-    error:
-        Py_XDECREF(hashlib);
-        Py_XDECREF(sha1);
-        Py_XDECREF(update);
-        Py_XDECREF(digest);
-        Py_XDECREF(cnt_obj);
+error:
+    Py_XDECREF(hashlib);
+    Py_XDECREF(sha1);
+    Py_XDECREF(update);
+    Py_XDECREF(digest);
+    Py_XDECREF(cnt_obj);
     return NULL;
 }
 
 static PyMethodDef crypto_methods[] = {
     {
-        "rar3_sha1",
-        rar3_sha1,
+        "rar3_s2k_core",
+        rar3_s2k_core,
         METH_O,
-        "rar3_sha1(seed) -> (sha1, iv)\n\nseed must be a writable buffer (e.g. bytearray); it is corrupted in place."
+        "rar3_s2k_core(seed) -> (sha1, iv)\n\nseed must be a bytearray; it is corrupted in place."
     },
   {NULL, NULL, 0, NULL},
 };
