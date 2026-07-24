@@ -174,8 +174,9 @@ def test_check_returncode():
 # own cli tests
 
 def cli(*args):
+    from rarfile.cli import main
     try:
-        rarfile.main(args)
+        main(args)
         return 0
     except SystemExit as ex:
         return int(ex.code)
