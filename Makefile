@@ -46,6 +46,10 @@ docs:
 	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group docs --reinstall-package rarfile
 	uv run --no-sync sphinx-build -q -W -b html doc doc/_build
 
+fmt:
+	uvx autopep8 -i *.py src/**/*.py test/*.py
+	uvx isort *.py src/**/*.py test/*.py
+
 clean:
 	rm -rf __pycache__ build dist
 	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class test/*.pyc

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # RarFile documentation build configuration file, created by
 # sphinx-quickstart on Sun Mar 24 13:29:46 2013.

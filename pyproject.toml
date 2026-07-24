@@ -84,3 +84,16 @@ archs = ["universal2"]
 
 [tool.cibuildwheel.windows]
 archs = ["native"]
+
+[tool.autopep8]
+max_line_length = 120
+ignore = ["E265", "E266"]
+aggressive = 1
+
+[tool.isort]
+known_first_party = ["rarfile"]
+multi_line_output = 5
+balanced_wrapping = true
+include_trailing_comma = true
+atomic = true
+quiet = true
