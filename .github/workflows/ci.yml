@@ -81,13 +81,8 @@ jobs:
 
       - name: "Install archivers (macos)"
         if: ${{runner.os == 'macOS'}}
-        run: |
-          brew install rar unar libarchive sevenzip
-          unrar
-          unar -h
-          bsdtar -h
-          7z i
-          7zz i
+        id: 'macports'
+        uses: melusina-org/setup-macports@v1
 
       - name: "Install archivers (windows)"
         if: ${{runner.os == 'Windows'}}
