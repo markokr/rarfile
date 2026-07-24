@@ -65,11 +65,7 @@ from struct import Struct, pack, unpack
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
 from tempfile import mkstemp
 
-try:
-    from ._crypto import rar3_s2k_core
-except ImportError:
-    from .crypto import rar3_s2k_core
-from .crypto import NoHashContext, CRC32Context, Blake2SP, AES_CBC_Decrypt, have_crypto as _have_crypto
+from .crypto import NoHashContext, CRC32Context, Blake2SP, AES_CBC_Decrypt, rar3_s2k_core, have_crypto as _have_crypto
 from .errors import (
     Error, BadRarFile, NotRarFile, BadRarName, NoRarEntry, PasswordRequired, BadSymLinkError,
     NeedFirstVolume, NoCrypto, RarExecError, RarWarning, RarFatalError, RarCRCError,
