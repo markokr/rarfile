@@ -31,32 +31,31 @@ Backends:
 | Backend     | Status               | Notes                                               |
 +=============+======================+=====================================================+
 | unrar_      | Supported            | * Recommended: full format support.                 |
-|             |                      | * Non-free software, but free to use.               |
-+-------------+----------------------+-----------------------------------------------------+
-| unar_       | Supported            | * Not usable on Windows: last build is from 2013    |
-|             |                      |   (v1.8.1) that does support output to stdout.      |
-|             |                      | * Does not support RAR2 locked files.               |
-|             |                      | * Does not support RAR5 Blake2 hash checking.       |
 +-------------+----------------------+-----------------------------------------------------+
 | 7zip_       | Supported            | * Requires ``7zip-rar`` package on Debian/Ubuntu.   |
 +-------------+----------------------+-----------------------------------------------------+
-| p7zip_      | Supported            | * Unmaintained?                                     |
-|             |                      | * Requires ``p7zip-rar`` package on Debian/Ubuntu.  |
+| p7zip_      | Supported            | * Requires ``p7zip-rar`` package on Debian/Ubuntu.  |
 +-------------+----------------------+-----------------------------------------------------+
-| bsdtar_     | Supported            | * Not recommended: limited RAR format support.      |
-|             |                      | * Available on Windows as tar.exe       .           |
-|             |                      | * Does not support multi-volume archives.           |
+| unar_       | Supported            | * Does not support RAR2 locked files.               |
+|             |                      | * Does not support RAR5 Blake2 hash checking.       |
++-------------+----------------------+-----------------------------------------------------+
+| bsdtar_     | Supported            | * Does not support multi-volume archives.           |
 |             |                      | * Does not support solid archives.                  |
 |             |                      | * Does not support password-protected archives.     |
 |             |                      | * Does not support RARVM-based compression filters. |
 +-------------+----------------------+-----------------------------------------------------+
-| unrar-free_ | Supported            | * Supports output to stdout (v0.2.0).               |
-|             |                      | * Based on libarchive so similar format support     |
-|             |                      |   as ``bsdtar`` but supports multi-volume (v0.3.0). |
+| unrar-free_ | Supported            | * Since v0.3.0 based on libarchive, same as bsdtar. |
+|             |                      | * Supports multi-volume archives.                   |
 +-------------+----------------------+-----------------------------------------------------+
 
-.. _p7zip: https://sourceforge.net/projects/p7zip/
+.. _p7zip: https://github.com/p7zip-project/p7zip
 .. _unrar-free: https://gitlab.com/bgermann/unrar-free
+
+OS notes:
+
+- Windows: default `tar` is `bsdtar`.
+- MacOS: default `tar` is `bsdtar`.  Use MacPorts to install `rar`/`unrar`/`7zip`/`p7zip`,
+  Homebrew is dropping RAR support.
 
 Links:
 
