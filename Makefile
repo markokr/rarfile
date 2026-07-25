@@ -18,7 +18,7 @@ VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.p
 RXVERSION = $(shell echo '$(VERSION)' | sed 's/\./[.]/g')
 TAG = v$(VERSION)
 
-ALL_SOURCES = $(wildcard setup.py pyproject.toml src/*/*.py src/*/*.[ch])
+ALL_SOURCES = $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
 BUILD_TAG = .venv/build.tag
 
 .PHONY: test-venv test-all remove-tag
@@ -44,7 +44,9 @@ remove-tag:
 	@rm -f $(BUILD_TAG)
 
 $(BUILD_TAG): $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
+	RARFILE_REQUIRE_EXTENSION=1 \
 	uv sync --reinstall-package rarfile
+	uv run python3 -c 'import rarfile._crypto'
 	touch $@
 
 test: $(BUILD_TAG)
@@ -64,7 +66,7 @@ fmt:
 	uv run isort *.py src/**/*.py test/*.py
 
 cfmt:
-	indent -linux -l100 src/crypto/*.[ch]
+	indent -linux -l100 src/*/*.[ch]
 
 clean:
 	rm -rf __pycache__ build dist
