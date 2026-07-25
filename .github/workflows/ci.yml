@@ -99,4 +99,4 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          make test PYTHON="${{ matrix.pick.PY }}" CRYPTO="${{ matrix.pick.CRYPTO }}"
+          make test-venv PYTHON="${{ matrix.pick.PY }}" CRYPTO="${{ matrix.pick.CRYPTO }}"
