@@ -3,7 +3,7 @@
 
 import argparse
 
-from . import RarFile
+from .archive import RarFile
 
 __all__ = ('main',)
 
