@@ -115,6 +115,7 @@ def test_rar3_s2k_native_matches_pure():
     multi-block branch of the corruption loop.
     """
     from rarfile.crypto import rar3_s2k_core, rar3_s2k_core_py
+    #assert rar3_s2k_core is not rar3_s2k_core_py
     if rar3_s2k_core is rar3_s2k_core_py:
         pytest.skip("C extension not built; active impl is the pure-Python one")
 
@@ -123,10 +124,11 @@ def test_rar3_s2k_native_matches_pure():
         b"p" * 66,    # >64 bytes, single-block corruption
         b"p" * 130,   # multi-block corruption
     )
+    #seeds = [bytes(range(n)) for n in range(8, 200)]
     for seed in seeds:
         a, b = bytearray(seed), bytearray(seed)
         h_native, iv_native = rar3_s2k_core(a)
         h_pure, iv_pure = rar3_s2k_core_py(b)
-        assert h_native.digest() == h_pure.digest()
+        assert h_native.digest() == h_pure.digest(), f"failed at length {len(seed)}"
         assert iv_native == iv_pure
         assert a == b
