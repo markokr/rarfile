@@ -1,5 +1,5 @@
-rarfile - RAR archive reader for Python
-=======================================
+rarfile
+=======
 
 This is Python module for RAR_ archive reading.
 The interface follows the style of zipfile_.

@@ -40,6 +40,11 @@ pycryptodome = [
 ]
 
 [dependency-groups]
+dev = [
+    {include-group = "docs"},
+    {include-group = "lint"},
+    {include-group = "test"},
+]
 test = [
     "coverage",
     "pytest",
@@ -47,12 +52,14 @@ test = [
     "pytest-xdist",
 ]
 docs = [
-    "sphinx==7.2.6",
-    "docutils==0.20.1",
+    "sphinx",
+    "docutils",
 ]
 lint = [
-    "pylint==3.1.0",
-    "pyflakes==3.2.0",
+    "pylint",
+    "isort",
+    "autopep8",
+    "ruff",
 ]
 
 # Dev/test-only pins - applied by uv during lock/sync, not published in
@@ -97,3 +104,44 @@ balanced_wrapping = true
 include_trailing_comma = true
 atomic = true
 quiet = true
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore = [
+    'BLE001', # Do not catch blind exception
+    'DTZ', # datetime() called without a tzinfo
+    'I',
+    'PLR1730', # Replace `if` statement with min()
+    'RET501', # Remove explicit `return None`
+    'RUF022', # `__all__` is not sorted
+    'RUF023', # __slots__` is not sorted
+    'RUF059', # Unpacked variable X is never used
+    'S110', # `try`-`except`-`pass` detected, consider logging the exception
+    'SIM102', # Use a single `if` statement instead of nested `if` statements
+    'SIM103', # Return the condition `bool(...)` directly
+    'SIM114', # Combine `if` branches using logical `or` operator
+    'SIM115', # Use a context manager for opening files
+    'UP031', # Use format specifiers instead of percent format
+
+    'PLR0124',  # Name compared with itself, consider replacing `n1 == n1`
+    'SIM201', #  Use `n2 != d2` instead of `not n2 == d2`
+    'UP020', # [*] Use builtin `open`
+    'C405', # Unnecessary list literal (rewrite as a set literal)
+    'F841', # Local variable `rf` is assigned to but never used
+
+    # fix
+
+    'PT031', # `pytest.warns()` block should contain a single simple statement
+
+    'PIE790', #Unnecessary `pass` statement - fix
+    'RUF100', # Unused blanket `noqa` directive - fix
+    'SIM117', # Use a single `with` statement with multiple contexts instead of nested `with` statements - fix
+    'UP024', # Replace aliased errors with `OSError` [IOError] - fix
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+#addopts = "-ra -q"
+testpaths = ["test"]
