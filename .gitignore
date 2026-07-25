@@ -1,5 +1,6 @@
 *.pyc
 *.swp
+*~
 *.rar.[0-9]*
 *.rar.py*
 *.rar.jy*
@@ -9,6 +10,7 @@
 *.diffs
 *.egg-info
 __pycache__
+.coverage.*
 .coverage
 .tox
 .mypy_cache
@@ -20,6 +22,5 @@ tmp
 doc/_build
 doc/html
 cover
-uv.lock
 *.so
 *.pyd

@@ -18,37 +18,53 @@ VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.p
 RXVERSION = $(shell echo '$(VERSION)' | sed 's/\./[.]/g')
 TAG = v$(VERSION)
 
-.PHONY: all test test-all lint docs clean ack prepare release shownote unrelease
+ALL_SOURCES = $(wildcard setup.py pyproject.toml src/*/*.py src/*/*.[ch])
+BUILD_TAG = .venv/build.tag
+
+.PHONY: test-venv test-all remove-tag
+.PHONY: all test lint docs clean ack prepare release shownote unrelease
 
 all: lint docs test
 
-test:
+test-venv: remove-tag
 	uv venv --python $(PYTHON) --clear
-	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group test $(CRYPTO_FLAG) --reinstall-package rarfile
+	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) \
+	uv sync --no-dev --group test $(CRYPTO_FLAG) --reinstall-package rarfile
 	uv run --no-sync pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
-	uv run --no-sync bash test/run_dump.sh python "py$(TESTTAG)"
+	uv run --no-sync bash test/run_dump.sh python "$(TESTTAG)"
 
-test-all:
+test-all: remove-tag
 	for py in $(PYTHONS); do \
 		for crypto in "" pycryptodome cryptography; do \
-			$(MAKE) test PYTHON=$$py CRYPTO=$$crypto; \
+			$(MAKE) test-venv PYTHON=$$py CRYPTO=$$crypto; \
 		done; \
 	done
 
-lint:
-	uv venv --python $(PYTHON) --clear
-	uv sync --group lint --group test
-	uv run --no-sync pyflakes src
-	uv run --no-sync pylint rarfile dumprar.py test
+remove-tag:
+	@rm -f $(BUILD_TAG)
 
-docs:
-	uv venv --python $(PYTHON) --clear
-	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) uv sync --group docs --reinstall-package rarfile
-	uv run --no-sync sphinx-build -q -W -b html doc doc/_build
+$(BUILD_TAG): $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
+	uv sync --reinstall-package rarfile
+	touch $@
+
+test: $(BUILD_TAG)
+	uv run pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
+	uv run bash test/run_dump.sh python "$(TESTTAG)"
+
+lint: $(BUILD_TAG)
+	uv run ruff check src test
+	uv run pylint rarfile dumprar.py test
+
+docs: $(BUILD_TAG)
+	uv run sphinx-build -q -W -b html doc doc/_build
 
 fmt:
-	uvx autopep8 -i *.py src/**/*.py test/*.py
-	uvx isort *.py src/**/*.py test/*.py
+	uv run ruff check --fix src
+	uv run autopep8 -i *.py src/**/*.py test/*.py
+	uv run isort *.py src/**/*.py test/*.py
+
+cfmt:
+	indent -linux -l100 src/crypto/*.[ch]
 
 clean:
 	rm -rf __pycache__ build dist
@@ -61,7 +77,7 @@ clean:
 	rm -rf src/rarfile/__pycache__
 	rm -f src/rarfile/*.so src/rarfile/*.pyd
 	rm -f .coverage.*
-	rm -f uv.lock
+	rm -rf .venv .tox .ruff_cache __pycache__ .pytest_cache
 
 ack:
 	for fn in test/files/*.rar.$(TESTTAG); do \
