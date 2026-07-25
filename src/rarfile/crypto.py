@@ -1,27 +1,14 @@
-# rarfile.crypto
-#
-# Copyright (c) 2005-2026  Marko Kreen <markokr@gmail.com>
-#
-# Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
-#
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
 """Low-level crypto helpers.
 """
 
 from binascii import crc32, hexlify
-from hashlib import blake2s, sha1
-from struct import pack_into, unpack_from
+from hashlib import blake2s, pbkdf2_hmac, sha1
+from struct import pack, pack_into, unpack, unpack_from
 
-__all__ = ("rar3_s2k_core", "AES_CBC_Decrypt", "have_crypto", "NoHashContext", "CRC32Context", "Blake2SP")
+from .bits import RAR_MAX_PASSWORD
+from .errors import BadRarFile
+
+__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "NoHashContext", "CRC32Context", "Blake2SP")
 
 
 # optional: only needed for encrypted headers
@@ -51,6 +38,50 @@ class AES_CBC_Decrypt:
             self.decrypt = ciph.decryptor().update
 
 
+class HeaderDecrypt:
+    """File-like object that decrypts from another file"""
+
+    def __init__(self, f, key, iv):
+        self.f = f
+        self.ciph = AES_CBC_Decrypt(key, iv)
+        self.buf = b""
+
+    def tell(self):
+        """Current file pos - works only on block boundaries."""
+        return self.f.tell()
+
+    def read(self, cnt=None):
+        """Read and decrypt."""
+        if cnt > 8 * 1024:
+            raise BadRarFile("Bad count to header decrypt - wrong password?")
+
+        # consume old data
+        if cnt <= len(self.buf):
+            res = self.buf[:cnt]
+            self.buf = self.buf[cnt:]
+            return res
+        res = self.buf
+        self.buf = b""
+        cnt -= len(res)
+
+        # decrypt new data
+        blklen = 16
+        while cnt > 0:
+            enc = self.f.read(blklen)
+            if len(enc) < blklen:
+                break
+            dec = self.ciph.decrypt(enc)
+            if cnt >= len(dec):
+                res += dec
+                cnt -= len(dec)
+            else:
+                res += dec[:cnt]
+                self.buf = dec[cnt:]
+                cnt = 0
+
+        return res
+
+
 class NoHashContext:
     """No-op hash function."""
 
@@ -69,7 +100,7 @@ class NoHashContext:
 
 class CRC32Context:
     """Hash context that uses CRC32."""
-    __slots__ = ["_crc"]
+    __slots__ = ("_crc",)
 
     def __init__(self, data=None):
         self._crc = 0
@@ -92,7 +123,7 @@ class CRC32Context:
 class Blake2SP:
     """Blake2sp hash context.
     """
-    __slots__ = ["_thread", "_buf", "_cur", "_digest"]
+    __slots__ = ("_thread", "_buf", "_cur", "_digest")
     digest_size = 32
     block_size = 64
     parallelism = 8
@@ -213,3 +244,26 @@ try:
     from ._crypto import rar3_s2k_core
 except ImportError:
     rar3_s2k_core = rar3_s2k_core_py
+
+
+def rar3_s2k(pwd, salt, _core=rar3_s2k_core):
+    """String-to-key hash for RAR3.
+    """
+    if not isinstance(pwd, str):
+        pwd = pwd.decode("utf8")
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
+    seed = bytearray(wstr + salt)
+    h, iv = _core(seed)
+    key_be = h.digest()[:16]
+    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
+    return key_le, iv
+
+
+def rar5_s2k(pwd, salt, kdf_count):
+    """String-to-key hash for RAR5.
+    """
+    if not isinstance(pwd, str):
+        pwd = pwd.decode("utf8")
+    wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
+    ustr = wstr.decode("utf-16le").encode("utf8")
+    return pbkdf2_hmac("sha256", ustr, salt, kdf_count)

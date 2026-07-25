@@ -404,3 +404,11 @@ def test_is_solid():
         assert not rf.is_solid()
     with rarfile.RarFile("test/files/rar5-solid.rar") as rf:
         assert rf.is_solid()
+
+
+def test_public_exports():
+    missing = object()
+    for k in rarfile.__all__:
+        assert getattr(rarfile, k, missing) is not missing, f"rarfile.{k} is missing"
+    for k in rarfile.__all_available__:
+        assert getattr(rarfile, k, missing) is not missing, f"rarfile.{k} is missing"

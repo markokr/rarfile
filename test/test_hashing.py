@@ -5,7 +5,6 @@ from binascii import hexlify, unhexlify
 
 import pytest
 
-import rarfile
 from rarfile import Blake2SP, CRC32Context, NoHashContext
 
 
@@ -68,25 +67,27 @@ def test_blake2sp():
 
 
 def test_rar3_s2k():
+    from rarfile.crypto import rar3_s2k
+
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
-    key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
+    key, iv = rar3_s2k(b"password", unhexlify("00FF00"))
     assert (tohex(key), tohex(iv)) == exp
-    key, iv = rarfile.rar3_s2k("password", unhexlify("00FF00"))
+    key, iv = rar3_s2k("password", unhexlify("00FF00"))
     assert (tohex(key), tohex(iv)) == exp
 
     exp = ("ffff33ffaf31987c899ccc2f965a8927", "bdff6873721b247afa4f978448a5aeef")
-    key, iv = rarfile.rar3_s2k("p" * 28, unhexlify("1122334455667788"))
+    key, iv = rar3_s2k("p" * 28, unhexlify("1122334455667788"))
     assert (tohex(key), tohex(iv)) == exp
     exp = ("306cafde28f1ea78c9427c3ec642c0db", "173ecdf574c0bfe9e7c23bdfd96fa435")
-    key, iv = rarfile.rar3_s2k("p" * 29, unhexlify("1122334455667788"))
+    key, iv = rar3_s2k("p" * 29, unhexlify("1122334455667788"))
     assert (tohex(key), tohex(iv)) == exp
 
     exp = ("b1bc223609af7d4f3b70e5a254ac2501", "302c97945530d7ffa7c551eb2dd21a90")
-    key, iv = rarfile.rar3_s2k("p" * 127, unhexlify("1122334455667788"))
+    key, iv = rar3_s2k("p" * 127, unhexlify("1122334455667788"))
     assert (tohex(key), tohex(iv)) == exp
 
 
-def test_rar3_s2k_pure_python(monkeypatch):
+def test_rar3_s2k_pure_python():
     """Exercise the pure-Python rar3_s2k_core fallback through rar3_s2k.
 
     The active implementation is the C extension where it is built, so force
@@ -95,15 +96,14 @@ def test_rar3_s2k_pure_python(monkeypatch):
     multi-block case is covered by test_rar3_s2k on pure-only machines and by
     test_rar3_s2k_native_matches_pure where the extension is built.
     """
-    from rarfile.crypto import rar3_s2k_core_py
-    monkeypatch.setattr(rarfile, "rar3_s2k_core", rar3_s2k_core_py)
+    from rarfile.crypto import rar3_s2k, rar3_s2k_core_py
 
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
-    key, iv = rarfile.rar3_s2k(b"password", unhexlify("00FF00"))
+    key, iv = rar3_s2k(b"password", unhexlify("00FF00"), rar3_s2k_core_py)
     assert (tohex(key), tohex(iv)) == exp
 
     exp = ("306cafde28f1ea78c9427c3ec642c0db", "173ecdf574c0bfe9e7c23bdfd96fa435")
-    key, iv = rarfile.rar3_s2k("p" * 29, unhexlify("1122334455667788"))
+    key, iv = rar3_s2k("p" * 29, unhexlify("1122334455667788"), rar3_s2k_core_py)
     assert (tohex(key), tohex(iv)) == exp
 
 

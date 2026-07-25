@@ -7,6 +7,7 @@ import sys
 import pytest
 
 import rarfile
+from rarfile import backend, config
 
 
 def have_tool(name):
@@ -19,8 +20,8 @@ def have_tool(name):
 
 
 def tool_setup(unrar=False, unar=False, bsdtar=False, sevenzip=False):
-    rarfile.FORCE_TOOL = True
-    rarfile.tool_setup(unrar=unrar, unar=unar, bsdtar=bsdtar, sevenzip=sevenzip, force=True)
+    config.FORCE_TOOL = True
+    backend.tool_setup(unrar=unrar, unar=unar, bsdtar=bsdtar, sevenzip=sevenzip, force=True)
 
 
 def install_unrar_tool():
@@ -40,8 +41,8 @@ def install_7z_tool():
 
 
 def uninstall_alt_tool():
-    rarfile.FORCE_TOOL = False
-    rarfile.tool_setup(force=True)
+    config.FORCE_TOOL = False
+    backend.tool_setup(force=True)
 
 
 def test_read_rar3():
@@ -80,7 +81,7 @@ def test_unrar_tool():
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="unar not available on Windows")
-@pytest.mark.skipif(not have_tool(rarfile.UNAR_TOOL), reason="unar not installed")
+@pytest.mark.skipif(not have_tool(config.UNAR_TOOL), reason="unar not installed")
 def test_unar_tool():
     install_unar_tool()
     try:
@@ -99,7 +100,7 @@ def test_unar_tool():
 
 
 @pytest.mark.skipif(
-    not have_tool(rarfile.BSDTAR_TOOL) and not have_tool(rarfile.TAR_TOOL),
+    not have_tool(config.BSDTAR_TOOL) and not have_tool(config.TAR_TOOL),
     reason="bsdtar not installed",
 )
 def test_bsdtar_tool():
@@ -121,7 +122,7 @@ def test_bsdtar_tool():
 
 
 @pytest.mark.skipif(
-    not have_tool(rarfile.SEVENZIP_TOOL) and not have_tool(rarfile.SEVENZIP2_TOOL),
+    not have_tool(config.SEVENZIP_TOOL) and not have_tool(config.SEVENZIP2_TOOL),
     reason="7z/7zz not installed",
 )
 def test_7z_tool():
@@ -145,30 +146,31 @@ def test_7z_tool():
 
 def test_popen_fail():
     with pytest.raises(rarfile.RarCannotExec):
-        rarfile.custom_popen(["missing-unrar-exe"])
+        backend.custom_popen(["missing-unrar-exe"])
 
     if sys.platform != "win32":
         with pytest.raises(rarfile.RarCannotExec):
-            rarfile.custom_popen(["./test/files/rar5-blake.rar.exp"])
+            backend.custom_popen(["./test/files/rar5-blake.rar.exp"])
 
 
 def test_check_returncode():
-    errmap = rarfile.UNRAR_CONFIG["errmap"]
+    from rarfile.backend import check_returncode
+    errmap = backend.UNRAR_CONFIG["errmap"]
 
-    assert not rarfile.check_returncode(0, "", errmap)
+    assert not check_returncode(0, "", errmap)
 
     with pytest.raises(rarfile.RarFatalError):
-        rarfile.check_returncode(2, "x", errmap)
+        check_returncode(2, "x", errmap)
     with pytest.raises(rarfile.RarUnknownError):
-        rarfile.check_returncode(100, "", errmap)
+        check_returncode(100, "", errmap)
     with pytest.raises(rarfile.RarUserBreak):
-        rarfile.check_returncode(255, "", errmap)
+        check_returncode(255, "", errmap)
     with pytest.raises(rarfile.RarSignalExit):
-        rarfile.check_returncode(-11, "", errmap)
+        check_returncode(-11, "", errmap)
 
-    errmap = rarfile.UNAR_CONFIG["errmap"]
+    errmap = backend.UNAR_CONFIG["errmap"]
     with pytest.raises(rarfile.RarUnknownError):
-        rarfile.check_returncode(2, "", errmap)
+        check_returncode(2, "", errmap)
 
 
 # own cli tests

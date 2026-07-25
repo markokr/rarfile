@@ -1,10 +1,11 @@
 """Various low-level utitlites.
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 
-__all__ = ("is_filelike", "XFile", "UnicodeFilename", "nsdatetime", "to_nsdatetime", "to_nsecs")
+__all__ = ("is_filelike", "XFile", "UnicodeFilename", "nsdatetime", "to_nsdatetime", "to_nsecs", "sanitize_filename")
 
 
 def is_filelike(obj):
@@ -110,7 +111,7 @@ class UnicodeFilename:
     def decode(self):
         """Decompress compressed UTF16 value."""
         hi = self.enc_byte()
-        flagbits = 0
+        flags = flagbits = 0
         while self.encpos < len(self.encdata):
             if flagbits == 0:
                 flags = self.enc_byte()
@@ -152,6 +153,7 @@ class nsdatetime(datetime):
         usec, mod = divmod(nanosecond, 1000) if nanosecond else (microsecond, 0)
         if mod == 0:
             return datetime(year, month, day, hour, minute, second, usec, tzinfo, fold=fold)
+        # pylint: disable=too-many-function-args,unexpected-keyword-arg
         self = super().__new__(cls, year, month, day, hour, minute, second, usec, tzinfo, fold=fold)
         self.nanosecond = nanosecond
         return self
@@ -226,3 +228,30 @@ def to_nsecs(dt):
     secs = int(dt.timestamp())
     nsecs = dt.nanosecond if isinstance(dt, nsdatetime) else dt.microsecond * 1000
     return secs * 1000000000 + nsecs
+
+
+_BAD_CHARS = r"""\x00-\x1F<>|"?*"""
+RC_BAD_CHARS_UNIX = re.compile(r"[%s]" % _BAD_CHARS)
+RC_BAD_CHARS_WIN32 = re.compile(r"[%s:^\\]" % _BAD_CHARS)
+
+
+def sanitize_filename(fname, pathsep, is_win32):
+    """Make filename safe for write access.
+    """
+    if is_win32:
+        if len(fname) > 1 and fname[1] == ":":
+            fname = fname[2:]
+        rc = RC_BAD_CHARS_WIN32
+    else:
+        rc = RC_BAD_CHARS_UNIX
+    if rc.search(fname):
+        fname = rc.sub("_", fname)
+
+    parts = []
+    for seg in fname.split("/"):
+        if seg in ("", ".", ".."):
+            continue
+        if is_win32 and seg[-1] in (" ", "."):
+            seg = seg[:-1] + "_"
+        parts.append(seg)
+    return pathsep.join(parts)

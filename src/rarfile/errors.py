@@ -1,3 +1,6 @@
+"""Custom error classes.
+"""
+
 __all__ = (
     "Error",
     "BadRarFile",
