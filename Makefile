@@ -2,7 +2,7 @@
 PYTHON ?= 3.10
 CRYPTO ?= cryptography
 RARFILE_REQUIRE_EXTENSION ?= 1
-PYTHONS = 3.10 3.11 3.12 3.13 3.14 3.14t pypy3.10 pypy3.11
+PYTHONS = 3.10 3.11 3.12 3.13 3.14 3.14t pypy3.11
 
 ifneq ($(CRYPTO),)
 CRYPTO_FLAG = --extra $(CRYPTO)
