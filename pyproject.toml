@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,12 +32,8 @@ Issues = "https://github.com/markokr/rarfile/issues"
 Documentation = "https://rarfile.readthedocs.io"
 
 [project.optional-dependencies]
-cryptography = [
-    "cryptography",
-]
-pycryptodome = [
-    "pycryptodome",
-]
+cryptography = ["cryptography"]
+pycryptodome = ["pycryptodome"]
 
 [dependency-groups]
 dev = [
@@ -62,23 +58,10 @@ lint = [
     "ruff",
 ]
 
-# Dev/test-only pins - applied by uv during lock/sync, not published in
-# package metadata. The two markers are exact complements so uv is forced
-# to fork instead of unifying everything on the old PyPy-compatible version.
-[tool.uv]
-constraint-dependencies = [
-    # cryptography > 45.0.7 dropped PyPy 3.10
-    "cryptography<=45.0.7; python_version == '3.10' and platform_python_implementation == 'PyPy'",
-    # cryptography >= 46 is the first with 3.14/3.14t wheels
-    "cryptography>=46.0.0; python_version != '3.10' or platform_python_implementation != 'PyPy'",
-]
-
 [tool.setuptools]
+packages = ["rarfile"]
 package-dir = {"" = "src"}
 include-package-data = false
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "rarfile.__version__"}
@@ -112,7 +95,7 @@ target-version = "py310"
 ignore = [
     'BLE001', # Do not catch blind exception
     'DTZ', # datetime() called without a tzinfo
-    'I',
+    'I', # use isort instead
     'PLR1730', # Replace `if` statement with min()
     'RET501', # Remove explicit `return None`
     'RUF022', # `__all__` is not sorted
