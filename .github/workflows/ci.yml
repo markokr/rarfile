@@ -100,3 +100,38 @@ jobs:
         shell: bash
         run: |
           make test-venv PYTHON="${{ matrix.pick.PY }}" CRYPTO="${{ matrix.pick.CRYPTO }}"
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }} ${{ matrix.linux_arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: windows-11-arm
+          - os: macos-latest
+          - os: ubuntu-latest
+            linux_arch: x86_64
+          - os: ubuntu-24.04-arm
+            linux_arch: aarch64
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build abi3 wheels
+        uses: pypa/cibuildwheel@v4.1.0
+        env:
+          # A single abi3 wheel built on the minimum supported version (3.10)
+          # covers every later non-free-threaded CPython. setup.py selects the
+          # limited ABI automatically for these interpreters.
+          CIBW_BUILD: "cp310-*"
+      - name: Build free-threaded wheels
+        uses: pypa/cibuildwheel@v4.1.0
+        env:
+          # The stable ABI does not cover free-threaded builds, so these get
+          # regular version-specific wheels.
+          CIBW_BUILD: "cp314t-*"
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          path: ./wheelhouse/*.whl
+          name: dist-wheels-${{ matrix.os }}-${{ matrix.linux_arch }}
+
