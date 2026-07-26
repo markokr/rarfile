@@ -10,7 +10,7 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }} ${{ matrix.linux_arch }}
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -20,28 +20,17 @@ jobs:
           - os: windows-11-arm
           - os: macos-latest
           - os: ubuntu-latest
-            linux_arch: x86_64
           - os: ubuntu-24.04-arm
-            linux_arch: aarch64
     steps:
       - uses: actions/checkout@v7
-      - name: Build abi3 wheels
+      - name: Build wheels
         uses: pypa/cibuildwheel@v4.1.0
         env:
-          # A single abi3 wheel built on the minimum supported version (3.10)
-          # covers every later non-free-threaded CPython. setup.py selects the
-          # limited ABI automatically for these interpreters.
-          CIBW_BUILD: "cp310-*"
-      - name: Build free-threaded wheels
-        uses: pypa/cibuildwheel@v4.1.0
-        env:
-          # The stable ABI does not cover free-threaded builds, so these get
-          # regular version-specific wheels.
-          CIBW_BUILD: "cp314t-*"
+          CIBW_BUILD: "cp310-* cp314t-*"
       - uses: actions/upload-artifact@v7.0.1
         with:
           path: ./wheelhouse/*.whl
-          name: dist-wheels-${{ matrix.os }}-${{ matrix.linux_arch }}
+          name: dist-wheels-${{ matrix.os }}
 
   sdist:
     name: "Build source package"
