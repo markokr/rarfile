@@ -4,6 +4,23 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 5.0.dev1 (unreleased)
+-----------------------------
+
+Breaking changes:
+
+* Move to multi-file module.  Most top level symbols should be
+  still there, only deliberate change is that configuration
+  cannot be changed on top-level module, ``rarfile.UNRAR_TOOL = "..."``
+  does not work, ``rarfile.config.UNRAR_TOOL = "..."`` is the new way.
+
+Features:
+
+* Optimized C implementation for ``rar3_s2k``, the Python version
+  could get extremely slow with longer passwords.  The helper
+  module is optional, if not built, Python fallback implementation
+  will be used.
+
 Version 4.4 (2026-07-22)
 ------------------------
 

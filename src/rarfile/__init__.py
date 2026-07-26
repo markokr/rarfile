@@ -50,4 +50,4 @@ from .utils import *
 
 __all__ = ("get_rar_version", "is_rarfile", "is_rarfile_sfx", "RarInfo", "RarFile", "RarExtFile")
 
-__version__ = "4.4"
+__version__ = "5.0.dev1"
