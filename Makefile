@@ -43,7 +43,7 @@ test-all: remove-tag
 remove-tag:
 	@rm -f $(BUILD_TAG)
 
-$(BUILD_TAG): $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
+$(BUILD_TAG): $(ALL_SOURCES)
 	RARFILE_REQUIRE_EXTENSION=1 \
 	uv sync --reinstall-package rarfile
 	uv run python3 -c 'import rarfile._crypto'
@@ -80,6 +80,7 @@ clean:
 	rm -f src/rarfile/*.so src/rarfile/*.pyd
 	rm -f .coverage.*
 	rm -rf .venv .tox .ruff_cache __pycache__ .pytest_cache
+	rm -f src/crypto/*.[ch]~
 
 ack:
 	for fn in test/files/*.rar.$(TESTTAG); do \

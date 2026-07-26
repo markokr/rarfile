@@ -236,7 +236,9 @@ def rar3_s2k_core_py(seed):
             if j == 0:
                 iv[i] = digest()[19]
 
-    return h, bytes(iv)
+    key_be = h.digest()[:16]
+    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
+    return key_le, bytes(iv)
 
 
 # load C version
@@ -253,10 +255,7 @@ def rar3_s2k(pwd, salt, _core=rar3_s2k_core):
         pwd = pwd.decode("utf8")
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
     seed = bytearray(wstr + salt)
-    h, iv = _core(seed)
-    key_be = h.digest()[:16]
-    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
-    return key_le, iv
+    return _core(seed)
 
 
 def rar5_s2k(pwd, salt, kdf_count):
