@@ -1,5 +1,5 @@
-#ifndef RARFILE_CRYPTO_MODULE_H
-#define RARFILE_CRYPTO_MODULE_H
+#ifndef CRYPTO_MODULE_H
+#define CRYPTO_MODULE_H
 
 #include <Python.h>
 

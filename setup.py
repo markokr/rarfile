@@ -22,7 +22,7 @@ setup(
     ext_modules=[
         Extension(
             name="rarfile._crypto",
-            sources=["src/crypto/module.c", "src/crypto/rar3_s2k_core.c"],
+            sources=["src/crypto/module.c", "src/crypto/rar3_s2k_core.c", "src/crypto/bhash.c"],
             py_limited_api=limited,
             define_macros=[("Py_LIMITED_API", "0x030A0000")] if limited else [],
             optional=not REQUIRE_CRYPTO_EXTENSION,
