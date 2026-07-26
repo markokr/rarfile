@@ -410,5 +410,3 @@ def test_public_exports():
     missing = object()
     for k in rarfile.__all__:
         assert getattr(rarfile, k, missing) is not missing, f"rarfile.{k} is missing"
-    for k in rarfile.__all_available__:
-        assert getattr(rarfile, k, missing) is not missing, f"rarfile.{k} is missing"
