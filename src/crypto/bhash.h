@@ -5,7 +5,9 @@
 #ifndef CRYPTO_BHASH_H
 #define CRYPTO_BHASH_H
 
+#include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define BHASH_BUFSIZE (1024)
 #define BHASH_NULL { .update = NULL, .digest = NULL }

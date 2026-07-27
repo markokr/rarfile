@@ -2,7 +2,9 @@
  * Python module setup.
  */
 
-#include "module.h"
+#include <Python.h>
+
+#include "rar3_s2k_core.h"
 
 static PyMethodDef crypto_methods[] = {
 	{

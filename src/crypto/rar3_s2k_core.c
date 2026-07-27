@@ -2,8 +2,10 @@
  * rar3_s2k_core in C.
  */
 
-#include "module.h"
+#include <Python.h>
+
 #include "bhash.h"
+#include "rar3_s2k_core.h"
 
 static inline uint32_t load_be32(const uint8_t *p)
 {
@@ -28,31 +30,34 @@ static bool validate_digest(PyObject *d)
 	return true;
 }
 
+
 /* unrolled message schedule calculation */
-#define R1(w, _i) \
+#define WBUF 16
+#define W(i) w[(i) & (WBUF-1)]
+#define P(i) p[((i) & 15) * 4]
+#define R1(_i) \
 	do { \
-		int i = _i; \
-		uint32_t x = w[(i - 3) & 15] ^ w[(i - 8) & 15] ^ w[(i - 14) & 15] ^ w[(i - 16) & 15]; \
-		w[i & 15] = (x << 1) | (x >> 31); \
+		unsigned int i = _i; \
+		if (i < 16) { \
+			W(i) = load_be32(&P(i)); \
+		} else { \
+			uint32_t x = W(i - 3) ^ W(i - 8) ^ W(i - 14) ^ W(i - 16); \
+			W(i) = (x << 1) | (x >> 31); \
+		} \
+		if (i >= 64) { \
+			store_le32(&P(i), W(i)); \
+		} \
 	} while (0)
-#define R4(w, i) R1(w, i); R1(w, i + 1); R1(w, i + 2); R1(w, i + 3)
-#define R16(w, i) R4(w, i); R4(w, i + 4); R4(w, i + 8); R4(w, i + 12)
-#define R64(w, i) R16(w, i); R16(w, i + 16); R16(w, i + 32); R16(w, i + 48)
+#define R4(i) R1(i); R1(i + 1); R1(i + 2); R1(i + 3)
+#define R16(i) R4(i); R4(i + 4); R4(i + 8); R4(i + 12)
+#define R64(i) R16(i); R16(i + 16); R16(i + 32); R16(i + 48)
+#define R80(i) R16(i); R64(i + 16)
 
 static void rar3_corrupt_block(uint8_t *p)
 {
-	uint32_t w[16];
+	uint32_t w[WBUF];
 
-	for (int i = 0; i < 16; i++) {
-		w[i] = load_be32(&p[i * 4]);
-	}
-
-	/* unrolled rounds 16..79 */
-	R64(w, 16);
-
-	for (int i = 0; i < 16; i++) {
-		store_le32(&p[i * 4], w[i]);
-	}
+	R80(0);
 }
 
 static PyObject *process_final_key(struct BufferedHash *buf)

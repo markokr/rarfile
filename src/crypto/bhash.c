@@ -2,7 +2,8 @@
  * Buffered hash.
  */
 
-#include "module.h"
+#include <Python.h>
+
 #include "bhash.h"
 
 bool bhash_init(struct BufferedHash *buf, const char *algo)
