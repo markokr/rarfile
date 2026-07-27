@@ -45,6 +45,7 @@ from .crypto import *
 from .crypto import have_crypto as _have_crypto
 from .errors import *
 from .format import *
+from .info import *
 from .stream import *
 from .utils import *
 

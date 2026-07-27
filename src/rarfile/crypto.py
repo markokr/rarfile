@@ -8,7 +8,7 @@ from struct import pack, pack_into, unpack, unpack_from
 from .bits import RAR_MAX_PASSWORD
 from .errors import BadRarFile
 
-__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "NoHashContext", "CRC32Context", "Blake2SP")
+__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "NoHashContext", "CRC32Context", "Blake2SP", "HeaderDecrypt")
 
 
 # optional: only needed for encrypted headers

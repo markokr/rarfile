@@ -1,11 +1,17 @@
 """Various low-level utitlites.
 """
 
+import os
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
+from tempfile import mkstemp
 
-__all__ = ("is_filelike", "XFile", "UnicodeFilename", "nsdatetime", "to_nsdatetime", "to_nsecs", "sanitize_filename")
+from . import config
+
+__all__ = ("is_filelike", "XFile", "UnicodeFilename", "nsdatetime", "to_nsdatetime", "to_nsecs", "to_datetime",
+           "parse_dos_time", "sanitize_filename", "membuf_tempfile")
 
 
 def is_filelike(obj):
@@ -230,6 +236,40 @@ def to_nsecs(dt):
     return secs * 1000000000 + nsecs
 
 
+def to_datetime(t):
+    """Convert 6-part time tuple into datetime object.
+    """
+    # extract values
+    year, mon, day, h, m, s = t
+
+    # assume the values are valid
+    try:
+        return datetime(year, mon, day, h, m, s)
+    except ValueError:
+        pass
+
+    # sanitize invalid values
+    mday = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    mon = max(1, min(mon, 12))
+    day = max(1, min(day, mday[mon]))
+    h = min(h, 23)
+    m = min(m, 59)
+    s = min(s, 59)
+    return datetime(year, mon, day, h, m, s)
+
+
+def parse_dos_time(stamp):
+    """Parse standard 32-bit DOS timestamp.
+    """
+    sec, stamp = stamp & 0x1F, stamp >> 5
+    mn, stamp = stamp & 0x3F, stamp >> 6
+    hr, stamp = stamp & 0x1F, stamp >> 5
+    day, stamp = stamp & 0x1F, stamp >> 5
+    mon, stamp = stamp & 0x0F, stamp >> 4
+    yr = (stamp & 0x7F) + 1980
+    return (yr, mon, day, hr, mn, sec * 2)
+
+
 _BAD_CHARS = r"""\x00-\x1F<>|"?*"""
 RC_BAD_CHARS_UNIX = re.compile(r"[%s]" % _BAD_CHARS)
 RC_BAD_CHARS_WIN32 = re.compile(r"[%s:^\\]" % _BAD_CHARS)
@@ -255,3 +295,21 @@ def sanitize_filename(fname, pathsep, is_win32):
             seg = seg[:-1] + "_"
         parts.append(seg)
     return pathsep.join(parts)
+
+
+def membuf_tempfile(memfile):
+    """Write in-memory file object to real file.
+    """
+    memfile.seek(0, 0)
+
+    tmpfd, tmpname = mkstemp(suffix=".rar", dir=config.HACK_TMP_DIR)
+    tmpf = os.fdopen(tmpfd, "wb")
+
+    try:
+        shutil.copyfileobj(memfile, tmpf, config.BSIZE)
+        tmpf.close()
+    except BaseException:
+        tmpf.close()
+        os.unlink(tmpname)
+        raise
+    return tmpname
