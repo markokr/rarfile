@@ -21,6 +21,8 @@ TAG = v$(VERSION)
 ALL_SOURCES = $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
 BUILD_TAG = .venv/build.tag
 
+INDENT = indent
+
 .PHONY: test-venv test-all remove-tag
 .PHONY: all test lint docs clean ack prepare release shownote unrelease
 
@@ -66,7 +68,7 @@ fmt:
 	uv run isort *.py src/**/*.py test/*.py
 
 cfmt:
-	indent -linux -l100 src/*/*.[ch]
+	$(INDENT) src/*/*.[ch]
 
 clean:
 	rm -rf __pycache__ build dist

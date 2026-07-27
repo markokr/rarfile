@@ -7,8 +7,8 @@
 
 static inline uint32_t load_be32(const uint8_t *p)
 {
-	return (uint32_t) (p[0]) << 24 |
-	    (uint32_t) (p[1]) << 16 | (uint32_t) (p[2]) << 8 | (uint32_t) (p[3]);
+	return (uint32_t)(p[0]) << 24 |
+	    (uint32_t)(p[1]) << 16 | (uint32_t)(p[2]) << 8 | (uint32_t)(p[3]);
 }
 
 static inline void store_le32(uint8_t *p, uint32_t x)
@@ -28,7 +28,7 @@ static bool validate_digest(PyObject *d)
 	return true;
 }
 
-/* unrolled message schedule calcuation */
+/* unrolled message schedule calculation */
 #define R1(w, _i) \
 	do { \
 		int i = _i; \
@@ -60,9 +60,11 @@ static PyObject *process_final_key(struct BufferedHash *buf)
 	uint8_t key[16];
 
 	PyObject *d = bhash_digest(buf);
-	if (!d || !validate_digest(d))
+	if (!d || !validate_digest(d)) {
+		Py_XDECREF(d);
 		return NULL;
-	const uint8_t *bytes = (uint8_t *) PyBytes_AsString(d);
+	}
+	const uint8_t *bytes = (uint8_t *)PyBytes_AsString(d);
 
 	/* swap byte order */
 	for (int i = 0; i < 4; i++) {
@@ -84,7 +86,7 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 		PyErr_SetString(PyExc_TypeError, "seed must be a bytearray");
 		return NULL;
 	}
-	uint8_t *seed_ptr = (uint8_t *) PyByteArray_AsString(seed);
+	uint8_t *seed_ptr = (uint8_t *)PyByteArray_AsString(seed);
 	size_t seed_len = (size_t)PyByteArray_Size(seed);
 
 	if (!bhash_init(&buf, "sha1"))
@@ -116,9 +118,11 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 			/* Collect IV */
 			if (j == 0) {
 				PyObject *d = bhash_digest(&buf);
-				if (!d || !validate_digest(d))
+				if (!d || !validate_digest(d)) {
+					Py_XDECREF(d);
 					goto error;
-				ivbuf[i] = (uint8_t) PyBytes_AsString(d)[19];
+				}
+				ivbuf[i] = (uint8_t)PyBytes_AsString(d)[19];
 				Py_DECREF(d);
 			}
 		}
