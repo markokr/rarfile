@@ -30,7 +30,6 @@ static bool validate_digest(PyObject *d)
 	return true;
 }
 
-
 /* unrolled message schedule calculation */
 #define WBUF 16
 #define W(i) w[(i) & (WBUF-1)]
