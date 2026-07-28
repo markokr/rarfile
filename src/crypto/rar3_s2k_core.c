@@ -85,16 +85,16 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 	uint32_t count = 0;
 	uint8_t ivbuf[16] = { 0 };
 
-	/* seed must be a bytearray so we can mutate it in place */
-	if (!PyByteArray_Check(seed)) {
-		PyErr_SetString(PyExc_TypeError, "seed must be a bytearray");
+	PyObject *seed_buf = PyByteArray_FromObject(seed);
+	if (seed_buf == NULL)
+		return NULL;
+	uint8_t *seed_ptr = (uint8_t *)PyByteArray_AsString(seed_buf);
+	size_t seed_len = (size_t)PyByteArray_Size(seed_buf);
+
+	if (!bhash_init(&buf, "sha1")) {
+		Py_DECREF(seed_buf);
 		return NULL;
 	}
-	uint8_t *seed_ptr = (uint8_t *)PyByteArray_AsString(seed);
-	size_t seed_len = (size_t)PyByteArray_Size(seed);
-
-	if (!bhash_init(&buf, "sha1"))
-		return NULL;
 
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 0x4000; j++, count++) {
@@ -134,6 +134,7 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 
 	PyObject *key = process_final_key(&buf);
 	bhash_free(&buf);
+	Py_DECREF(seed_buf);
 	if (key == NULL)
 		return NULL;
 
@@ -150,5 +151,6 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 
  error:
 	bhash_free(&buf);
+	Py_DECREF(seed_buf);
 	return NULL;
 }
