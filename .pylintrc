@@ -80,6 +80,7 @@ disable=bare-except,
 	duplicate-code,
         consider-using-min-builtin,
         too-many-positional-arguments,
+        multiple-statements,
 	unnecessary-pass
 
 # Enable the message, report, category or checker with the given id(s). You can

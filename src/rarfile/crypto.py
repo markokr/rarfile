@@ -3,13 +3,21 @@
 
 from binascii import crc32, hexlify
 from hashlib import blake2s, pbkdf2_hmac, sha1
-from struct import pack, pack_into, unpack, unpack_from
+from struct import Struct
 
 from .bits import RAR_MAX_PASSWORD
 from .errors import BadRarFile
 
 __all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "NoHashContext", "CRC32Context", "Blake2SP", "HeaderDecrypt")
 
+
+BLK_BE = Struct(">16L")
+BLK_LE = Struct("<16L")
+
+KEY_BE = Struct(">4L")
+KEY_LE = Struct("<4L")
+
+U16_LE = Struct('<H')
 
 # optional: only needed for encrypted headers
 AES = None
@@ -184,61 +192,91 @@ class Blake2SP:
         return hexlify(self.digest()).decode("ascii")
 
 
-def _rar3_corrupt_block(seed, pos):
-    """Emulate one block of the buggy RAR3 SHA1 corruption.
+def generate():
+    import textwrap
+    words = [chr(ord('a') + i) for i in range(16)]
+    all_words = ", ".join(words)
+    header = f"""\
+        def rar3_corrupt_block(seed, pos):
+            {all_words} = BLK_BE.unpack_from(seed, pos)
+            for _ in range(4):
+    """.rstrip()
+    footer = f"    BLK_LE.pack_into(seed, pos, {all_words})"
+    lines = [textwrap.dedent(header)]
+    for i in range(16):
+        a = words[(i - 3) & 15]
+        b = words[(i - 8) & 15]
+        c = words[(i - 14) & 15]
+        d = words[(i - 16) & 15]
+        step1 = f"x = {a} ^ {b} ^ {c} ^ {d}"
+        step2 = f"{d} = ((x << 1) | (x >> 31)) & 0xFFFFFFFF"
+        lines.append(f"        {step1}; {step2}")
+    lines.append(footer)
+    print("\n".join(lines))
 
-    Reads a 64-byte block as 16 big-endian words, runs the SHA1 message
-    schedule expansion (rounds 16..79) over a rolling 16-word window, then
-    writes the resulting words back little-endian, mutating the block in place.
-    """
-    w = list(unpack_from(">16L", seed, pos))
-    for i in range(16, 80):
-        x = w[(i - 3) & 15] ^ w[(i - 8) & 15] ^ w[(i - 14) & 15] ^ w[(i - 16) & 15]
-        w[i & 15] = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
-    pack_into("<16L", seed, pos, *w)
+
+def rar3_corrupt_block(seed, pos):
+    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p = BLK_BE.unpack_from(seed, pos)
+    for _ in range(4):
+        # fmt: off
+        x = n ^ i ^ c ^ a; a = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = o ^ j ^ d ^ b; b = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = p ^ k ^ e ^ c; c = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = a ^ l ^ f ^ d; d = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = b ^ m ^ g ^ e; e = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = c ^ n ^ h ^ f; f = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = d ^ o ^ i ^ g; g = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = e ^ p ^ j ^ h; h = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = f ^ a ^ k ^ i; i = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = g ^ b ^ l ^ j; j = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = h ^ c ^ m ^ k; k = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = i ^ d ^ n ^ l; l = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = j ^ e ^ o ^ m; m = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = k ^ f ^ p ^ n; n = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = l ^ g ^ a ^ o; o = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        x = m ^ h ^ b ^ p; p = ((x << 1) | (x >> 31)) & 0xFFFFFFFF
+        # fmt: on
+    BLK_LE.pack_into(seed, pos, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
 
 
 def rar3_s2k_core_py(seed):
-    """Run the full RAR3 string-to-key hash (16 outer loops of 0x4000 iterations).
-
-    Each iteration feeds ``seed`` and a 3-byte little-endian counter into the
-    SHA1 update, then corrupts ``seed`` in place for every full 64-byte block
-    (the RAR3 bug).
-
-    Returns a ``(sha1, iv)`` tuple: the hashlib.sha1() object holding the
-    final key state, and the 16-byte IV.
+    """Main loop of the RAR3 string-to-key hash.
     """
     seed_len = len(seed)
+    seed_buf = bytearray(seed_len + 3)
+    seed_buf[:seed_len] = seed
+
     iv = bytearray(16)
     nbytes = 0
 
     h = sha1()
     update = h.update
     digest = h.digest
+    set_counter = U16_LE.pack_into
 
+    counter = 0
     for i in range(16):
-        base = i << 14
+        seed_buf[-1] = (counter >> 16) & 0xFF
         for j in range(0x4000):
-            update(seed)
-
-            # Corrupt each full 64-byte block
             bufpos = nbytes & 63
             nbytes += seed_len + 3
+
+            set_counter(seed_buf, seed_len, counter & 0xFFFF)
+            counter += 1
+
+            update(seed_buf)
+
             if seed_len > 64:
                 dpos = 64 - bufpos
                 while dpos + 64 <= seed_len:
-                    _rar3_corrupt_block(seed, dpos)
+                    rar3_corrupt_block(seed_buf, dpos)
                     dpos += 64
-
-            x = base + j
-            update(bytes((x & 0xFF, (x >> 8) & 0xFF, (x >> 16) & 0xFF)))
 
             if j == 0:
                 iv[i] = digest()[19]
 
-    key_be = h.digest()[:16]
-    key_le = pack("<LLLL", *unpack(">LLLL", key_be))
-    return key_le, bytes(iv)
+    a, b, c, d = KEY_BE.unpack_from(h.digest(), 0)
+    return KEY_LE.pack(a, b, c, d), bytes(iv)
 
 
 # load C version
@@ -254,8 +292,7 @@ def rar3_s2k(pwd, salt, _core=rar3_s2k_core):
     if not isinstance(pwd, str):
         pwd = pwd.decode("utf8")
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
-    seed = bytearray(wstr + salt)
-    return _core(seed)
+    return _core(wstr + salt)
 
 
 def rar5_s2k(pwd, salt, kdf_count):
@@ -266,3 +303,7 @@ def rar5_s2k(pwd, salt, kdf_count):
     wstr = pwd.encode("utf-16le")[:RAR_MAX_PASSWORD * 2]
     ustr = wstr.decode("utf-16le").encode("utf8")
     return pbkdf2_hmac("sha256", ustr, salt, kdf_count)
+
+
+if __name__ == "__main__":
+    generate()
