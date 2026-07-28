@@ -9,17 +9,26 @@ Version 5.0.dev1 (unreleased)
 
 Breaking changes:
 
-* Move to multi-file module.  Most top level symbols should be
-  still there, only deliberate change is that configuration
-  cannot be changed on top-level module, ``rarfile.UNRAR_TOOL = "..."``
+* Move to multi-file module.  Module root is kept compatible,
+  only deliberate change is that configuration
+  cannot be changed on root level: ``rarfile.UNRAR_TOOL = "..."``
   does not work, ``rarfile.config.UNRAR_TOOL = "..."`` is the new way.
+  [`#137 <https://github.com/markokr/rarfile/pull/137>`_]
 
 Features:
 
-* Optimized C implementation for ``rar3_s2k``, the Python version
-  could get extremely slow with longer passwords.  The helper
-  module is optional, if not built, Python fallback implementation
-  will be used.
+* Optimized C implementation for ``rar3_s2k``. The helper module is optional,
+  if missing Python fallback implementation will be used.
+  [`#132 <https://github.com/markokr/rarfile/pull/132>`_]
+
+* Improve speed of Python fallback for ``rar3_s2k``.
+  [`#140 <https://github.com/markokr/rarfile/pull/140>`_]
+
+* Detect if regular `tar` is `bsdtar` and use it.
+  [`#111 <https://github.com/markokr/rarfile/pull/111>`_]
+
+* Check if `7z` actually supports RAR.
+  [`#134 <https://github.com/markokr/rarfile/pull/134>`_]
 
 Version 4.4 (2026-07-22)
 ------------------------
@@ -30,6 +39,7 @@ Security fixes:
   `rarfile` tried to calculate header CRC by reading
   data payload for those, but that could cause excessive
   allocations.
+  [`GHSA-v5rw-pq35-5xw4 <https://github.com/markokr/rarfile/security/advisories/GHSA-v5rw-pq35-5xw4>`_]
 
 Fixes:
 
