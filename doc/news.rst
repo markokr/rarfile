@@ -4,6 +4,17 @@ rarfile history
 
 .. py:currentmodule:: rarfile
 
+Version 4.5 (2026-08-02)
+------------------------
+
+Security fixes:
+
+* Skip comments that are larger than 256k.
+
+Fixes:
+
+* Truncate filenames at NUL byte.
+
 Version 4.4 (2026-07-22)
 ------------------------
 
