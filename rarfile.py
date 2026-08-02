@@ -1613,6 +1613,9 @@ class RAR3Parser(CommonParser):
             h.orig_filename = name
             h.filename = name.decode("utf8", "replace")
         else:
+            nul = name.find(b"\0")
+            if nul >= 0:
+                name = name[:nul]
             # stored in random encoding
             h.orig_filename = name
             h.filename = self._decode(name)
@@ -2010,7 +2013,12 @@ class RAR5Parser(CommonParser):
 
         h.file_compress_flags, pos = load_vint(hdata, pos)
         h.file_host_os, pos = load_vint(hdata, pos)
-        h.orig_filename, pos = load_vstr(hdata, pos)
+
+        name, pos = load_vstr(hdata, pos)
+        nul = name.find(b"\0")
+        if nul >= 0:
+            name = name[:nul]
+        h.orig_filename = name
         h.filename = h.orig_filename.decode("utf8", "replace").rstrip("/")
 
         # use compatible values
