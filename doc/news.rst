@@ -30,6 +30,17 @@ Features:
 * Check if `7z` actually supports RAR.
   [`#134 <https://github.com/markokr/rarfile/pull/134>`_]
 
+Version 4.5 (2026-08-02)
+------------------------
+
+Security fixes:
+
+* Skip comments that are larger than 256k.
+
+Fixes:
+
+* Truncate filenames at NUL byte.
+
 Version 4.4 (2026-07-22)
 ------------------------
 

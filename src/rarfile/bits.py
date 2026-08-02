@@ -83,6 +83,7 @@ RAR_M5 = 0x35   #: Compression level `-m5` - Maximum compression.
 
 RAR_MAX_PASSWORD = 127  #: Max number of utf-16 chars in passwords.
 RAR_MAX_KDF_SHIFT = 24  #: Max power-of-2 for KDF count
+RAR_MAX_COMMENT = 256 * 1024  #: Max supported comment size
 
 #
 # RAR5 constants

@@ -41,9 +41,9 @@ from .bits import (
     RAR_FILE_SPLIT_BEFORE, RAR_FILE_UNICODE, RAR_FILE_VERSION, RAR_ID,
     RAR_LONG_BLOCK, RAR_M0, RAR_MAIN_COMMENT, RAR_MAIN_ENCRYPTVER,
     RAR_MAIN_FIRSTVOLUME, RAR_MAIN_NEWNUMBERING, RAR_MAIN_PASSWORD,
-    RAR_MAIN_RECOVERY, RAR_MAIN_SOLID, RAR_MAIN_VOLUME, RAR_MAX_KDF_SHIFT,
-    RAR_OLD_SUB_MAC, RAR_OLD_SUB_UNIX, RAR_OS_MSDOS, RAR_OS_UNIX,
-    RAR_OS_WIN32, RAR_SKIP_IF_UNKNOWN,
+    RAR_MAIN_RECOVERY, RAR_MAIN_SOLID, RAR_MAIN_VOLUME, RAR_MAX_COMMENT,
+    RAR_MAX_KDF_SHIFT, RAR_OLD_SUB_MAC, RAR_OLD_SUB_UNIX, RAR_OS_MSDOS,
+    RAR_OS_UNIX, RAR_OS_WIN32, RAR_SKIP_IF_UNKNOWN,
 )
 from .crypto import Blake2SP, CRC32Context, HeaderDecrypt, NoHashContext
 from .crypto import have_crypto as _have_crypto
@@ -577,6 +577,9 @@ class RAR3Parser(CommonParser):
             h.orig_filename = name
             h.filename = name.decode("utf8", "replace")
         else:
+            nul = name.find(b"\0")
+            if nul >= 0:
+                name = name[:nul]
             # stored in random encoding
             h.orig_filename = name
             h.filename = self._decode(name)
@@ -622,6 +625,9 @@ class RAR3Parser(CommonParser):
             # followed by block-specific header
             if stype == RAR_BLOCK_OLD_COMMENT and pos + S_COMMENT_HDR.size <= pos_next:
                 declen, ver, meth, crc = S_COMMENT_HDR.unpack_from(hdata, pos)
+                if declen > RAR_MAX_COMMENT:
+                    pos = pos_next
+                    continue
                 pos += S_COMMENT_HDR.size
                 data = hdata[pos: pos_next]
                 cmt = rar3_decompress(ver, meth, data, declen, sflags,
@@ -633,6 +639,11 @@ class RAR3Parser(CommonParser):
         return pos
 
     def _read_comment_v3(self, inf, pwd=None):
+
+        if inf.compress_size > RAR_MAX_COMMENT:
+            return None
+        if inf.file_size > RAR_MAX_COMMENT:
+            return None
 
         # read data
         with XFile(inf.volume_file) as rf:
@@ -857,7 +868,12 @@ class RAR5Parser(CommonParser):
 
         h.file_compress_flags, pos = load_vint(hdata, pos)
         h.file_host_os, pos = load_vint(hdata, pos)
-        h.orig_filename, pos = load_vstr(hdata, pos)
+
+        name, pos = load_vstr(hdata, pos)
+        nul = name.find(b"\0")
+        if nul >= 0:
+            name = name[:nul]
+        h.orig_filename = name
         h.filename = h.orig_filename.decode("utf8", "replace").rstrip("/")
 
         # use compatible values
@@ -1053,6 +1069,10 @@ class RAR5Parser(CommonParser):
         if item.block_flags & (RAR5_BLOCK_FLAG_SPLIT_BEFORE | RAR5_BLOCK_FLAG_SPLIT_AFTER):
             return None
         if item.compress_type != RAR_M0:
+            return None
+        if item.compress_size > RAR_MAX_COMMENT:
+            return None
+        if item.file_size > RAR_MAX_COMMENT:
             return None
 
         if item.flags & RAR_FILE_PASSWORD:
