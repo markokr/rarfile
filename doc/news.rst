@@ -24,10 +24,10 @@ Features:
 * Improve speed of Python fallback for ``rar3_s2k``.
   [`#140 <https://github.com/markokr/rarfile/pull/140>`_]
 
-* Detect if regular `tar` is `bsdtar` and use it.
+* Detect if regular ``tar`` is ``bsdtar`` and use it.
   [`#111 <https://github.com/markokr/rarfile/pull/111>`_]
 
-* Check if `7z` actually supports RAR.
+* Check if ``7z`` actually supports RAR.
   [`#134 <https://github.com/markokr/rarfile/pull/134>`_]
 
 Version 4.5 (2026-08-02)
@@ -36,6 +36,7 @@ Version 4.5 (2026-08-02)
 Security fixes:
 
 * Skip comments that are larger than 256k.
+  [`GHSA-94vx-95fq-wwvp <https://github.com/markokr/rarfile/security/advisories/GHSA-94vx-95fq-wwvp>`_]
 
 Fixes:
 
@@ -47,7 +48,7 @@ Version 4.4 (2026-07-22)
 Security fixes:
 
 * Skip CRC check for some old subblocks.  Previously
-  `rarfile` tried to calculate header CRC by reading
+  ``rarfile`` tried to calculate header CRC by reading
   data payload for those, but that could cause excessive
   allocations.
   [`GHSA-v5rw-pq35-5xw4 <https://github.com/markokr/rarfile/security/advisories/GHSA-v5rw-pq35-5xw4>`_]
