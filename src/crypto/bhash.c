@@ -13,7 +13,7 @@ bool bhash_init(struct BufferedHash *buf, const char *algo)
 		return false;
 
 	PyObject *ctx = PyObject_CallMethod(hashlib, algo, NULL);
-	Py_CLEAR(hashlib);
+	Py_DECREF(hashlib);
 	if (ctx == NULL)
 		return false;
 
@@ -24,7 +24,7 @@ bool bhash_init(struct BufferedHash *buf, const char *algo)
 	}
 
 	PyObject *digest = PyObject_GetAttrString(ctx, "digest");
-	Py_CLEAR(ctx);
+	Py_DECREF(ctx);
 	if (digest == NULL) {
 		Py_DECREF(update);
 		return false;

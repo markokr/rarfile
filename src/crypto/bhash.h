@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define BHASH_BUFSIZE (1024)
+#define BHASH_BUFSIZE (2 * 1024)
 #define BHASH_NULL { .update = NULL, .digest = NULL }
 
 struct BufferedHash {
