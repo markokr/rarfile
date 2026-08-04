@@ -18,7 +18,9 @@ VERSION = $(shell sed -n 's/^__version__ = "\(.*\)"/\1/p' src/rarfile/__init__.p
 RXVERSION = $(shell echo '$(VERSION)' | sed 's/\./[.]/g')
 TAG = v$(VERSION)
 
-ALL_SOURCES = $(wildcard setup.py pyproject.toml src/rarfile/*.py src/crypto/*.[ch])
+C_SOURCES = $(wildcard src/crypto/*.[ch])
+PY_SOURCES = $(wildcard setup.py pyproject.toml src/rarfile/*.py)
+ALL_SOURCES = $(PY_SOURCES) $(C_SOURCES)
 BUILD_TAG = .venv/build.tag
 
 INDENT = indent
@@ -45,7 +47,7 @@ test-all: remove-tag
 remove-tag:
 	@rm -f $(BUILD_TAG)
 
-$(BUILD_TAG): $(ALL_SOURCES)
+$(BUILD_TAG): $(C_SOURCES)
 	RARFILE_REQUIRE_EXTENSION=1 \
 	uv sync --reinstall-package rarfile
 	uv run python3 -c 'import rarfile._crypto'
@@ -57,7 +59,7 @@ test: $(BUILD_TAG)
 
 lint: $(BUILD_TAG)
 	uv run ruff check src test
-	uv run pylint rarfile dumprar.py test
+	uv run pylint rarfile dumprar.py test/*.py
 
 docs: $(BUILD_TAG)
 	uv run sphinx-build -q -W -b html doc doc/_build
