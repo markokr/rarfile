@@ -4,6 +4,7 @@
 
 #include <Python.h>
 
+#include "module.h"
 #include "bhash.h"
 #include "rar3_s2k_core.h"
 
@@ -85,13 +86,17 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 	uint32_t count = 0;
 	uint8_t ivbuf[16] = { 0 };
 
+	struct crypto_state *st = PyModule_GetState(self);
+	if (st == NULL)
+		return NULL;
+
 	PyObject *seed_buf = PyByteArray_FromObject(seed);
 	if (seed_buf == NULL)
 		return NULL;
 	uint8_t *seed_ptr = (uint8_t *)PyByteArray_AsString(seed_buf);
 	size_t seed_len = (size_t)PyByteArray_Size(seed_buf);
 
-	if (!bhash_init(&buf, "sha1")) {
+	if (!bhash_init(&buf, st->sha1, NULL)) {
 		Py_DECREF(seed_buf);
 		return NULL;
 	}

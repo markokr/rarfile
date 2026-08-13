@@ -6,14 +6,14 @@
 
 #include "bhash.h"
 
-bool bhash_init(struct BufferedHash *buf, const char *algo)
+bool bhash_init(struct BufferedHash *buf, PyObject *init, PyObject *kwargs)
 {
-	PyObject *hashlib = PyImport_ImportModule("hashlib");
-	if (hashlib == NULL)
+	PyObject *args = PyTuple_New(0);
+	if (args == NULL)
 		return false;
 
-	PyObject *ctx = PyObject_CallMethod(hashlib, algo, NULL);
-	Py_DECREF(hashlib);
+	PyObject *ctx = PyObject_Call(init, args, kwargs);
+	Py_DECREF(args);
 	if (ctx == NULL)
 		return false;
 
