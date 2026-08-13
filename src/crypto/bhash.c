@@ -6,6 +6,11 @@
 
 #include "bhash.h"
 
+/* bug in 3.10 stable ABI, PyMemoryView_FromMemory is 3.7+ */
+#ifndef PyBUF_READ
+#define PyBUF_READ 0x100
+#endif
+
 bool bhash_init(struct BufferedHash *buf, PyObject *init, PyObject *kwargs)
 {
 	PyObject *args = PyTuple_New(0);
@@ -40,7 +45,7 @@ bool bhash_flush(struct BufferedHash *buf)
 	if (buf->pos == 0)
 		return true;
 
-	PyObject *data = PyBytes_FromStringAndSize((const char *)buf->data, buf->pos);
+	PyObject *data = PyMemoryView_FromMemory((char *)buf->data, buf->pos, PyBUF_READ);
 	if (data == NULL)
 		return false;
 
