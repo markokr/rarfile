@@ -40,7 +40,7 @@ bool bhash_init(struct BufferedHash *buf, PyObject *init, PyObject *kwargs)
 	return true;
 }
 
-bool bhash_flush(struct BufferedHash *buf)
+static bool bhash_flush(struct BufferedHash *buf)
 {
 	if (buf->pos == 0)
 		return true;
