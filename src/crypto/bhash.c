@@ -3,6 +3,7 @@
  */
 
 #include <Python.h>
+#include <string.h>
 
 #include "bhash.h"
 
