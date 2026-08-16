@@ -68,7 +68,7 @@ class NeedFirstVolume(Error):
             Volume number of current file or None if not known
     """
 
-    def __init__(self, msg, volume):
+    def __init__(self, msg: str, volume: int | None):
         super().__init__(msg)
         self.current_volume = volume
 

@@ -8,20 +8,20 @@ import pytest
 from rarfile import Blake2SP, CRC32Context, NoHashContext
 
 
-def tohex(data):
+def tohex(data: bytes) -> str:
     """Return hex string."""
     return hexlify(data).decode("ascii")
 
 
-def test_nohash():
-    assert NoHashContext("").hexdigest() is None
-    assert NoHashContext("asd").hexdigest() is None
+def test_nohash() -> None:
+    assert NoHashContext(b"").hexdigest() is None  # type: ignore[func-returns-value]
+    assert NoHashContext(b"asd").hexdigest() is None  # type: ignore[func-returns-value]
     md = NoHashContext()
-    md.update("asd")
-    assert md.digest() is None
+    md.update(b"asd")
+    assert md.digest() is None  # type: ignore[func-returns-value]
 
 
-def test_crc32():
+def test_crc32() -> None:
     assert CRC32Context(b"").hexdigest() == "00000000"
     assert CRC32Context(b"Hello").hexdigest() == "f7d18982"
     assert CRC32Context(b"Bye").hexdigest() == "4f7ad7d4"
@@ -33,14 +33,14 @@ def test_crc32():
     assert md.hexdigest() == "f7d18982"
 
 
-def xblake2sp(xdata):
+def xblake2sp(xdata: str) -> str:
     data = unhexlify(xdata)
     md = Blake2SP()
     md.update(data)
     return md.hexdigest()
 
 
-def xblake2sp_slow(xdata):
+def xblake2sp_slow(xdata: str) -> str:
     data = unhexlify(xdata)
     md = Blake2SP()
     buf = memoryview(data)
@@ -51,7 +51,7 @@ def xblake2sp_slow(xdata):
     return md.hexdigest()
 
 
-def test_blake2sp():
+def test_blake2sp() -> None:
     assert Blake2SP(b"").hexdigest() == "dd0e891776933f43c7d032b08a917e25741f8aa9a12c12e1cac8801500f2ca4f"
     assert Blake2SP(b"Hello").hexdigest() == "0d6bae0db99f99183d060f7994bb94b45c6490b2a0a628b8b1346ebea8ec1d66"
 
@@ -66,7 +66,7 @@ def test_blake2sp():
     assert xblake2sp_slow(long2) == "24a78d92592d0761a3681f32935225ca55ffb8eb16b55ab9481c89c59a985ff3"
 
 
-def test_rar3_s2k():
+def test_rar3_s2k() -> None:
     from rarfile.crypto import rar3_s2k
 
     exp = ("a160cb31cb262e9231c0b6fc984fbb0d", "aa54a659fb0c359b30f353a6343fb11d")
@@ -87,7 +87,7 @@ def test_rar3_s2k():
     assert (tohex(key), tohex(iv)) == exp
 
 
-def test_rar3_s2k_pure_python():
+def test_rar3_s2k_pure_python() -> None:
     """Exercise the pure-Python rar3_s2k_core fallback through rar3_s2k.
 
     The active implementation is the C extension where it is built, so force
@@ -107,14 +107,16 @@ def test_rar3_s2k_pure_python():
     assert (tohex(key), tohex(iv)) == exp
 
 
-def test_rar3_s2k_native_matches_pure():
+def test_rar3_s2k_native_matches_pure() -> None:
     """The C extension, when built, must match the pure-Python fallback exactly.
 
     Only runs where the extension is present (otherwise the two names are the
     same object and there is nothing to compare). The 130-byte seed forces the
     multi-block branch of the corruption loop.
     """
-    from rarfile.crypto import rar3_s2k_core, rar3_s2k_core_py
+    from rarfile.crypto import (  # type: ignore[attr-defined]
+        rar3_s2k_core, rar3_s2k_core_py,
+    )
 
     #assert rar3_s2k_core is not rar3_s2k_core_py
     if rar3_s2k_core is rar3_s2k_core_py:
@@ -127,9 +129,7 @@ def test_rar3_s2k_native_matches_pure():
     )
     #seeds = [bytes(range(n)) for n in range(8, 200)]
     for seed in seeds:
-        a, b = bytearray(seed), bytearray(seed)
-        h_native, iv_native = rar3_s2k_core(a)
-        h_pure, iv_pure = rar3_s2k_core_py(b)
+        h_native, iv_native = rar3_s2k_core(seed)
+        h_pure, iv_pure = rar3_s2k_core_py(seed)
         assert h_native == h_pure, f"failed at length {len(seed)}"
         assert iv_native == iv_pure
-        assert a == b

@@ -3,6 +3,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -10,7 +11,7 @@ import rarfile
 from rarfile import backend, config
 
 
-def have_tool(name):
+def have_tool(name: str) -> bool:
     for dn in os.get_exec_path():
         if os.path.isfile(os.path.join(dn, name)):
             return True
@@ -19,39 +20,39 @@ def have_tool(name):
     return False
 
 
-def tool_setup(unrar=False, unar=False, bsdtar=False, sevenzip=False):
+def tool_setup(unrar: bool = False, unar: bool = False, bsdtar: bool = False, sevenzip: bool = False) -> None:
     config.FORCE_TOOL = True
     backend.tool_setup(unrar=unrar, unar=unar, bsdtar=bsdtar, sevenzip=sevenzip, force=True)
 
 
-def install_unrar_tool():
+def install_unrar_tool() -> None:
     tool_setup(unrar=True)
 
 
-def install_unar_tool():
+def install_unar_tool() -> None:
     tool_setup(unar=True)
 
 
-def install_bsdtar_tool():
+def install_bsdtar_tool() -> None:
     tool_setup(bsdtar=True)
 
 
-def install_7z_tool():
+def install_7z_tool() -> None:
     tool_setup(sevenzip=True)
 
 
-def uninstall_alt_tool():
+def uninstall_alt_tool() -> None:
     config.FORCE_TOOL = False
     backend.tool_setup(force=True)
 
 
-def test_read_rar3():
+def test_read_rar3() -> None:
     with rarfile.RarFile("test/files/seektest.rar") as rf:
         for fn in rf.namelist():
             rf.read(fn)
 
 
-def test_read_vols():
+def test_read_vols() -> None:
     with rarfile.RarFile("test/files/rar3-old.rar") as rf:
         for fn in rf.namelist():
             rf.read(fn)  # old
@@ -63,7 +64,7 @@ def test_read_vols():
             rf.read(fn)  # rar5
 
 
-def test_unrar_tool():
+def test_unrar_tool() -> None:
     install_unrar_tool()
     try:
         test_read_rar3()
@@ -82,7 +83,7 @@ def test_unrar_tool():
 
 @pytest.mark.skipif(sys.platform == "win32", reason="unar not available on Windows")
 @pytest.mark.skipif(not have_tool(config.UNAR_TOOL), reason="unar not installed")
-def test_unar_tool():
+def test_unar_tool() -> None:
     install_unar_tool()
     try:
         test_read_rar3()
@@ -103,7 +104,7 @@ def test_unar_tool():
     not have_tool(config.BSDTAR_TOOL) and not have_tool(config.TAR_TOOL),
     reason="bsdtar not installed",
 )
-def test_bsdtar_tool():
+def test_bsdtar_tool() -> None:
     install_bsdtar_tool()
     try:
         #test_read_rar3()
@@ -125,7 +126,7 @@ def test_bsdtar_tool():
     not have_tool(config.SEVENZIP_TOOL) and not have_tool(config.SEVENZIP2_TOOL),
     reason="7z/7zz not installed",
 )
-def test_7z_tool():
+def test_7z_tool() -> None:
     install_7z_tool()
     try:
         #test_read_rar3()
@@ -144,7 +145,7 @@ def test_7z_tool():
 
 # test popen errors
 
-def test_popen_fail():
+def test_popen_fail() -> None:
     with pytest.raises(rarfile.RarCannotExec):
         backend.custom_popen(["missing-unrar-exe"])
 
@@ -153,11 +154,11 @@ def test_popen_fail():
             backend.custom_popen(["./test/files/rar5-blake.rar.exp"])
 
 
-def test_check_returncode():
+def test_check_returncode() -> None:
     from rarfile.backend import check_returncode
     errmap = backend.UNRAR_CONFIG["errmap"]
 
-    assert not check_returncode(0, "", errmap)
+    check_returncode(0, "", errmap)
 
     with pytest.raises(rarfile.RarFatalError):
         check_returncode(2, "x", errmap)
@@ -175,37 +176,37 @@ def test_check_returncode():
 
 # own cli tests
 
-def cli(*args):
+def cli(*args: str) -> int:
     from rarfile.cli import main
     try:
-        main(args)
+        main(list(args))
         return 0
     except SystemExit as ex:
-        return int(ex.code)
+        return int(ex.code or 0)
     except Exception as ex:
         sys.stderr.write(str(ex) + "\n")
         return 1
 
 
-def test_cli_list(capsys):
+def test_cli_list(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli("-l", "test/files/rar3-old.rar") == 0
     res = capsys.readouterr()
     assert "bigfile" in res.out
 
 
-def test_cli_testrar(capsys):
+def test_cli_testrar(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli("-t", "test/files/rar3-old.rar") == 0
     res = capsys.readouterr()
     assert not res.err
 
 
-def test_cli_extract(capsys, tmp_path):
+def test_cli_extract(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     assert cli("-e", "test/files/rar3-old.rar", str(tmp_path)) == 0
     res = capsys.readouterr()
     assert not res.err
 
 
-def test_cli_help(capsys):
+def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli("--help") == 0
     res = capsys.readouterr()
     assert "option" in res.out

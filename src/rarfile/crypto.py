@@ -2,34 +2,38 @@
 """
 
 from binascii import crc32, hexlify
+from collections.abc import Callable
 from hashlib import blake2s, pbkdf2_hmac, sha1
 from struct import Struct
+from typing import Protocol, TypeAlias
 
 from .bits import RAR_MAX_PASSWORD
 from .errors import BadRarFile
+from .utils import FileLike
 
-__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "NoHashContext", "CRC32Context", "Blake2SP", "HeaderDecrypt")
+__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "HashContext",
+           "NoHashContext", "CRC32Context", "Blake2SP", "HeaderDecrypt")
 
 
-BLK_BE = Struct(">16L")
-BLK_LE = Struct("<16L")
-
-KEY_BE = Struct(">4L")
-KEY_LE = Struct("<4L")
-
-U16_LE = Struct('<H')
+Decryptor: TypeAlias = Callable[[bytes], bytes]
 
 # optional: only needed for encrypted headers
-AES = None
 try:
     try:
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives.ciphers import (
             Cipher, algorithms, modes,
         )
+
+        def get_decrypt(key: bytes, iv: bytes) -> Decryptor:
+            ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
+            return ciph.decryptor().update
         have_crypto = 1
     except ImportError:
         from Crypto.Cipher import AES
+
+        def get_decrypt(key: bytes, iv: bytes) -> Decryptor:
+            return AES.new(key, AES.MODE_CBC, iv).decrypt
         have_crypto = 2
 except ImportError:
     have_crypto = 0
@@ -38,29 +42,31 @@ except ImportError:
 class AES_CBC_Decrypt:
     """Decrypt API"""
 
-    def __init__(self, key, iv):
-        if have_crypto == 2:
-            self.decrypt = AES.new(key, AES.MODE_CBC, iv).decrypt
-        else:
-            ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
-            self.decrypt = ciph.decryptor().update
+    def __init__(self, key: bytes, iv: bytes):
+        self.decrypt = get_decrypt(key, iv)
 
 
 class HeaderDecrypt:
     """File-like object that decrypts from another file"""
 
-    def __init__(self, f, key, iv):
+    def __init__(self, f: FileLike, key: bytes, iv: bytes):
         self.f = f
         self.ciph = AES_CBC_Decrypt(key, iv)
         self.buf = b""
 
-    def tell(self):
+    def tell(self) -> int:
         """Current file pos - works only on block boundaries."""
         return self.f.tell()
 
-    def read(self, cnt=None):
+    def seek(self, ofs: int, whence: int = 0, /) -> int:
+        raise NotImplementedError('Why?')
+
+    def close(self) -> None:
+        pass
+
+    def read(self, cnt: int = -1, /) -> bytes:
         """Read and decrypt."""
-        if cnt > 8 * 1024:
+        if cnt > 8 * 1024 or cnt < 0:
             raise BadRarFile("Bad count to header decrypt - wrong password?")
 
         # consume old data
@@ -90,40 +96,49 @@ class HeaderDecrypt:
         return res
 
 
+class HashContext(Protocol):
+    """Common interface for the various hash/checksum contexts."""
+
+    def update(self, data: bytes | memoryview) -> None: ...
+    def digest(self) -> int | bytes | None: ...
+    def hexdigest(self) -> str | None: ...
+
+
 class NoHashContext:
     """No-op hash function."""
 
-    def __init__(self, data=None):
+    def __init__(self, data: bytes | None = None):
         """Initialize"""
 
-    def update(self, data):
+    def update(self, data: bytes | memoryview) -> None:
         """Update data"""
 
-    def digest(self):
+    def digest(self) -> None:
         """Final hash"""
 
-    def hexdigest(self):
+    def hexdigest(self) -> None:
         """Hexadecimal digest."""
+        return None
 
 
 class CRC32Context:
     """Hash context that uses CRC32."""
     __slots__ = ("_crc",)
 
-    def __init__(self, data=None):
+    def __init__(self, data: bytes | None = None):
         self._crc = 0
         if data:
             self.update(data)
 
-    def update(self, data):
+    def update(self, data: bytes | memoryview) -> None:
         """Process data."""
         self._crc = crc32(data, self._crc)
 
-    def digest(self):
+    def digest(self) -> int:
         """Final hash."""
         return self._crc
 
-    def hexdigest(self):
+    def hexdigest(self) -> str:
         """Hexadecimal digest."""
         return "%08x" % self.digest()
 
@@ -136,11 +151,11 @@ class Blake2SP:
     block_size = 64
     parallelism = 8
 
-    def __init__(self, data=None):
+    def __init__(self, data: bytes | None = None):
         self._buf = b""
         self._cur = 0
-        self._digest = None
-        self._thread = []
+        self._digest: bytes | None = None
+        self._thread: list[blake2s] = []
 
         for i in range(self.parallelism):
             ctx = self._blake2s(i, 0, i == (self.parallelism - 1))
@@ -149,15 +164,15 @@ class Blake2SP:
         if data:
             self.update(data)
 
-    def _blake2s(self, ofs, depth, is_last):
+    def _blake2s(self, ofs: int, depth: int, is_last: bool) -> blake2s:
         return blake2s(node_offset=ofs, node_depth=depth, last_node=is_last,
                        depth=2, inner_size=32, fanout=self.parallelism)
 
-    def _add_block(self, blk):
+    def _add_block(self, blk: memoryview | bytes) -> None:
         self._thread[self._cur].update(blk)
         self._cur = (self._cur + 1) % self.parallelism
 
-    def update(self, data):
+    def update(self, data: bytes | memoryview) -> None:
         """Hash data.
         """
         view = memoryview(data)
@@ -174,25 +189,38 @@ class Blake2SP:
             view = view[bs:]
         self._buf = view.tobytes()
 
-    def digest(self):
+    def digest(self) -> bytes:
         """Return final digest value.
         """
-        if self._digest is None:
-            if self._buf:
-                self._add_block(self._buf)
-                self._buf = b""
-            ctx = self._blake2s(0, 1, True)
-            for t in self._thread:
-                ctx.update(t.digest())
-            self._digest = ctx.digest()
-        return self._digest
+        cached = self._digest
+        if cached is not None:
+            return cached
 
-    def hexdigest(self):
+        if self._buf:
+            self._add_block(self._buf)
+            self._buf = b""
+        ctx = self._blake2s(0, 1, True)
+        for t in self._thread:
+            ctx.update(t.digest())
+        digest = ctx.digest()
+        self._digest = digest
+        return digest
+
+    def hexdigest(self) -> str:
         """Hexadecimal digest."""
         return hexlify(self.digest()).decode("ascii")
 
 
-def generate():
+BLK_BE = Struct(">16L")
+BLK_LE = Struct("<16L")
+
+KEY_BE = Struct(">4L")
+KEY_LE = Struct("<4L")
+
+U16_LE = Struct('<H')
+
+
+def generate() -> None:
     import textwrap
     words = [chr(ord('a') + i) for i in range(16)]
     all_words = ", ".join(words)
@@ -215,7 +243,7 @@ def generate():
     print("\n".join(lines))
 
 
-def rar3_corrupt_block(seed, pos):
+def rar3_corrupt_block(seed: bytearray, pos: int) -> None:
     a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p = BLK_BE.unpack_from(seed, pos)
     for _ in range(4):
         # fmt: off
@@ -239,7 +267,7 @@ def rar3_corrupt_block(seed, pos):
     BLK_LE.pack_into(seed, pos, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
 
 
-def rar3_s2k_core_py(seed):
+def rar3_s2k_core_py(seed: bytes) -> tuple[bytes, bytes]:
     """Main loop of the RAR3 string-to-key hash.
     """
     seed_len = len(seed)
@@ -286,7 +314,8 @@ except ImportError:
     rar3_s2k_core = rar3_s2k_core_py
 
 
-def rar3_s2k(pwd, salt, _core=rar3_s2k_core):
+def rar3_s2k(pwd: str | bytes, salt: bytes, _core: Callable[[
+             bytes], tuple[bytes, bytes]] = rar3_s2k_core) -> tuple[bytes, bytes]:
     """String-to-key hash for RAR3.
     """
     if not isinstance(pwd, str):
@@ -295,7 +324,7 @@ def rar3_s2k(pwd, salt, _core=rar3_s2k_core):
     return _core(wstr + salt)
 
 
-def rar5_s2k(pwd, salt, kdf_count):
+def rar5_s2k(pwd: str | bytes, salt: bytes, kdf_count: int) -> bytes:
     """String-to-key hash for RAR5.
     """
     if not isinstance(pwd, str):

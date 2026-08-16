@@ -19,13 +19,20 @@ RarFile class
 RarInfo class
 -------------
 
-.. autoclass:: RarInfo
-   :members:
+.. autoclass:: RarInfo()
+    :show-inheritance:
+    :members:
+
+RarEntry class
+--------------
+
+.. autoclass:: RarEntry()
+    :members:
 
 RarExtFile class
 ----------------
 
-.. autoclass:: RarExtFile
+.. autoclass:: RarExtFile()
    :show-inheritance:
    :members:
    :inherited-members:
@@ -34,9 +41,14 @@ RarExtFile class
 nsdatetime class
 ----------------
 
-.. autoclass:: nsdatetime
+.. autoclass:: nsdatetime(..., *, fold = 0, nanosecond = 0)
    :show-inheritance:
-   :members:
+   :exclude-members: replace
+
+   .. autoattribute:: nanosecond
+   .. automethod:: astimezone
+   .. automethod:: isoformat
+   .. automethod:: replace(..., nanosecond = 0)
 
 Functions
 ---------
@@ -47,19 +59,10 @@ Functions
 Constants
 ---------
 
-.. autodata:: RAR_M0
-.. autodata:: RAR_M1
-.. autodata:: RAR_M2
-.. autodata:: RAR_M3
-.. autodata:: RAR_M4
-.. autodata:: RAR_M5
-
-.. autodata:: RAR_OS_WIN32
-.. autodata:: RAR_OS_UNIX
-.. autodata:: RAR_OS_MACOS
-.. autodata:: RAR_OS_BEOS
-.. autodata:: RAR_OS_OS2
-.. autodata:: RAR_OS_MSDOS
+.. py:currentmodule:: rarfile.bits
+.. automodule:: rarfile.bits
+   :members:
+.. py:currentmodule:: rarfile
 
 Warnings
 --------
@@ -75,6 +78,7 @@ Exceptions
 .. autoclass:: BadRarName
 .. autoclass:: NoRarEntry
 .. autoclass:: PasswordRequired
+.. autoclass:: BadSymLinkError
 .. autoclass:: NeedFirstVolume
 .. autoclass:: NoCrypto
 .. autoclass:: RarExecError
@@ -94,4 +98,34 @@ Exceptions
 .. autoclass:: RarSignalExit
 .. autoclass:: RarCannotExec
 
+Types
+-----
 
+.. autotype is broken in sphinx 9.1
+
+.. py:type:: DateTuple
+    :canonical: tuple[int, int, int, int, int, int]
+
+    Type for date components.
+
+.. py:type:: PathLike
+    :canonical: str | bytes | ~pathlib.Path
+
+    Type for file names.
+
+.. autoclass:: FileLike()
+    :show-inheritance:
+
+    .. automethod:: read
+    .. automethod:: seek
+    .. automethod:: tell
+    .. automethod:: close
+
+.. autoclass:: RawFileLike()
+    :show-inheritance:
+
+    .. automethod:: read
+    .. automethod:: readinto
+    .. automethod:: seek
+    .. automethod:: tell
+    .. automethod:: close

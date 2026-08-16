@@ -7,7 +7,7 @@ import io
 import rarfile
 
 
-def try_read(tmpfn):
+def try_read(tmpfn: io.BytesIO) -> None:
     if not rarfile.is_rarfile(tmpfn):
         return
     rarfile.RarFile(tmpfn, errors="stop")
@@ -24,7 +24,7 @@ def try_read(tmpfn):
             pass
 
 
-def process_rar(rarfn, quick=False):
+def process_rar(rarfn: str, quick: bool = False) -> None:
     with open(rarfn, "rb") as f:
         data = f.read()
     for n in range(len(data)):
@@ -39,19 +39,19 @@ def process_rar(rarfn, quick=False):
     for n in range(1, len(data)):
         for i in range(len(crap)):
             c = crap[i:i + 1]
-            bad = data[:n - 1] + c + data[n:]
-            try_read(io.BytesIO(bad))
+            bad_data = data[:n - 1] + c + data[n:]
+            try_read(io.BytesIO(bad_data))
 
 
-def test_corrupt_quick_rar3():
+def test_corrupt_quick_rar3() -> None:
     process_rar("test/files/rar3-comment-plain.rar", True)
 
 
-def test_corrupt_quick_rar5():
+def test_corrupt_quick_rar5() -> None:
     process_rar("test/files/rar5-times.rar", True)
 
 
-def test_corrupt_all():
+def test_corrupt_all() -> None:
     test_rar_list = glob.glob("test/files/*.rar")
     test_rar_list = []
     for rar in test_rar_list:

@@ -6,6 +6,7 @@ import binascii
 import getopt
 import io
 import sys
+from collections.abc import Sequence
 from datetime import datetime
 
 import rarfile as rf
@@ -39,14 +40,14 @@ r5_block_types = {
 }
 
 
-def rar3_type(btype):
+def rar3_type(btype: int) -> str:
     """RAR3 type code as string."""
     if btype < rf.RAR_BLOCK_MARK or btype > rf.RAR_BLOCK_ENDARC:
         return "*UNKNOWN*"
     return block_strs[btype - rf.RAR_BLOCK_MARK]
 
 
-def rar5_type(btype):
+def rar5_type(btype: int) -> str:
     """RAR5 type code as string."""
     return r5_block_types.get(btype, "*UNKNOWN*")
 
@@ -184,7 +185,7 @@ dos_mode_bits = (
 )
 
 
-def xprint(m, *args):
+def xprint(m: str, *args: object) -> None:
     """Print string to stdout.
     """
     if args:
@@ -192,15 +193,15 @@ def xprint(m, *args):
     print(m)
 
 
-def tohex(data):
+def tohex(data: bytes) -> str:
     """Return hex string."""
     return binascii.hexlify(data).decode("ascii")
 
 
-def render_flags(flags, bit_list):
+def render_flags(flags: int, bit_list: Sequence[tuple[int, str]]) -> str:
     """Show bit names.
     """
-    res = []
+    res: list[str] = []
     known = 0
     for bit in bit_list:
         known = known | bit[0]
@@ -220,7 +221,7 @@ def render_flags(flags, bit_list):
     return ",".join(res)
 
 
-def get_file_flags(flags):
+def get_file_flags(flags: int) -> str:
     """Show flag names and handle dict size.
     """
     res = render_flags(flags & ~rf.RAR_FILE_DICTMASK, file_bits)
@@ -230,7 +231,7 @@ def get_file_flags(flags):
     return res
 
 
-def fmt_time(t):
+def fmt_time(t: datetime | rf.DateTuple | None) -> str:
     """Format time.
     """
     if t is None:
@@ -240,18 +241,29 @@ def fmt_time(t):
     return "%04d-%02d-%02d %02d:%02d:%02d" % t
 
 
-def show_item(h):
+# RAR3 record classes handled by show_item_v3()
+Rar3Record = (
+    rf.Rar3Info | rf.Rar3MainInfo | rf.Rar3EndArcInfo | rf.Rar3GenericInfo
+)
+
+# RAR5 record classes handled by show_item_v5()
+Rar5Record = (
+    rf.Rar5BaseFile | rf.Rar5MainInfo | rf.Rar5EncryptionInfo | rf.Rar5EndArcInfo
+)
+
+
+def show_item(h: rf.RarEntry) -> None:
     """Show any RAR3/5 record.
     """
-    if isinstance(h, rf.Rar3Info):
+    if isinstance(h, (rf.Rar3Info, rf.Rar3MainInfo, rf.Rar3EndArcInfo,
+                      rf.Rar3GenericInfo)):
         show_item_v3(h)
-    elif isinstance(h, rf.Rar5Info):
+    elif isinstance(h, (rf.Rar5BaseFile, rf.Rar5MainInfo,
+                        rf.Rar5EncryptionInfo, rf.Rar5EndArcInfo)):
         show_item_v5(h)
-    else:
-        xprint("Unknown info record")
 
 
-def show_rftype(h):
+def show_rftype(h: rf.RarEntry) -> str:
     return "".join([
         h.is_file() and "F" or "-",
         h.is_dir() and "D" or "-",
@@ -259,11 +271,11 @@ def show_rftype(h):
     ])
 
 
-def modex3(v):
+def modex3(v: int) -> list[str]:
     return [v & 4 and "r" or "-", v & 2 and "w" or "-", v & 1 and "x" or "-"]
 
 
-def unix_mode(mode):
+def unix_mode(mode: int) -> str:
     perms = modex3(mode >> 6) + modex3(mode >> 3) + modex3(mode)
     if mode & 0x0800:
         perms[2] = perms[2] == "x" and "s" or "S"
@@ -287,7 +299,7 @@ def unix_mode(mode):
     return "".join(perms)
 
 
-def show_mode(h):
+def show_mode(h: rf.RarInfo) -> str:
     if h.host_os in (rf.RAR_OS_UNIX, rf.RAR_OS_BEOS):
         s_mode = unix_mode(h.mode)
     elif h.host_os in (rf.RAR_OS_MSDOS, rf.RAR_OS_WIN32, rf.RAR_OS_OS2):
@@ -297,13 +309,13 @@ def show_mode(h):
     return s_mode
 
 
-def show_item_v3(h):
+def show_item_v3(h: Rar3Record) -> None:
     """Show any RAR3 record.
     """
     st = rar3_type(h.type)
     xprint("%s: hdrlen=%d datlen=%d is=%s",
            st, h.header_size, h.add_size, show_rftype(h))
-    if h.type in (rf.RAR_BLOCK_FILE, rf.RAR_BLOCK_SUB):
+    if isinstance(h, rf.Rar3Info):
         s_mode = show_mode(h)
         xprint("  flags=0x%04x:%s", h.flags, get_file_flags(h.flags))
         if h.host_os >= 0 and h.host_os < len(os_list):
@@ -318,8 +330,11 @@ def show_item_v3(h):
                h.host_os, s_os,
                h.extract_version, s_mode, h.compress_type,
                h.compress_size, h.file_size, h.volume, s_namecmp)
-        ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
-        xprint("  crc=0x%08x (%d) date_time=%s", ucrc, h.CRC, fmt_time(h.date_time))
+        if h.CRC is not None:
+            ucrc = (h.CRC + (1 << 32)) & ((1 << 32) - 1)
+            xprint("  crc=0x%08x (%d) date_time=%s", ucrc, h.CRC, fmt_time(h.date_time))
+        else:
+            xprint("  date_time=%s", fmt_time(h.date_time))
         xprint("  name=%s", h.filename)
         if h.mtime:
             xprint("  mtime=%s", fmt_time(h.mtime))
@@ -329,38 +344,39 @@ def show_item_v3(h):
             xprint("  atime=%s", fmt_time(h.atime))
         if h.arctime:
             xprint("  arctime=%s", fmt_time(h.arctime))
-    elif h.type == rf.RAR_BLOCK_MAIN:
+    elif isinstance(h, rf.Rar3MainInfo):
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, main_bits))
-    elif h.type == rf.RAR_BLOCK_ENDARC:
+    elif isinstance(h, rf.Rar3EndArcInfo):
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, endarc_bits))
         if h.flags & rf.RAR_ENDARC_DATACRC:
             xprint("  datacrc=0x%08x", h.endarc_datacrc)
-        if h.flags & rf.RAR_ENDARC_DATACRC:
             xprint("  volnr=%d", h.endarc_volnr)
     elif h.type == rf.RAR_BLOCK_MARK:
         xprint("  flags=0x%04x:", h.flags)
     elif h.type == rf.RAR_BLOCK_OLD_SUB:
+        assert h.old_sub_type is not None
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, generic_bits))
         xprint("  sub_type=0x%04x:%s", h.old_sub_type,
                r2_subblock_types.get(h.old_sub_type, '*UNKNOWN*'))
     else:
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.flags, generic_bits))
 
-    if h.comment is not None:
+    if isinstance(h, (rf.Rar3Info, rf.Rar3MainInfo)) and h.comment is not None:
         cm = repr(h.comment)
         if cm[0] == "u":
             cm = cm[1:]
         xprint("  comment=%s", cm)
 
 
-def show_item_v5(h):
+def show_item_v5(h: Rar5Record) -> None:
     """Show any RAR5 record.
     """
+    assert h.block_type is not None and h.block_flags is not None
     st = rar5_type(h.block_type)
     xprint("%s: hdrlen=%d datlen=%d hdr_extra=%d is=%s", st, h.header_size,
            h.add_size, h.block_extra_size, show_rftype(h))
     xprint("  block_flags=0x%04x:%s", h.block_flags, render_flags(h.block_flags, r5_block_flags))
-    if h.block_type in (rf.RAR5_BLOCK_FILE, rf.RAR5_BLOCK_SERVICE):
+    if isinstance(h, rf.Rar5BaseFile):
         xprint("  name=%s", h.filename)
         s_mode = show_mode(h)
         if h.file_host_os == rf.RAR5_OS_UNIX:
@@ -412,11 +428,11 @@ def show_item_v5(h):
         if h.file_version:
             flags, version = h.file_version
             xprint("  version: flags=%r version=%r", flags, version)
-    elif h.block_type == rf.RAR5_BLOCK_MAIN:
+    elif isinstance(h, rf.Rar5MainInfo):
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.main_flags, r5_main_flags))
-    elif h.block_type == rf.RAR5_BLOCK_ENDARC:
+    elif isinstance(h, rf.Rar5EndArcInfo):
         xprint("  flags=0x%04x:%s", h.flags, render_flags(h.endarc_flags, r5_endarc_flags))
-    elif h.block_type == rf.RAR5_BLOCK_ENCRYPTION:
+    elif isinstance(h, rf.Rar5EncryptionInfo):
         algo_name = "AES256" if h.encryption_algo == rf.RAR5_XENC_CIPHER_AES256 else "UnknownAlgo"
         xprint("  algo=%d:%s flags=0x%04x:%s", h.encryption_algo, algo_name, h.flags,
                render_flags(h.encryption_flags, r5_enc_flags))
@@ -425,7 +441,7 @@ def show_item_v5(h):
     else:
         xprint("  - missing info -")
 
-    if h.comment is not None:
+    if isinstance(h, rf.Rar5BaseFile) and h.comment is not None:
         cm = repr(h.comment)
         if cm[0] == "u":
             cm = cm[1:]
@@ -441,18 +457,20 @@ cf_test_unrar = 0
 cf_test_memory = 0
 
 
-def check_crc(f, inf, desc):
+def check_crc(f: rf.RarExtFile, inf: rf.RarInfo, desc: str) -> None:
     """Compare result crc to expected value.
     """
     exp = inf._md_expect
     if exp is None:
+        return
+    if f._md_context is None:
         return
     ucrc = f._md_context.digest()
     if ucrc != exp:
         print("crc error - %s - exp=%r got=%r" % (desc, exp, ucrc))
 
 
-def test_read_long(r, inf):
+def test_read_long(r: rf.RarFile, inf: rf.RarInfo) -> None:
     """Test read and readinto.
     """
     md_class = inf._md_class or rf.NoHashContext
@@ -467,11 +485,11 @@ def test_read_long(r, inf):
         bctx.update(data)
         total += len(data)
     if total != inf.file_size:
-        xprint("\n *** %s has corrupt file: %s ***", r.rarfile, inf.filename)
+        xprint("\n *** %s has corrupt file: %s ***", r._rarfile, inf.filename)
         xprint(" *** short read: got=%d, need=%d ***\n", total, inf.file_size)
     check_crc(f, inf_orig, "read")
     bhash = bctx.hexdigest()
-    if cf_verbose > 1:
+    if cf_verbose > 1 and f._md_context is not None:
         if f._md_context.digest() == inf_orig._md_expect:
             #xprint("  checkhash: %r", bhash)
             pass
@@ -496,12 +514,12 @@ def test_read_long(r, inf):
     f.close()
 
 
-def test_read(r, inf):
+def test_read(r: rf.RarFile, inf: rf.RarInfo) -> None:
     """Test file read."""
     test_read_long(r, inf)
 
 
-def test_real(fn, pwd):
+def test_real(fn: str, pwd: str | None) -> None:
     """Actual archive processing.
     """
     xprint("Archive: %s", fn)
@@ -510,7 +528,7 @@ def test_real(fn, pwd):
     if cf_verbose > 1:
         cb = show_item
 
-    rfarg = fn
+    rfarg: str | io.BytesIO = fn
     if cf_test_memory:
         rfarg = io.BytesIO(open(fn, "rb").read())
 
@@ -556,24 +574,20 @@ def test_real(fn, pwd):
         r.testrar()
 
 
-def test(fn, pwd):
+def test(fn: str, pwd: str | None) -> None:
     """Process one archive with error handling.
     """
     try:
         test_real(fn, pwd)
     except rf.NeedFirstVolume as ex:
         xprint(" --- %s is middle part of multi-vol archive (%s)---", fn, str(ex))
-    except rf.Error:
-        exc, msg, tb = sys.exc_info()
-        xprint("\n *** %s: %s ***\n", exc.__name__, msg)
-        del tb
-    except IOError:
-        exc, msg, tb = sys.exc_info()
-        xprint("\n *** %s: %s ***\n", exc.__name__, msg)
-        del tb
+    except rf.Error as ex:
+        xprint("\n *** %s: %s ***\n", type(ex).__name__, str(ex))
+    except IOError as ex:
+        xprint("\n *** %s: %s ***\n", type(ex).__name__, str(ex))
 
 
-def main():
+def main() -> None:
     """Program entry point.
     """
     global cf_verbose, cf_show_comment, cf_charset
@@ -615,13 +629,14 @@ def main():
         else:
             raise ValueError("unhandled switch: " + o)
 
-    args2 = []
+    args2: list[str] = []
     for a in args:
-        if a[0] == "@":
+        if a.startswith("@"):
             for ln in open(a[1:], "r", encoding="utf8"):
                 fn = ln[:-1]
-                args2.append(fn)
-        else:
+                if fn:
+                    args2.append(fn)
+        elif a:
             args2.append(a)
     args = args2
 

@@ -5,13 +5,14 @@ import io
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
 import rarfile
 
 
-def get_props(rf, name):
+def get_props(rf: rarfile.RarFile, name: str) -> str:
     inf = rf.getinfo(name)
     return "".join([
         inf.is_file() and "F" or "-",
@@ -20,15 +21,15 @@ def get_props(rf, name):
     ])
 
 
-def san_unix(fn):
+def san_unix(fn: str) -> str:
     return rarfile.sanitize_filename(fn, "/", False)
 
 
-def san_win32(fn):
+def san_win32(fn: str) -> str:
     return rarfile.sanitize_filename(fn, "/", True)
 
 
-def test_sanitize_unix():
+def test_sanitize_unix() -> None:
     assert san_unix("asd/asd") == "asd/asd"
     assert san_unix("asd/../asd") == "asd/asd"
     assert san_unix("c:/a/x") == r"c:/a/x"
@@ -36,7 +37,7 @@ def test_sanitize_unix():
     assert san_unix("z<>*?:") == "z____:"
 
 
-def test_sanitize_win32():
+def test_sanitize_win32() -> None:
     assert san_win32("asd/asd") == "asd/asd"
     assert san_win32("asd/../asd") == "asd/asd"
     assert san_win32("c:/a/x") == "a/x"
@@ -44,8 +45,9 @@ def test_sanitize_win32():
     assert san_win32("z<>*?:\\^") == "z_______"
 
 
-def checktime(fn, exp_mtime):
+def checktime(fn: Path, exp_mtime: datetime | None) -> None:
     # cannot check subsecond precision as filesystem may not support it
+    assert exp_mtime is not None
     cut = len("0000-00-00 00:00:00")
     st = os.stat(fn)
     got_mtime = datetime.fromtimestamp(st.st_mtime, exp_mtime.tzinfo)
@@ -54,7 +56,7 @@ def checktime(fn, exp_mtime):
     assert exp_stamp == got_stamp
 
 
-def checkfile(fn, data, mtime):
+def checkfile(fn: Path, data: str, mtime: datetime | None) -> None:
     with open(fn, "r", encoding="utf8") as f:
         got = f.read()
         assert got.strip() == data
@@ -62,7 +64,7 @@ def checkfile(fn, data, mtime):
     checktime(fn, mtime)
 
 
-def check_subdir(rf, tmp_path):
+def check_subdir(rf: rarfile.RarFile, tmp_path: Path) -> None:
     # pre-mkdir
     ext1 = tmp_path / "ext1"
     inf = rf.getinfo("sub/dir1/file1.txt")
@@ -122,7 +124,7 @@ def check_subdir(rf, tmp_path):
     "test/files/rar3-subdirs.rar",
     "test/files/rar5-subdirs.rar",
 ])
-def test_subdirs(fn, tmp_path):
+def test_subdirs(fn: str, tmp_path: Path) -> None:
     with rarfile.RarFile(fn) as rf:
         check_subdir(rf, tmp_path)
 
@@ -133,7 +135,7 @@ def test_subdirs(fn, tmp_path):
     "test/files/rar5-readonly-unix.rar",
     "test/files/rar5-readonly-win.rar",
 ])
-def test_readonly(fn, tmp_path):
+def test_readonly(fn: str, tmp_path: Path) -> None:
     with rarfile.RarFile(fn) as rf:
         assert get_props(rf, "ro_dir") == "-D-"
         assert get_props(rf, "ro_dir/ro_file.txt") == "F--"
@@ -152,7 +154,7 @@ def test_readonly(fn, tmp_path):
     "test/files/rar3-symlink-unix.rar",
     "test/files/rar5-symlink-unix.rar",
 ])
-def test_symlink(fn, tmp_path):
+def test_symlink(fn: str, tmp_path: Path) -> None:
     with rarfile.RarFile(fn) as rf:
         assert get_props(rf, "data.txt") == "F--"
         assert get_props(rf, "data_link") == "--L"
@@ -181,7 +183,7 @@ def test_symlink(fn, tmp_path):
         assert os.readlink(str(tmp_path / "data_link")) == "data.txt"
 
 
-def test_symlink_win(tmp_path):
+def test_symlink_win(tmp_path: Path) -> None:
     fn = "test/files/rar5-symlink-win.rar"
     with rarfile.RarFile(fn) as rf:
         assert get_props(rf, "content/dir1") == "-D-"
@@ -216,7 +218,7 @@ def test_symlink_win(tmp_path):
     "test/files/rar3-vols.part1.rar",
     "test/files/rar5-vols.part1.rar",
 ])
-def test_vols(fn, tmp_path):
+def test_vols(fn: str, tmp_path: Path) -> None:
     with rarfile.RarFile(fn) as rf:
         rarfile.FORCE_TOOL = True
         try:
@@ -232,7 +234,7 @@ def test_vols(fn, tmp_path):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlink semantics differ on Windows")
-def test_symlink_chained_traversal_blocked(tmp_path):
+def test_symlink_chained_traversal_blocked(tmp_path: Path) -> None:
     """Regression test for symlink-chained zip-slip (CWE-22 + CWE-59).
 
     The fixture rar5-evil-symlink-traversal.rar contains two members:

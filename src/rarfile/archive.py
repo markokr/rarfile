@@ -6,7 +6,10 @@ import os
 import shutil
 import sys
 import warnings
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from pathlib import Path
+from types import TracebackType
+from typing import IO, Literal
 
 from . import config
 from .backend import empty_read
@@ -20,17 +23,17 @@ from .errors import (
     PasswordRequired, UnsupportedWarning,
 )
 from .format import RAR3Parser, RAR5Parser
-from .utils import XFile, is_filelike, sanitize_filename, to_nsecs
+from .info import RarEntry, RarInfo
+from .stream import RarExtFile
+from .utils import (
+    FileLike, PathLike, XFile, is_filelike, sanitize_filename, to_nsecs,
+)
 
 # export only interesting items
-__all__ = (
-    "get_rar_version",
-    "is_rarfile",
-    "is_rarfile_sfx",
-    "RarFile")
+__all__ = ("get_rar_version", "is_rarfile", "is_rarfile_sfx", "RarFile")
 
 
-def _find_sfx_header(xfile):
+def _find_sfx_header(xfile: PathLike | FileLike) -> tuple[int, int]:
     sig = RAR_ID[:-1]
     buf = io.BytesIO()
     steps = (64, config.SFX_MAX_SIZE)
@@ -61,7 +64,7 @@ def _find_sfx_header(xfile):
 ##
 
 
-def get_rar_version(xfile):
+def get_rar_version(xfile: PathLike | FileLike) -> int:
     """Check quickly whether file is rar archive.
     """
     with XFile(xfile) as fd:
@@ -74,7 +77,7 @@ def get_rar_version(xfile):
     return 0
 
 
-def is_rarfile(xfile):
+def is_rarfile(xfile: PathLike | FileLike) -> bool:
     """Check quickly whether file is rar archive.
     """
     try:
@@ -84,7 +87,7 @@ def is_rarfile(xfile):
         return False
 
 
-def is_rarfile_sfx(xfile):
+def is_rarfile_sfx(xfile: PathLike | FileLike) -> bool:
     """Check whether file is rar archive with support for SFX.
 
     It will read 2M from file.
@@ -118,26 +121,33 @@ class RarFile:
     """
 
     #: File name, if available.  Unicode string or None.
-    filename = None
+    filename: str | None = None
 
     #: Archive comment.  Unicode string or None.
-    comment = None
+    comment: str | None = None
 
-    def __init__(self, file, mode="r", charset=None, info_callback=None,
-                 crc_check=True, errors="stop", part_only=False):
+    _file_parser: RAR3Parser | RAR5Parser | None = None
+
+    def __init__(self, file: str | Path | FileLike,
+                 mode: str = "r",
+                 charset: str | None = None,
+                 info_callback: Callable[[RarEntry], None] | None = None,
+                 crc_check: bool = True,
+                 errors: Literal["stop", "strict"] = "stop",
+                 part_only: bool = False):
         if is_filelike(file):
             self.filename = getattr(file, "name", None)
         else:
             if isinstance(file, Path):
                 file = str(file)
             self.filename = file
-        self._rarfile = file
+        self._rarfile: str | FileLike = file
 
         self._charset = charset or config.DEFAULT_CHARSET
         self._info_callback = info_callback
         self._crc_check = crc_check
         self._part_only = part_only
-        self._password = None
+        self._password: str | None = None
         self._file_parser = None
 
         if errors == "stop":
@@ -152,19 +162,20 @@ class RarFile:
 
         self._parse()
 
-    def __enter__(self):
+    def __enter__(self) -> "RarFile":
         """Open context."""
         return self
 
-    def __exit__(self, typ, value, traceback):
+    def __exit__(self, typ: type[BaseException] | None, value: BaseException | None,
+                 traceback: TracebackType | None) -> None:
         """Exit context."""
         self.close()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[RarInfo]:
         """Iterate over members."""
         return iter(self.infolist())
 
-    def setpassword(self, pwd):
+    def setpassword(self, pwd: str | None) -> None:
         """Sets the password to use when extracting.
         """
         self._password = pwd
@@ -176,42 +187,52 @@ class RarFile:
         else:
             self._file_parser.setpassword(self._password)
 
-    def needs_password(self):
+    def needs_password(self) -> bool:
         """Returns True if any archive entries require password for extraction.
         """
+        assert self._file_parser is not None
         return self._file_parser.needs_password()
 
-    def is_solid(self):
+    def is_solid(self) -> bool:
         """Returns True if archive uses solid compression.
 
         .. versionadded:: 4.2
         """
+        assert self._file_parser is not None
         return self._file_parser.is_solid()
 
-    def namelist(self):
+    def namelist(self) -> list[str]:
         """Return list of filenames in archive.
         """
-        return [f.filename for f in self.infolist()]
+        names: list[str] = []
+        for f in self.infolist():
+            names.append(f.filename)
+        return names
 
-    def infolist(self):
+    def infolist(self) -> Sequence[RarInfo]:
         """Return RarInfo objects for all files/directories in archive.
         """
+        if self._file_parser is None:
+            return []
         return self._file_parser.infolist()
 
-    def volumelist(self):
+    def volumelist(self) -> Sequence[PathLike | FileLike]:
         """Returns filenames of archive volumes.
 
         In case of single-volume archive, the list contains
         just the name of main archive file.
         """
+        if self._file_parser is None:
+            return []
         return self._file_parser.volumelist()
 
-    def getinfo(self, name):
+    def getinfo(self, name: str | Path | RarInfo) -> RarInfo:
         """Return RarInfo for file.
         """
+        assert self._file_parser is not None
         return self._file_parser.getinfo(name)
 
-    def getinfo_orig(self, name):
+    def getinfo_orig(self, name: str | Path | RarInfo) -> RarInfo:
         """Return RarInfo for file source.
 
         RAR5: if name is hard-linked or copied file,
@@ -219,9 +240,10 @@ class RarFile:
 
         .. versionadded:: 4.1
         """
+        assert self._file_parser is not None
         return self._file_parser.getinfo_orig(name)
 
-    def open(self, name, mode="r", pwd=None):
+    def open(self, name: str | Path | RarInfo, mode: str = "r", pwd: str | None = None) -> RarExtFile:
         """Returns file-like object (:class:`RarExtFile`) from where the data can be read.
 
         The object implements :class:`io.RawIOBase` interface, so it can
@@ -261,9 +283,10 @@ class RarFile:
         else:
             pwd = None
 
+        assert self._file_parser is not None
         return self._file_parser.open(inf, pwd)
 
-    def read(self, name, pwd=None):
+    def read(self, name: str | Path | RarInfo, pwd: str | None = None) -> bytes:
         """Return uncompressed data for archive entry.
 
         For longer files using :meth:`~RarFile.open` may be better idea.
@@ -279,11 +302,11 @@ class RarFile:
         with self.open(name, "r", pwd) as f:
             return f.read()
 
-    def close(self):
+    def close(self) -> None:
         """Release open resources."""
         pass
 
-    def printdir(self, file=None):
+    def printdir(self, file: IO[str] | None = None) -> None:
         """Print archive file list to stdout or given file.
         """
         if file is None:
@@ -291,7 +314,8 @@ class RarFile:
         for f in self.infolist():
             print(f.filename, file=file)
 
-    def extract(self, member, path=None, pwd=None):
+    def extract(self, member: str | Path | RarInfo, path: str | Path | None = None,
+                pwd: str | None = None) -> str | None:
         """Extract single file into current directory.
 
         Parameters:
@@ -306,7 +330,9 @@ class RarFile:
         inf = self.getinfo(member)
         return self._extract_one(inf, path, pwd, True)
 
-    def extractall(self, path=None, members=None, pwd=None):
+    def extractall(self, path: str | Path | None = None,
+                   members: Iterable[str | Path | RarInfo] | None = None,
+                   pwd: str | None = None) -> None:
         """Extract all files into current directory.
 
         Parameters:
@@ -321,12 +347,13 @@ class RarFile:
         if members is None:
             members = self.namelist()
 
-        done = set()
-        dirs = []
+        done: set[str] = set()
+        dirs: list[tuple[str, RarInfo]] = []
         for m in members:
             inf = self.getinfo(m)
             dst = self._extract_one(inf, path, pwd, not inf.is_dir())
             if inf.is_dir():
+                assert dst is not None
                 if dst not in done:
                     dirs.append((dst, inf))
                     done.add(dst)
@@ -335,7 +362,7 @@ class RarFile:
             for dst, inf in dirs:
                 self._set_attrs(inf, dst)
 
-    def testrar(self, pwd=None):
+    def testrar(self, pwd: str | None = None) -> None:
         """Read all files and test CRC.
         """
         for member in self.infolist():
@@ -343,7 +370,7 @@ class RarFile:
                 with self.open(member, 'r', pwd) as f:
                     empty_read(f, member.file_size, config.BSIZE)
 
-    def strerror(self):
+    def strerror(self) -> str | None:
         """Return error string if parsing failed or None if no problems.
         """
         if not self._file_parser:
@@ -354,7 +381,7 @@ class RarFile:
     ## private methods
     ##
 
-    def _parse(self):
+    def _parse(self) -> None:
         """Run parser for file type
         """
         ver, sfx_ofs = _find_sfx_header(self._rarfile)
@@ -374,7 +401,8 @@ class RarFile:
         self._file_parser.parse()
         self.comment = self._file_parser.comment
 
-    def _extract_one(self, info, path, pwd, set_attrs):
+    def _extract_one(self, info: RarInfo, path: str | Path | None, pwd: str | None,
+                     set_attrs: bool) -> str | None:
         fname = sanitize_filename(
             info.filename, os.path.sep, config.WIN32
         )
@@ -408,11 +436,11 @@ class RarFile:
             return self._make_symlink(info, dstfn, pwd, set_attrs, path)
         return None
 
-    def _create_helper(self, name, flags, info):
+    def _create_helper(self, name: str, flags: int, info: RarInfo) -> int:
         return os.open(name, flags)
 
-    def _make_file(self, info, dstfn, pwd, set_attrs):
-        def helper(name, flags):
+    def _make_file(self, info: RarInfo, dstfn: str, pwd: str | None, set_attrs: bool) -> str:
+        def helper(name: str, flags: int) -> int:
             return self._create_helper(name, flags, info)
         with self.open(info, "r", pwd) as src:
             with open(dstfn, "wb", opener=helper) as dst:
@@ -421,19 +449,19 @@ class RarFile:
             self._set_attrs(info, dstfn)
         return dstfn
 
-    def _make_dir(self, info, dstfn, pwd, set_attrs):
+    def _make_dir(self, info: RarInfo, dstfn: str, pwd: str | None, set_attrs: bool) -> str:
         os.makedirs(dstfn, exist_ok=True)
         if set_attrs:
             self._set_attrs(info, dstfn)
         return dstfn
 
-    def _make_symlink(self, info, dstfn, pwd, set_attrs, top):
+    def _make_symlink(self, info: RarInfo, dstfn: str, pwd: str | None, set_attrs: bool, top: str) -> str | None:
         target_is_directory = False
         if info.host_os == RAR_OS_UNIX:
             link_name = self.read(info, pwd).decode("utf8", "replace")
             target_is_directory = (info.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         elif info.file_redir:
-            redir_type, redir_flags, link_name = info.file_redir
+            redir_type, _redir_flags, link_name = info.file_redir
             if redir_type == RAR5_XREDIR_WINDOWS_JUNCTION:
                 warnings.warn(f"Windows junction not supported - {info.filename}", UnsupportedWarning)
                 return None
@@ -457,7 +485,7 @@ class RarFile:
         os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
         return dstfn
 
-    def _set_attrs(self, info, dstfn):
+    def _set_attrs(self, info: RarInfo, dstfn: str) -> None:
         if info.host_os == RAR_OS_UNIX:
             os.chmod(dstfn, info.mode & 0o777)
         elif info.host_os in (RAR_OS_WIN32, RAR_OS_MSDOS):

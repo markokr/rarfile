@@ -1,0 +1,3 @@
+
+def rar3_s2k_core(seed: bytes) -> tuple[bytes, bytes]: ...
+
