@@ -25,6 +25,8 @@ classifiers = [
     "Topic :: System :: Archiving :: Compression",
 ]
 
+dependencies = ["typing-extensions >= 4.10.0; python_version < '3.13'"]
+
 [project.urls]
 Homepage = "https://github.com/markokr/rarfile"
 Source = "https://github.com/markokr/rarfile"
@@ -53,9 +55,15 @@ docs = [
 ]
 lint = [
     "pylint",
+    "mypy",
     "isort",
     "autopep8",
     "ruff",
+
+    "cryptography",
+    "pycryptodome",
+    "setuptools",
+    "types-setuptools",
 ]
 
 [tool.setuptools]
@@ -81,6 +89,14 @@ balanced_wrapping = true
 include_trailing_comma = true
 atomic = true
 quiet = true
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+disallow_any_decorated = true
+disallow_any_unimported = true
+#disallow_any_explicit = true
+#disallow_any_expr = true
 
 [tool.ruff]
 target-version = "py310"
@@ -108,6 +124,7 @@ ignore = [
     'C405', # Unnecessary list literal (rewrite as a set literal)
     'F841', # Local variable `rf` is assigned to but never used
 
+    'PYI034',
     # fix
 
     'PT031', # `pytest.warns()` block should contain a single simple statement
@@ -122,3 +139,7 @@ ignore = [
 minversion = "6.0"
 #addopts = "-ra -q"
 testpaths = ["test"]
+
+[tool.pyright]
+reportPrivateUsage = false
+reportUnsupportedDunderAll = false

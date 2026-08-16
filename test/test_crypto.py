@@ -13,7 +13,7 @@ try:
         Cipher, algorithms, modes,
     )
 
-    def aes_encrypt(key, iv, data):
+    def aes_encrypt(key: bytes, iv: bytes, data: bytes) -> bytes:
         ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
         enc = ciph.encryptor()
         return enc.update(data)
@@ -22,7 +22,7 @@ except ImportError:
 
 
 @pytest.mark.skipif(not have_crypto, reason="No crypto")
-def test_aes128_cbc():
+def test_aes128_cbc() -> None:
     data = b"0123456789abcdef" * 2
     key = b"\x02" * 16
     iv = b"\x80" * 16
@@ -35,7 +35,7 @@ def test_aes128_cbc():
 
 
 @pytest.mark.skipif(not have_crypto, reason="No crypto")
-def test_aes256_cbc():
+def test_aes256_cbc() -> None:
     data = b"0123456789abcdef" * 2
     key = b"\x52" * 32
     iv = b"\x70" * 16

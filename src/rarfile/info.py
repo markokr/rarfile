@@ -1,23 +1,114 @@
-"""RAR file format parser.
+"""RAR entry records.
 """
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import TypeAlias
 
 from .bits import (
     RAR5_BLOCK_ENCRYPTION, RAR5_BLOCK_FLAG_SPLIT_AFTER,
     RAR5_BLOCK_FLAG_SPLIT_BEFORE, RAR5_COMPR_SOLID, RAR5_FILE_FLAG_ISDIR,
     RAR5_MAIN_FLAG_SOLID, RAR5_XREDIR_UNIX_SYMLINK,
     RAR5_XREDIR_WINDOWS_JUNCTION, RAR5_XREDIR_WINDOWS_SYMLINK,
-    RAR_BLOCK_ENDARC, RAR_BLOCK_FILE, RAR_BLOCK_MAIN, RAR_BLOCK_SUB,
-    RAR_FILE_DIRECTORY, RAR_FILE_PASSWORD, RAR_FILE_SPLIT_AFTER,
+    RAR_BLOCK_ENDARC, RAR_BLOCK_FILE, RAR_BLOCK_MAIN, RAR_BLOCK_MARK,
+    RAR_BLOCK_SUB, RAR_FILE_DIRECTORY, RAR_FILE_PASSWORD, RAR_FILE_SPLIT_AFTER,
     RAR_FILE_SPLIT_BEFORE, RAR_MAIN_PASSWORD, RAR_MAIN_SOLID, RAR_OS_UNIX,
 )
+from .crypto import HashContext
+from .utils import DateTuple, FileLike, PathLike
 
-__all__ = ("RarInfo", "Rar3Info", "Rar5Info", "Rar5BaseFile",
-           "Rar5FileInfo", "Rar5ServiceInfo", "Rar5MainInfo",
-           "Rar5EncryptionInfo", "Rar5EndArcInfo")
+__all__ = (
+    "RarEntry", "RarInfo",
+    "Rar3Info", "Rar3SubInfo", "Rar3MainInfo", "Rar3EndArcInfo",
+    "Rar3GenericInfo",
+    "Rar5BaseFile", "Rar5FileInfo", "Rar5ServiceInfo",
+    "Rar5MainInfo", "Rar5EncryptionInfo", "Rar5EndArcInfo",
+)
 
 
-class RarInfo:
-    r"""An entry in rar archive.
+FileEncryption: TypeAlias = tuple[int, int, int, bytes, bytes, bytes | None]
+
+
+@dataclass(kw_only=True, eq=False)
+class RarEntry:
+    """Base class for all records in a rar archive.
+
+    .. versionadded:: 5.0
+
+    Attributes:
+
+        type
+            RAR3 block type.  One of RAR_BLOCK_* constants.  RAR5 blocks are mappend
+
+        flags
+            File modification timestamp.   As tuple of (year, month, day, hour, minute, second).
+            RAR5 allows archives where it is missing, it's None then.
+
+        block_type
+            RAR5 block type.  One of RAR5_BLOCK_* contants.  None on RAR3.
+
+    """
+
+    type: int = 0
+    flags: int
+    volume: int = 0
+    volume_file: PathLike | FileLike | None = None
+
+    header_crc: int
+    header_size: int
+    header_offset: int
+    data_offset: int
+    add_size: int
+
+    # rar5 low-level framing, None for rar3
+    block_type: int | None = None
+    block_flags: int | None = None
+    block_extra_size: int = 0
+
+    # zipfile compat
+    def is_dir(self) -> bool:
+        """Returns True if entry is a directory.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def is_symlink(self) -> bool:
+        """Returns True if entry is a symlink.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def is_file(self) -> bool:
+        """Returns True if entry is a normal file.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def needs_password(self) -> bool:
+        """Returns True if data is stored password-protected.
+        """
+        if self.type == RAR_BLOCK_FILE:
+            return (self.flags & RAR_FILE_PASSWORD) > 0
+        return False
+
+    def _must_disable_hack(self) -> bool:
+        """Returns True if temp-file extraction hack must be avoided."""
+        return False
+
+    def isdir(self) -> bool:
+        """Returns True if entry is a directory.
+
+        .. deprecated:: 4.0
+        """
+        return self.is_dir()
+
+
+@dataclass(kw_only=True, eq=False)
+class RarInfo(RarEntry):
+    r"""A file entry in rar archive.
 
     Timestamps as :class:`~datetime.datetime` are without timezone in RAR3,
     with UTC timezone in RAR5 archives.
@@ -115,113 +206,65 @@ class RarInfo:
     """
 
     # zipfile-compatible fields
-    filename = None
-    file_size = None
-    compress_size = None
-    date_time = None
-    CRC = None
-    volume = None
-    orig_filename = None
+    filename: str
+    orig_filename: bytes
+    file_size: int
+    compress_size: int | None = None
+    date_time: DateTuple | None = None
+    CRC: int | None = None
 
     # optional extended time fields, datetime() objects.
-    mtime = None
-    ctime = None
-    atime = None
+    mtime: datetime | None = None
+    ctime: datetime | None = None
+    atime: datetime | None = None
+    arctime: datetime | None = None
 
-    extract_version = None
-    mode = None
-    host_os = None
-    compress_type = None
+    extract_version: int
+    mode: int
+    host_os: int
+    compress_type: int
 
-    # rar3-only fields
-    comment = None
-    arctime = None
+    # rar3-only field
+    comment: str | None = None
 
     # rar5-only fields
-    blake2sp_hash = None
-    file_redir = None
+    blake2sp_hash: bytes | None = None
+    file_redir: tuple[int, int, str] | None = None
+    file_version: tuple[int, int] | None = None
+    file_owner: tuple[bytes | None, bytes | None, int | None, int | None] | None = None
 
-    # internal fields
-    flags = 0
-    type = None
-
-    # zipfile compat
-    def is_dir(self):
-        """Returns True if entry is a directory.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
-    def is_symlink(self):
-        """Returns True if entry is a symlink.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
-    def is_file(self):
-        """Returns True if entry is a normal file.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
-    def needs_password(self):
-        """Returns True if data is stored password-protected.
-        """
-        if self.type == RAR_BLOCK_FILE:
-            return (self.flags & RAR_FILE_PASSWORD) > 0
-        return False
-
-    def isdir(self):
-        """Returns True if entry is a directory.
-
-        .. deprecated:: 4.0
-        """
-        return self.is_dir()
+    # internal hashing fields
+    _md_class: type[HashContext] | None = None
+    _md_expect: int | bytes | None = None
 
 
+#
+# RAR3 format
+#
+
+@dataclass(kw_only=True, eq=False)
 class Rar3Info(RarInfo):
-    """RAR3 specific fields."""
-    extract_version = 15
-    salt = None
-    add_size = 0
-    header_crc = None
-    header_size = None
-    header_offset = None
-    data_offset = None
-    _md_class = None
-    _md_expect = None
-    _name_size = None
+    """RAR3 file record."""
 
-    # make sure some rar5 fields are always present
-    file_redir = None
-    blake2sp_hash = None
+    type: int = RAR_BLOCK_FILE
+    _name_size: int
+    salt: bytes | None
 
-    endarc_datacrc = None
-    endarc_volnr = None
-
-    old_sub_type = None
-
-    def _must_disable_hack(self):
+    def _must_disable_hack(self) -> bool:
         if self.type == RAR_BLOCK_FILE:
             if self.flags & RAR_FILE_PASSWORD:
                 return True
             elif self.flags & (RAR_FILE_SPLIT_BEFORE | RAR_FILE_SPLIT_AFTER):
                 return True
-        elif self.type == RAR_BLOCK_MAIN:
-            if self.flags & (RAR_MAIN_SOLID | RAR_MAIN_PASSWORD):
-                return True
         return False
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         """Returns True if entry is a directory."""
         if self.type == RAR_BLOCK_FILE and not self.is_symlink():
             return (self.flags & RAR_FILE_DIRECTORY) == RAR_FILE_DIRECTORY
         return False
 
-    def is_symlink(self):
+    def is_symlink(self) -> bool:
         """Returns True if entry is a symlink."""
         return (
             self.type == RAR_BLOCK_FILE and
@@ -229,7 +272,7 @@ class Rar3Info(RarInfo):
             self.mode & 0xF000 == 0xA000
         )
 
-    def is_file(self):
+    def is_file(self) -> bool:
         """Returns True if entry is a normal file."""
         return (
             self.type == RAR_BLOCK_FILE and
@@ -237,46 +280,98 @@ class Rar3Info(RarInfo):
         )
 
 
-class Rar5Info(RarInfo):
-    """Shared fields for RAR5 records.
-    """
-    extract_version = 50
-    header_crc = None
-    header_size = None
-    header_offset = None
-    data_offset = None
+@dataclass(kw_only=True, eq=False)
+class Rar3SubInfo(Rar3Info):
+    """RAR3 service subblock, using the file-record layout."""
 
-    # type=all
-    block_type = None
-    block_flags = None
-    add_size = 0
-    block_extra_size = 0
+    type: int = RAR_BLOCK_SUB
 
-    # type=MAIN
-    volume_number = None
-    _md_class = None
-    _md_expect = None
 
-    def _must_disable_hack(self):
+@dataclass(kw_only=True, eq=False)
+class Rar3MainInfo(RarEntry):
+    """RAR3 archive main record."""
+
+    type: int = RAR_BLOCK_MAIN
+    comment: str | None
+
+    def _must_disable_hack(self) -> bool:
+        if self.flags & (RAR_MAIN_SOLID | RAR_MAIN_PASSWORD):
+            return True
         return False
 
 
-class Rar5BaseFile(Rar5Info):
-    """Shared sturct for file & service record.
-    """
-    type = -1
-    file_flags = None
-    file_encryption = (0, 0, 0, b"", b"", b"")
-    file_compress_flags = None
-    file_redir = None
-    file_owner = None
-    file_version = None
-    blake2sp_hash = None
+@dataclass(kw_only=True, eq=False)
+class Rar3EndArcInfo(RarEntry):
+    """RAR3 end of archive record."""
 
-    def _must_disable_hack(self):
+    type: int = RAR_BLOCK_ENDARC
+    endarc_datacrc: int | None
+    endarc_volnr: int | None
+
+
+@dataclass(kw_only=True, eq=False)
+class Rar3GenericInfo(RarEntry):
+    """RAR3 mark and old-style subblocks without dedicated fields."""
+
+    type: int = RAR_BLOCK_MARK
+    old_sub_type: int | None = None
+
+
+#
+# RAR5 format
+#
+
+@dataclass(kw_only=True, eq=False)
+class Rar5MainInfo(RarEntry):
+    """RAR5 archive main record."""
+
+    type: int = RAR_BLOCK_MAIN
+    main_flags: int
+    main_volume_number: int | None
+
+    def _must_disable_hack(self) -> bool:
+        if self.main_flags & RAR5_MAIN_FLAG_SOLID:
+            return True
+        return False
+
+
+@dataclass(kw_only=True, eq=False)
+class Rar5EncryptionInfo(RarEntry):
+    """RAR5 archive header encryption record."""
+
+    type: int = RAR5_BLOCK_ENCRYPTION
+    encryption_algo: int
+    encryption_flags: int
+    encryption_kdf_count: int
+    encryption_salt: bytes
+    encryption_check_value: bytes | None
+
+    def needs_password(self) -> bool:
+        return True
+
+
+@dataclass(kw_only=True, eq=False)
+class Rar5EndArcInfo(RarEntry):
+    """RAR5 end of archive record."""
+
+    type: int = RAR_BLOCK_ENDARC
+    endarc_flags: int
+
+
+@dataclass(kw_only=True, eq=False)
+class Rar5BaseFile(RarInfo):
+    """Shared struct for RAR5 file & service records."""
+
+    file_flags: int
+    file_compress_flags: int
+    file_host_os: int
+    file_encryption: FileEncryption
+
+    def _must_disable_hack(self) -> bool:
         if self.flags & RAR_FILE_PASSWORD:
             return True
-        if self.block_flags & (RAR5_BLOCK_FLAG_SPLIT_BEFORE | RAR5_BLOCK_FLAG_SPLIT_AFTER):
+        if self.block_flags is not None and self.block_flags & (
+                RAR5_BLOCK_FLAG_SPLIT_BEFORE | RAR5_BLOCK_FLAG_SPLIT_AFTER):
             return True
         if self.file_compress_flags & RAR5_COMPR_SOLID:
             return True
@@ -285,14 +380,14 @@ class Rar5BaseFile(Rar5Info):
         return False
 
 
+@dataclass(kw_only=True, eq=False)
 class Rar5FileInfo(Rar5BaseFile):
-    """RAR5 file record.
-    """
-    type = RAR_BLOCK_FILE
+    """RAR5 file record."""
 
-    def is_symlink(self):
+    type: int = RAR_BLOCK_FILE
+
+    def is_symlink(self) -> bool:
         """Returns True if entry is a symlink."""
-        # pylint: disable=unsubscriptable-object
         return (
             self.file_redir is not None and
             self.file_redir[0] in (
@@ -302,53 +397,19 @@ class Rar5FileInfo(Rar5BaseFile):
             )
         )
 
-    def is_file(self):
+    def is_file(self) -> bool:
         """Returns True if entry is a normal file."""
         return not (self.is_dir() or self.is_symlink())
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         """Returns True if entry is a directory."""
-        if not self.file_redir:
-            if self.file_flags & RAR5_FILE_FLAG_ISDIR:
-                return True
-        return False
-
-
-class Rar5ServiceInfo(Rar5BaseFile):
-    """RAR5 service record.
-    """
-    type = RAR_BLOCK_SUB
-
-
-class Rar5MainInfo(Rar5Info):
-    """RAR5 archive main record.
-    """
-    type = RAR_BLOCK_MAIN
-    main_flags = None
-    main_volume_number = None
-
-    def _must_disable_hack(self):
-        if self.main_flags & RAR5_MAIN_FLAG_SOLID:
+        if not self.file_redir and self.file_flags & RAR5_FILE_FLAG_ISDIR:
             return True
         return False
 
 
-class Rar5EncryptionInfo(Rar5Info):
-    """RAR5 archive header encryption record.
-    """
-    type = RAR5_BLOCK_ENCRYPTION
-    encryption_algo = None
-    encryption_flags = None
-    encryption_kdf_count = None
-    encryption_salt = None
-    encryption_check_value = None
+@dataclass(kw_only=True, eq=False)
+class Rar5ServiceInfo(Rar5BaseFile):
+    """RAR5 service record."""
 
-    def needs_password(self):
-        return True
-
-
-class Rar5EndArcInfo(Rar5Info):
-    """RAR5 end of archive record.
-    """
-    type = RAR_BLOCK_ENDARC
-    endarc_flags = None
+    type: int = RAR_BLOCK_SUB

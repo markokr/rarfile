@@ -7,6 +7,7 @@ from glob import glob
 import pytest
 
 import rarfile
+from rarfile.crypto import have_crypto
 
 ARCHIVE_COMMENTS = {
     "rar15-comment-lock.rar": "RARcomment -----",
@@ -32,7 +33,7 @@ ARCHIVE_FILES = [
 ]
 
 
-def run_reading_normal(fn, comment):
+def run_reading_normal(fn: str | rarfile.FileLike, comment: str | None) -> None:
     try:
         rf = rarfile.RarFile(fn)
     except rarfile.NeedFirstVolume:
@@ -74,7 +75,7 @@ def run_reading_normal(fn, comment):
                 break
 
 
-def run_reading_inmem(fn, comment):
+def run_reading_inmem(fn: str, comment: str | None) -> None:
     try:
         rf = rarfile.RarFile(fn)
     except rarfile.NeedFirstVolume:
@@ -87,7 +88,7 @@ def run_reading_inmem(fn, comment):
     run_reading_normal(io.BytesIO(buf), comment)
 
 
-def run_reading(fn):
+def run_reading(fn: str) -> None:
     basename = fn.split("/")[-1]
     comment = ARCHIVE_COMMENTS.get(basename)
     run_reading_normal(fn, comment)
@@ -95,40 +96,40 @@ def run_reading(fn):
 
 
 @pytest.mark.parametrize("fn", ARCHIVE_FILES)
-def test_reading(fn):
+def test_reading(fn: str) -> None:
     run_reading(fn)
 
 
-@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
-def test_reading_rar3_hpsw():
+@pytest.mark.skipif(not have_crypto, reason="No crypto")
+def test_reading_rar3_hpsw() -> None:
     run_reading("test/files/rar3-comment-hpsw.rar")
 
 
-@pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
-def test_reading_rar3_hpsw_nocrypto():
+@pytest.mark.skipif(bool(have_crypto), reason="Has crypto")
+def test_reading_rar3_hpsw_nocrypto() -> None:
     with pytest.raises(rarfile.NoCrypto):
         run_reading("test/files/rar3-comment-hpsw.rar")
 
 
-@pytest.mark.skipif(not rarfile._have_crypto, reason="No crypto")
-def test_reading_rar5_hpsw():
+@pytest.mark.skipif(not have_crypto, reason="No crypto")
+def test_reading_rar5_hpsw() -> None:
     run_reading("test/files/rar5-hpsw.rar")
 
 
-@pytest.mark.skipif(rarfile._have_crypto, reason="Has crypto")
-def test_reading_rar5_hpsw_nocrypto():
+@pytest.mark.skipif(bool(have_crypto), reason="Has crypto")
+def test_reading_rar5_hpsw_nocrypto() -> None:
     with pytest.raises(rarfile.NoCrypto):
         run_reading("test/files/rar5-hpsw.rar")
 
 
-def test_reading_rar3_sfx():
+def test_reading_rar3_sfx() -> None:
     assert rarfile.is_rarfile("test/files/rar3-seektest.sfx") is False
     assert rarfile.is_rarfile_sfx("test/files/rar3-seektest.sfx") is True
     run_reading("test/files/rar3-seektest.sfx")
     run_reading("test/files/rar3-seektest.sfx")
 
 
-def test_reading_rar5_crc_sfx():
+def test_reading_rar5_crc_sfx() -> None:
     assert rarfile.is_rarfile("test/files/rar5-crc.sfx") is False
     assert rarfile.is_rarfile_sfx("test/files/rar5-crc.sfx") is True
     run_reading("test/files/rar5-crc.sfx")

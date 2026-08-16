@@ -2,7 +2,8 @@
 PYTHON ?= 3.10
 CRYPTO ?= cryptography
 RARFILE_REQUIRE_EXTENSION ?= 1
-PYTHONS = 3.10 3.11 3.12 3.13 3.14 3.14t pypy3.11
+MAIN_PYTHONS = 3.10 3.11 3.12 3.13 3.14
+PYTHONS = $(MAIN_PYTHONS) 3.14t pypy3.11
 
 ifneq ($(CRYPTO),)
 CRYPTO_FLAG = --extra $(CRYPTO)
@@ -44,6 +45,18 @@ test-all: remove-tag
 		done; \
 	done
 
+lint-venv: remove-tag
+	uv venv --python $(PYTHON) --clear
+	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) \
+	uv sync --group lint --reinstall-package rarfile
+	touch $(BUILD_TAG)
+	$(MAKE) lint remove-tag
+
+lint-all: remove-tag
+	for py in $(MAIN_PYTHONS); do \
+		$(MAKE) lint-venv PYTHON=$$py ; \
+	done
+
 remove-tag:
 	@rm -f $(BUILD_TAG)
 
@@ -58,16 +71,19 @@ test: $(BUILD_TAG)
 	uv run bash test/run_dump.sh python "$(TESTTAG)"
 
 lint: $(BUILD_TAG)
-	uv run ruff check src test
-	uv run pylint rarfile dumprar.py test/*.py
+	uv run python3 --version
+	uv run ruff check src *.py test doc
+	uv run mypy -p rarfile
+	uv run mypy *.py test
+	uv run pylint rarfile *.py test/*.py doc/*.py
 
 docs: $(BUILD_TAG)
 	uv run sphinx-build -q -W -b html doc doc/_build
 
 fmt:
-	uv run ruff check --fix src
-	uv run autopep8 -i *.py src/**/*.py test/*.py
-	uv run isort *.py src/**/*.py test/*.py
+	uv run ruff check --fix src *.py doc/*.py
+	uv run autopep8 -i *.py src/**/*.py test/*.py doc/*.py
+	uv run isort *.py src/**/*.py test/*.py doc/*.py
 
 cfmt:
 	$(INDENT) src/*/*.[ch]

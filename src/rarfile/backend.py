@@ -1,6 +1,9 @@
 import errno
 import re
+import sys
+from collections.abc import Sequence
 from subprocess import DEVNULL, PIPE, STDOUT, Popen
+from typing import Literal, Protocol, TypeAlias, TypedDict, TypeVar
 
 from . import config
 from .errors import (
@@ -10,10 +13,37 @@ from .errors import (
     RarWarning, RarWriteError, RarWrongPassword,
 )
 
+if sys.version_info < (3, 11):
+    from typing_extensions import NotRequired
+else:
+    from typing import NotRequired
+
+
+T_co = TypeVar("T_co", str, bytes, covariant=True)
+
+
+class Reader(Protocol[T_co]):
+    def read(self, n: int = -1, /) -> T_co: ...
+
+
 __all__ = ('empty_read', 'custom_popen', 'check_returncode', 'ToolSetup', 'tool_setup')
 
+CmdLine: TypeAlias = tuple[str, ...]
+ErrMap: TypeAlias = Sequence[type[Exception] | None]
+CmdLineKeys: TypeAlias = Literal["open_cmd", "check_cmd"]
 
-def empty_read(src, size, blklen):
+
+class ToolConfig(TypedDict):
+    open_cmd: CmdLine
+    check_cmd: CmdLine
+    password: str | tuple[str, ...] | None
+    no_password: Sequence[str]
+    errmap: ErrMap
+    check_output: NotRequired[str]
+    executables: NotRequired[Sequence[str]]
+
+
+def empty_read(src: Reader[bytes], size: int, blklen: int) -> None:
     """Read and drop fixed amount of data.
     """
     while size > 0:
@@ -26,7 +56,7 @@ def empty_read(src, size, blklen):
         size -= len(res)
 
 
-def custom_popen(cmd):
+def custom_popen(cmd: Sequence[str]) -> Popen[bytes]:
     """Disconnect cmd from parent fds, read only from stdout.
     """
     creationflags = 0x08000000 if config.WIN32 else 0  # CREATE_NO_WINDOW
@@ -42,14 +72,14 @@ def custom_popen(cmd):
     return p
 
 
-def check_returncode(code, out, errmap):
+def check_returncode(code: int, out: str, errmap: ErrMap) -> None:
     """Raise exception according to unrar exit code.
     """
     if code == 0:
         return
 
     if code > 0 and code < len(errmap):
-        exc = errmap[code]
+        exc = errmap[code] or RarUnknownError
     elif code == 255:
         exc = RarUserBreak
     elif code < 0:
@@ -67,11 +97,11 @@ def check_returncode(code, out, errmap):
 
 
 class ToolSetup:
-    def __init__(self, setup):
+    def __init__(self, setup: ToolConfig):
         self.setup = setup
-        self.executable = None
+        self.executable: str | None = None
 
-    def check(self):
+    def check(self) -> bool:
         if "executables" in self.setup:
             for varname in self.setup["executables"]:
                 tool = getattr(config, varname, None)
@@ -101,22 +131,23 @@ class ToolSetup:
         except RarCannotExec:
             return False
 
-    def open_cmdline(self, pwd, rarfn, filefn=None):
+    def open_cmdline(self, pwd: str | None, rarfn: str, filefn: str | None = None) -> list[str]:
         cmdline = self.get_cmdline("open_cmd", pwd)
         cmdline.append(rarfn)
         if filefn:
             self.add_file_arg(cmdline, filefn)
         return cmdline
 
-    def get_errmap(self):
+    def get_errmap(self) -> ErrMap:
         return self.setup["errmap"]
 
-    def get_cmdline(self, key, pwd, nodash=False):
-        if "executables" in self.setup:
+    def get_cmdline(self, key: CmdLineKeys, pwd: str | bytes | None, nodash: bool = False) -> list[str]:
+        cmdline: list[str]
+        if "executables" in self.setup and self.executable:
             cmdline = [self.executable] + list(self.setup[key])
         else:
             cmdline = list(self.setup[key])
-            cmdline[0] = getattr(config, cmdline[0], None)
+            cmdline[0] = getattr(config, self.setup[key][0])
         if key == "check_cmd":
             return cmdline
         self.add_password_arg(cmdline, pwd)
@@ -124,10 +155,10 @@ class ToolSetup:
             cmdline.append("--")
         return cmdline
 
-    def add_file_arg(self, cmdline, filename):
+    def add_file_arg(self, cmdline: list[str], filename: str) -> None:
         cmdline.append(filename)
 
-    def add_password_arg(self, cmdline, pwd):
+    def add_password_arg(self, cmdline: list[str], pwd: str | bytes | None) -> None:
         """Append password switch to commandline.
         """
         if pwd is not None:
@@ -146,7 +177,7 @@ class ToolSetup:
             cmdline.extend(self.setup["no_password"])
 
 
-UNRAR_CONFIG = {
+UNRAR_CONFIG: ToolConfig = {
     "open_cmd": ("UNRAR_TOOL", "p", "-inul"),
     "check_cmd": ("UNRAR_TOOL", "-inul", "-?"),
     "password": "-p",
@@ -161,7 +192,7 @@ UNRAR_CONFIG = {
 # Problems with unar RAR backend:
 # - Does not support RAR2 locked files [fails to read]
 # - Does not support RAR5 Blake2sp hash [reading works]
-UNAR_CONFIG = {
+UNAR_CONFIG: ToolConfig = {
     "open_cmd": ("UNAR_TOOL", "-q", "-o", "-"),
     "check_cmd": ("UNAR_TOOL", "-version"),
     "password": ("-p",),
@@ -173,7 +204,7 @@ UNAR_CONFIG = {
 # - Does not support solid archives.
 # - Does not support password-protected archives.
 # - Does not support RARVM-based compression filters.
-BSDTAR_CONFIG = {
+BSDTAR_CONFIG: ToolConfig = {
     "executables": ("BSDTAR_TOOL", "TAR_TOOL"),
     "open_cmd": ("-x", "--to-stdout", "-f"),
     "check_cmd": ("--version",),
@@ -183,7 +214,7 @@ BSDTAR_CONFIG = {
     "errmap": [None],
 }
 
-SEVENZIP_CONFIG = {
+SEVENZIP_CONFIG: ToolConfig = {
     "executables": ("SEVENZIP_TOOL", "SEVENZIP2_TOOL"),
     "open_cmd": ("e", "-so", "-bb0"),
     "check_cmd": ("i",),
@@ -195,10 +226,11 @@ SEVENZIP_CONFIG = {
                None, None, RarUserError, RarMemoryError]        # 5..8
 }
 
-CURRENT_SETUP = None
+CURRENT_SETUP: ToolSetup | None = None
 
 
-def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, force=False):
+def tool_setup(unrar: bool = True, unar: bool = True, bsdtar: bool = True,
+               sevenzip: bool = True, force: bool = False) -> ToolSetup:
     """Pick a tool, return cached ToolSetup.
     """
     global CURRENT_SETUP
@@ -206,7 +238,7 @@ def tool_setup(unrar=True, unar=True, bsdtar=True, sevenzip=True, force=False):
         CURRENT_SETUP = None
     if CURRENT_SETUP is not None:
         return CURRENT_SETUP
-    lst = []
+    lst: list[ToolConfig] = []
     if unrar:
         lst.append(UNRAR_CONFIG)
     if unar:

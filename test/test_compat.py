@@ -4,6 +4,7 @@
 import inspect
 import sys
 import zipfile
+from typing import Any
 
 import pytest
 
@@ -36,7 +37,7 @@ _ignore = set([
 ])
 
 
-def load_cls_names(maincls):
+def load_cls_names(maincls: type) -> dict[str, Any]:
     assert inspect.isclass(maincls)
     res = {}
     for cls in inspect.getmro(maincls):
@@ -46,14 +47,14 @@ def load_cls_names(maincls):
     return res
 
 
-def cleansig(sig):
+def cleansig(sig: inspect.Signature) -> str:
     res = str(sig).replace(", /", "")
     if "*" in res:
         res = res.split(", *", 1)[0] + ")"
     return res
 
 
-def compare(rmaincls, zmaincls):
+def compare(rmaincls: type, zmaincls: type) -> None:
     znames = load_cls_names(zmaincls)
     rnames = load_cls_names(rmaincls)
     for name, zval in znames.items():
@@ -73,15 +74,15 @@ def compare(rmaincls, zmaincls):
 
 
 @pytest.mark.skipif(_UNSUPPORTED, reason="Unsupported for sig checks")
-def test_cmp_zipfile():
+def test_cmp_zipfile() -> None:
     compare(rarfile.RarFile, zipfile.ZipFile)
 
 
 @pytest.mark.skipif(_UNSUPPORTED, reason="Unsupported for sig checks")
-def test_cmp_zipextfile():
+def test_cmp_zipextfile() -> None:
     compare(rarfile.RarExtFile, zipfile.ZipExtFile)
 
 
 @pytest.mark.skipif(_UNSUPPORTED, reason="Unsupported for sig checks")
-def test_cmp_zipinfo():
+def test_cmp_zipinfo() -> None:
     compare(rarfile.RarInfo, zipfile.ZipInfo)
