@@ -2,5 +2,9 @@
 -linux
 -sar
 -T uint8_t
+-T uint16_t
 -T uint32_t
+-T uint64_t
+-T size_t
+-T Py_ssize_t
 -T PyObject
