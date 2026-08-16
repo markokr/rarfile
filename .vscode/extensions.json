@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "github.vscode-github-actions",
+    "editorconfig.editorconfig",
+    "ms-vscode.cpptools",
+    "ms-vscode.makefile-tools",
+    "ms-python.isort",
+    "ms-python.autopep8",
+    "ms-python.vscode-pylance",
+    "trond-snekvik.simple-rst",
+    "swyddfa.esbonio",
+    "tamasfe.even-better-toml"
+  ]
+}
