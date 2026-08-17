@@ -65,11 +65,6 @@ It can be tested by simply opening command-line console and running ``unrar``.
 
 Instead ``unrar`` it might be preferable to install ``unar``.
 
-How to avoid the need for user to manually install rarfile/unrar?
------------------------------------------------------------------
-
-Include ``rarfile.py`` and/or ``unrar`` (or ``unar``) with your application.
-
 Will it support creating RAR archives?
 --------------------------------------
 

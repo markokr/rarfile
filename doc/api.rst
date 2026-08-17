@@ -1,6 +1,6 @@
 
-rarfile API documentation
-=========================
+rarfile API
+===========
 
 .. contents:: Table Of Contents
 
@@ -20,14 +20,14 @@ RarInfo class
 -------------
 
 .. autoclass:: RarInfo()
-    :show-inheritance:
-    :members:
+   :show-inheritance:
+   :members:
 
 RarEntry class
 --------------
 
 .. autoclass:: RarEntry()
-    :members:
+   :members:
 
 RarExtFile class
 ----------------
@@ -41,7 +41,7 @@ RarExtFile class
 nsdatetime class
 ----------------
 
-.. autoclass:: nsdatetime(..., *, fold = 0, nanosecond = 0)
+.. autoclass:: nsdatetime(..., nanosecond = 0)
    :show-inheritance:
    :exclude-members: replace
 
