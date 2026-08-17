@@ -1,5 +1,5 @@
-*.[ch]		diff=cpp
-*.py		diff=python
+*.[ch]			diff=cpp
+*.py			diff=python
 
-*.rar		-text
-*.r[0-9][0-9]	-text
+*.rar			binary
+*.[r-z][0-9][0-9]	binary
