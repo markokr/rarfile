@@ -10,8 +10,8 @@
 
 static inline uint32_t load_be32(const uint8_t *p)
 {
-	return (uint32_t)(p[0]) << 24 |
-	    (uint32_t)(p[1]) << 16 | (uint32_t)(p[2]) << 8 | (uint32_t)(p[3]);
+	return (uint32_t)(p[0]) << 24 | (uint32_t)(p[1]) << 16 | (uint32_t)(p[2]) << 8
+	    | (uint32_t)(p[3]);
 }
 
 static inline void store_le32(uint8_t *p, uint32_t x)
@@ -33,7 +33,7 @@ static bool validate_digest(PyObject *d)
 
 /* unrolled message schedule calculation */
 #define WBUF 16
-#define W(i) w[(i) & (WBUF-1)]
+#define W(i) w[(i) & (WBUF - 1)]
 #define P(i) p[((i) & 15) * 4]
 #define R1(_i) \
 	do { \
@@ -48,10 +48,13 @@ static bool validate_digest(PyObject *d)
 			store_le32(&P(i), W(i)); \
 		} \
 	} while (0)
+
+/* clang-format off */
 #define R4(i) R1(i); R1(i + 1); R1(i + 2); R1(i + 3)
 #define R16(i) R4(i); R4(i + 4); R4(i + 8); R4(i + 12)
 #define R64(i) R16(i); R16(i + 16); R16(i + 32); R16(i + 48)
 #define R80(i) R16(i); R64(i + 16)
+/* clang-format on */
 
 static void rar3_corrupt_block(uint8_t *p)
 {

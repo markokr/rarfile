@@ -1,0 +1,69 @@
+# .clang-format approximating GNU `indent -linux -sar`
+
+ColumnLimit: 100
+
+Language: Cpp
+Standard: c++03
+
+IndentWidth: 8
+TabWidth: 8
+UseTab: Always
+ContinuationIndentWidth: 4
+
+BreakBeforeBraces: Linux
+
+IndentCaseLabels: false
+IndentCaseBlocks: false
+
+IndentGotoLabels: false
+#IndentGotoLabelStyle: HalfIndent
+
+AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false   # -ncs
+SpaceBeforeAssignmentOperators: true
+SpaceAfterLogicalNot: false
+
+AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: false
+AlignConsecutiveMacros: false
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+SeparateDefinitionBlocks: Always
+
+ReflowComments: false
+AlignTrailingComments: true
+AlignEscapedNewlines: DontAlign
+
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+
+BinPackParameters: true
+BinPackArguments: true
+
+IndentPPDirectives: None
+SortIncludes: Never
+IncludeBlocks: Preserve
+
+IndentWrappedFunctionNames: false
+Cpp11BracedListStyle: false

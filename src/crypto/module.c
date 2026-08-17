@@ -8,12 +8,8 @@
 #include "rar3_s2k_core.h"
 
 static PyMethodDef crypto_methods[] = {
-	{
-	 "rar3_s2k_core",
-	 rar3_s2k_core,
-	 METH_O,
-	 "rar3_s2k_core(seed) -> (key, iv)"},
-	{NULL},
+	{ "rar3_s2k_core", rar3_s2k_core, METH_O, "rar3_s2k_core(seed) -> (key, iv)" },
+	{ NULL },
 };
 
 static int crypto_exec(PyObject *module)
@@ -59,14 +55,14 @@ static void crypto_free(void *module)
 }
 
 static PyModuleDef_Slot crypto_slots[] = {
-	{Py_mod_exec, crypto_exec},
+	{ Py_mod_exec, crypto_exec },
 #ifdef Py_MOD_PER_INTERPRETER_GIL_SUPPORTED
-	{Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+	{ Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED },
 #endif
 #ifdef Py_GIL_DISABLED
-	{Py_mod_gil, Py_MOD_GIL_NOT_USED},
+	{ Py_mod_gil, Py_MOD_GIL_NOT_USED },
 #endif
-	{0, NULL},
+	{ 0, NULL },
 };
 
 static struct PyModuleDef crypto_def = {

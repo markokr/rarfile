@@ -72,6 +72,9 @@ fmt:
 cfmt:
 	$(INDENT) src/*/*.[ch]
 
+cxfmt:
+	clang-format -i src/*/*.[ch]
+
 clean:
 	rm -rf __pycache__ build dist
 	rm -f *.pyc MANIFEST *.orig *.rej *.html *.class test/*.pyc
