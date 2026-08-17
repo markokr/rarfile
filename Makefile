@@ -1,5 +1,5 @@
 
-PYTHON ?= 3.10
+PYTHON ?= 3
 CRYPTO ?= cryptography
 RARFILE_REQUIRE_EXTENSION ?= 1
 MAIN_PYTHONS = 3.10 3.11 3.12 3.13 3.14
@@ -44,6 +44,7 @@ test-all: remove-tag
 			$(MAKE) test-venv PYTHON=$$py CRYPTO=$$crypto; \
 		done; \
 	done
+	$(MAKE) remove-tag
 
 lint-venv: remove-tag
 	uv venv --python $(PYTHON) --clear
@@ -62,7 +63,7 @@ remove-tag:
 
 $(BUILD_TAG): $(C_SOURCES)
 	RARFILE_REQUIRE_EXTENSION=1 \
-	uv sync --reinstall-package rarfile
+	uv sync --group dev $(CRYPTO_FLAG) --reinstall-package rarfile
 	uv run python3 -c 'import rarfile._crypto'
 	touch $@
 
