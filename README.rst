@@ -34,8 +34,6 @@ Backends:
 +-------------+----------------------+-----------------------------------------------------+
 | 7zip_       | Supported            | * Requires ``7zip-rar`` package on Debian/Ubuntu.   |
 +-------------+----------------------+-----------------------------------------------------+
-| p7zip_      | Supported            | * Requires ``p7zip-rar`` package on Debian/Ubuntu.  |
-+-------------+----------------------+-----------------------------------------------------+
 | unar_       | Supported            | * Does not support RAR2 locked files.               |
 |             |                      | * Does not support RAR5 Blake2 hash checking.       |
 +-------------+----------------------+-----------------------------------------------------+
@@ -44,8 +42,8 @@ Backends:
 |             |                      | * Does not support password-protected archives.     |
 |             |                      | * Does not support RARVM-based compression filters. |
 +-------------+----------------------+-----------------------------------------------------+
-| unrar-free_ | Supported            | * Since v0.3.0 based on libarchive, same as bsdtar. |
-|             |                      | * Supports multi-volume archives.                   |
+| unrar-free_ | Supported            | * Based on libarchive, same as bsdtar.              |
+|             |                      | * Supports multi-volume archives.  (v0.3.0+)        |
 +-------------+----------------------+-----------------------------------------------------+
 
 .. _p7zip: https://github.com/p7zip-project/p7zip
@@ -53,9 +51,9 @@ Backends:
 
 OS notes:
 
-- Windows: default `tar` is `bsdtar`.
-- MacOS: default `tar` is `bsdtar`.  Use MacPorts to install `rar`/`unrar`/`7zip`/`p7zip`,
-  Homebrew is dropping RAR support.
+- Windows: default ``tar`` is ``bsdtar``.
+- MacOS: default ``tar`` is ``bsdtar``.
+  Use MacPorts instead Homebrew to install ``unrar`` or ``7zip``.
 
 Links:
 

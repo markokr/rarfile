@@ -9,13 +9,18 @@ Version 5.0.dev1 (unreleased)
 
 Breaking changes:
 
-* Move to multi-file module.  Module root is kept compatible,
-  only deliberate change is that configuration
-  cannot be changed on root level: ``rarfile.UNRAR_TOOL = "..."``
+* Configuration cannot be changed on root level: ``rarfile.UNRAR_TOOL = "..."``
   does not work, ``rarfile.config.UNRAR_TOOL = "..."`` is the new way.
-  [`#137 <https://github.com/markokr/rarfile/pull/137>`_]
+
+* Non-file entries seen by ``info_callback`` will not contain file fields.
 
 Features:
+
+* Move to multi-file module.
+  [`#137 <https://github.com/markokr/rarfile/pull/137>`_]
+
+* Typing for Python.
+  [`#146 <https://github.com/markokr/rarfile/pull/146>`_]
 
 * Optimized C implementation for ``rar3_s2k``. The helper module is optional,
   if missing Python fallback implementation will be used.
