@@ -358,7 +358,7 @@ def show_item_v5(h):
     """
     st = rar5_type(h.block_type)
     xprint("%s: hdrlen=%d datlen=%d hdr_extra=%d is=%s", st, h.header_size,
-           h.compress_size, h.block_extra_size, show_rftype(h))
+           h.add_size, h.block_extra_size, show_rftype(h))
     xprint("  block_flags=0x%04x:%s", h.block_flags, render_flags(h.block_flags, r5_block_flags))
     if h.block_type in (rf.RAR5_BLOCK_FILE, rf.RAR5_BLOCK_SERVICE):
         xprint("  name=%s", h.filename)

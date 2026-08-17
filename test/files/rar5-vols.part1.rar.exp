@@ -1,5 +1,5 @@
 Archive: test/files/rar5-vols.part1.rar
-R5_FILE: hdrlen=45 datlen=205000 hdr_extra=0 is=F--
+R5_FILE: hdrlen=45 datlen=98489 hdr_extra=0 is=F--
   block_flags=0x0012:DATA,SPLIT_AFTER
   name=vols/bigfile.txt
   file_flags=0x0006:MTIME,CRC32
