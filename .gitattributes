@@ -1,0 +1,2 @@
+*.[ch]	diff=cpp
+*.py	diff=python
