@@ -16,9 +16,9 @@ import rarfile
 
 def test_not_rar():
     with pytest.raises(rarfile.NotRarFile):
-        rarfile.RarFile("src/rarfile/__init__.py", "r")
+        rarfile.RarFile(__file__, "r")
     with pytest.raises(rarfile.NotRarFile):
-        with open("src/rarfile/__init__.py", "rb") as f:
+        with open(__file__, "rb") as f:
             rarfile.RarFile(f, "r")
 
 
