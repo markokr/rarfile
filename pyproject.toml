@@ -110,7 +110,6 @@ ignore = [
     'RET501', # Remove explicit `return None`
     'RUF022', # `__all__` is not sorted
     'RUF023', # __slots__` is not sorted
-    'RUF059', # Unpacked variable X is never used
     'S110', # `try`-`except`-`pass` detected, consider logging the exception
     'SIM102', # Use a single `if` statement instead of nested `if` statements
     'SIM103', # Return the condition `bool(...)` directly
@@ -121,18 +120,8 @@ ignore = [
     'PLR0124',  # Name compared with itself, consider replacing `n1 == n1`
     'SIM201', #  Use `n2 != d2` instead of `not n2 == d2`
     'UP020', # [*] Use builtin `open`
-    'C405', # Unnecessary list literal (rewrite as a set literal)
-    'F841', # Local variable `rf` is assigned to but never used
-
-    'PYI034',
-    # fix
-
-    'PT031', # `pytest.warns()` block should contain a single simple statement
-
-    'PIE790', #Unnecessary `pass` statement - fix
-    'RUF100', # Unused blanket `noqa` directive - fix
     'SIM117', # Use a single `with` statement with multiple contexts instead of nested `with` statements - fix
-    'UP024', # Replace aliased errors with `OSError` [IOError] - fix
+    'PYI034', # Self
 ]
 
 [tool.pytest.ini_options]

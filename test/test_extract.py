@@ -194,13 +194,14 @@ def test_symlink_win(tmp_path: Path) -> None:
         assert get_props(rf, "links/dir_link") == "--L"
         assert get_props(rf, "links/file_link") == "--L"
 
+        rf.extract('content/dir1', tmp_path)
+        rf.extract('content/dir2', tmp_path)
+        rf.extract('content/file.txt', tmp_path)
+        rf.extract('links/dir_link', tmp_path)
+        rf.extract('links/file_link', tmp_path)
+
         with pytest.warns(rarfile.UnsupportedWarning):
-            rf.extract('content/dir1', tmp_path)
-            rf.extract('content/dir2', tmp_path)
-            rf.extract('content/file.txt', tmp_path)
             rf.extract('links/dir_junction', tmp_path)
-            rf.extract('links/dir_link', tmp_path)
-            rf.extract('links/file_link', tmp_path)
 
         with pytest.raises(rarfile.BadSymLinkError):
             rf.extract('links/bad_link', tmp_path)

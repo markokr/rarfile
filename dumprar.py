@@ -585,7 +585,7 @@ def test(fn: str, pwd: str | None) -> None:
         xprint(" --- %s is middle part of multi-vol archive (%s)---", fn, str(ex))
     except rf.Error as ex:
         xprint("\n *** %s: %s ***\n", type(ex).__name__, str(ex))
-    except IOError as ex:
+    except OSError as ex:
         xprint("\n *** %s: %s ***\n", type(ex).__name__, str(ex))
 
 

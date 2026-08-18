@@ -263,7 +263,7 @@ class CommonParser:
                     try:
                         volfile = self._next_volname(volfile)
                         fd = XFile(volfile)
-                    except IOError:
+                    except OSError:
                         self._set_error("Cannot open next volume: %s", str(volfile))
                         break
                     self._fd = fd
@@ -368,7 +368,7 @@ class CommonParser:
         """Given current vol name, construct next one
         """
         if is_filelike(volfile):
-            raise IOError("Working on single FD")
+            raise OSError("Working on single FD")
         assert self._main is not None
         name = cast(str, volfile)
         if self._main.flags & RAR_MAIN_NEWNUMBERING:

@@ -304,7 +304,6 @@ class RarFile:
 
     def close(self) -> None:
         """Release open resources."""
-        pass
 
     def printdir(self, file: IO[str] | None = None) -> None:
         """Print archive file list to stdout or given file.
@@ -397,12 +396,12 @@ class RarFile:
             p3 = RAR3Parser(self._rarfile, self._password, self._crc_check,
                             self._charset, self._strict, self._info_callback,
                             sfx_ofs, self._part_only)
-            self._file_parser = p3  # noqa
+            self._file_parser = p3
         elif ver == RAR_V5:
             p5 = RAR5Parser(self._rarfile, self._password, self._crc_check,
                             self._charset, self._strict, self._info_callback,
                             sfx_ofs, self._part_only)
-            self._file_parser = p5  # noqa
+            self._file_parser = p5
         else:
             raise NotRarFile("Not a RAR file")
 

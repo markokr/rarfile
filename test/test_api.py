@@ -380,16 +380,16 @@ def test_part_only() -> None:
         info_list.append(info)
 
     with pytest.raises(rarfile.NeedFirstVolume):
-        with rarfile.RarFile("test/files/rar3-vols.part2.rar") as rf:
+        with rarfile.RarFile("test/files/rar3-vols.part2.rar"):
             pass
-    with rarfile.RarFile("test/files/rar3-vols.part2.rar", part_only=True, info_callback=info_cb) as rf:
+    with rarfile.RarFile("test/files/rar3-vols.part2.rar", part_only=True, info_callback=info_cb):
         assert len(info_list) == 3
 
     with pytest.raises(rarfile.NeedFirstVolume):
-        with rarfile.RarFile("test/files/rar5-vols.part2.rar") as rf:
+        with rarfile.RarFile("test/files/rar5-vols.part2.rar"):
             pass
     info_list = []
-    with rarfile.RarFile("test/files/rar5-vols.part2.rar", part_only=True, info_callback=info_cb) as rf:
+    with rarfile.RarFile("test/files/rar5-vols.part2.rar", part_only=True, info_callback=info_cb):
         assert len(info_list) == 5
 
 
@@ -398,10 +398,10 @@ def test_volume_info() -> None:
 
     def info_cb(info: rarfile.RarEntry) -> None:
         info_list.append(info)
-    with rarfile.RarFile("test/files/rar3-vols.part1.rar", info_callback=info_cb) as rf:
+    with rarfile.RarFile("test/files/rar3-vols.part1.rar", info_callback=info_cb):
         assert len(info_list) == 10
     info_list = []
-    with rarfile.RarFile("test/files/rar5-vols.part1.rar", info_callback=info_cb) as rf:
+    with rarfile.RarFile("test/files/rar5-vols.part1.rar", info_callback=info_cb):
         assert len(info_list) == 16
 
 

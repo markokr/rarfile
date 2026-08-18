@@ -15,7 +15,7 @@ _VERS = [(3, 6), (3, 7), (3, 8)]
 
 _UNSUPPORTED = sys.version_info[:2] not in _VERS
 
-_ignore = set([
+_ignore = {
     "detach",
     "peek",
     "read1",
@@ -34,7 +34,7 @@ _ignore = set([
     "from_file",
     "testzip",
     "writestr",
-])
+}
 
 
 def load_cls_names(maincls: type) -> dict[str, Any]:

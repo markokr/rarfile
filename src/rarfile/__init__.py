@@ -33,9 +33,6 @@ by :meth:`RarFile.open`::
 For decompression to work, either ``unrar`` or ``unar`` tool must be in PATH.
 """
 
-
-# ruff: noqa: F401, PLE0604
-
 from .archive import *
 from .backend import *
 from .bits import *
