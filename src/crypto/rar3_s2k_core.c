@@ -93,6 +93,10 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 	if (st == NULL)
 		return NULL;
 
+	if (!PyBytes_Check(seed)) {
+		PyErr_SetString(PyExc_TypeError, "expect bytes");
+		return false;
+	}
 	PyObject *seed_buf = PyByteArray_FromObject(seed);
 	if (seed_buf == NULL)
 		return NULL;
