@@ -264,6 +264,8 @@ def show_item(h: rf.RarEntry) -> None:
 
 
 def show_rftype(h: rf.RarEntry) -> str:
+    if not isinstance(h, rf.RarInfo):
+        return "---"
     return "".join([
         h.is_file() and "F" or "-",
         h.is_dir() and "D" or "-",

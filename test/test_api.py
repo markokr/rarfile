@@ -311,6 +311,8 @@ def test_extract_mem(tmp_path: Path) -> None:
 
 
 def get_rftype(h: rarfile.RarEntry) -> str:
+    if not isinstance(h, rarfile.RarInfo):
+        return "---"
     assert h.is_dir() == h.isdir()
     return "".join([
         h.is_file() and "F" or "-",

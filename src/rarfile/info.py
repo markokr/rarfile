@@ -65,28 +65,6 @@ class RarEntry:
     block_flags: int | None = None
     block_extra_size: int = 0
 
-    # zipfile compat
-    def is_dir(self) -> bool:
-        """Returns True if entry is a directory.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
-    def is_symlink(self) -> bool:
-        """Returns True if entry is a symlink.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
-    def is_file(self) -> bool:
-        """Returns True if entry is a normal file.
-
-        .. versionadded:: 4.0
-        """
-        return False
-
     def needs_password(self) -> bool:
         """Returns True if data is stored password-protected.
         """
@@ -97,13 +75,6 @@ class RarEntry:
     def _must_disable_hack(self) -> bool:
         """Returns True if temp-file extraction hack must be avoided."""
         return False
-
-    def isdir(self) -> bool:
-        """Returns True if entry is a directory.
-
-        .. deprecated:: 4.0
-        """
-        return self.is_dir()
 
 
 @dataclass(kw_only=True, eq=False)
@@ -237,10 +208,39 @@ class RarInfo(RarEntry):
     _md_class: type[HashContext] | None = None
     _md_expect: int | bytes | None = None
 
+    # zipfile compat
+    def is_dir(self) -> bool:
+        """Returns True if entry is a directory.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def is_symlink(self) -> bool:
+        """Returns True if entry is a symlink.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def is_file(self) -> bool:
+        """Returns True if entry is a normal file.
+
+        .. versionadded:: 4.0
+        """
+        return False
+
+    def isdir(self) -> bool:
+        """Returns True if entry is a directory.
+
+        .. deprecated:: 4.0
+        """
+        return self.is_dir()
 
 #
 # RAR3 format
 #
+
 
 @dataclass(kw_only=True, eq=False)
 class Rar3Info(RarInfo):
