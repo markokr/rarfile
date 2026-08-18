@@ -12,17 +12,8 @@
 #define PyBUF_READ 0x100
 #endif
 
-bool bhash_init(struct BufferedHash *buf, PyObject *init, PyObject *kwargs)
+bool bhash_init(struct BufferedHash *buf, PyObject *ctx)
 {
-	PyObject *args = PyTuple_New(0);
-	if (args == NULL)
-		return false;
-
-	PyObject *ctx = PyObject_Call(init, args, kwargs);
-	Py_DECREF(args);
-	if (ctx == NULL)
-		return false;
-
 	PyObject *update = PyObject_GetAttrString(ctx, "update");
 	if (update == NULL) {
 		Py_DECREF(ctx);

@@ -20,7 +20,7 @@ struct BufferedHash {
 	uint8_t data[BHASH_BUFSIZE];
 };
 
-bool bhash_init(struct BufferedHash *buf, PyObject *init, PyObject *kwargs);
+bool bhash_init(struct BufferedHash *buf, PyObject *ctx);
 bool bhash_update(struct BufferedHash *buf, const uint8_t *data, size_t size);
 PyObject *bhash_digest(struct BufferedHash *buf);
 void bhash_free(struct BufferedHash *buf);

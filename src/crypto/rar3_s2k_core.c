@@ -103,10 +103,17 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 	uint8_t *seed_ptr = (uint8_t *)PyByteArray_AsString(seed_buf);
 	size_t seed_len = (size_t)PyByteArray_Size(seed_buf);
 
-	if (!bhash_init(&buf, st->sha1, NULL)) {
+	PyObject *ctx = PyObject_CallNoArgs(st->sha1);
+	if (ctx == NULL) {
+		Py_DECREF(seed_buf);
+		return false;
+	}
+	if (!bhash_init(&buf, ctx)) {
+		Py_DECREF(ctx);
 		Py_DECREF(seed_buf);
 		return NULL;
 	}
+	Py_DECREF(ctx);
 
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 0x4000; j++, count++) {
