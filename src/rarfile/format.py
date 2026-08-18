@@ -135,7 +135,7 @@ class CommonParser:
 
     _needs_password: bool = False
     _fd: XFile | None = None
-    _expect_sig: bytes = b''
+    _expect_sig: bytes = b""
     _parse_error: str | None = None
     _password: str | None = None
     comment: str | None = None
@@ -1397,7 +1397,7 @@ def load_windowstime(buf: bytes, pos: int) -> tuple[datetime, int]:
 # volume numbering
 #
 
-_rc_num = re.compile('^[0-9]+$')
+_rc_num = re.compile("^[0-9]+$")
 
 
 def _next_newvol(volfile: str) -> str:

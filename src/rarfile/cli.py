@@ -5,12 +5,12 @@ import argparse
 
 from .archive import RarFile
 
-__all__ = ('main',)
+__all__ = ("main",)
 
 
 def main(args: list[str]) -> None:
     p = argparse.ArgumentParser(description=__doc__,
-                                prog='python3 -m rarfile')
+                                prog="python3 -m rarfile")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("-l", "--list", metavar="<rarfile>",
                    help="Show archive listing")

@@ -95,7 +95,7 @@ class HeaderDecrypt:
         return self.f.tell()
 
     def seek(self, ofs: int, whence: int = 0, /) -> int:
-        raise NotImplementedError('Why?')
+        raise NotImplementedError("Why?")
 
     def close(self) -> None:
         pass
@@ -253,12 +253,12 @@ BLK_LE = Struct("<16L")
 KEY_BE = Struct(">4L")
 KEY_LE = Struct("<4L")
 
-U16_LE = Struct('<H')
+U16_LE = Struct("<H")
 
 
 def generate() -> None:
     import textwrap
-    words = [chr(ord('a') + i) for i in range(16)]
+    words = [chr(ord("a") + i) for i in range(16)]
     all_words = ", ".join(words)
     header = f"""\
         def rar3_corrupt_block(seed, pos):
