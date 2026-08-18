@@ -375,7 +375,7 @@ class RarFile:
         """
         for member in self.infolist():
             if member.is_file():
-                with self.open(member, 'r', pwd) as f:
+                with self.open(member, "r", pwd) as f:
                     empty_read(f, member.file_size, config.BSIZE)
 
     def strerror(self) -> str | None:
@@ -481,14 +481,14 @@ class RarFile:
         # disallow abs paths
         target = os.path.normpath(link_name)
         if os.path.isabs(target) or os.path.splitdrive(target)[0]:
-            raise BadSymLinkError('Absolute links not allowed')
+            raise BadSymLinkError("Absolute links not allowed")
 
         # disallow ../ traversal
         dest_abs = os.path.realpath(top)
         target_base = os.path.dirname(dstfn)
         target_abs = os.path.realpath(os.path.join(target_base, target))
         if os.path.commonpath([target_abs, dest_abs]) != dest_abs:
-            raise BadSymLinkError('Link to outside not allowed')
+            raise BadSymLinkError("Link to outside not allowed")
 
         os.symlink(link_name, dstfn, target_is_directory=target_is_directory)
         return dstfn

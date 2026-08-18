@@ -26,7 +26,7 @@ class Reader(Protocol[T_co]):
     def read(self, n: int = -1, /) -> T_co: ...
 
 
-__all__ = ('empty_read', 'custom_popen', 'check_returncode', 'ToolSetup', 'tool_setup')
+__all__ = ("empty_read", "custom_popen", "check_returncode", "ToolSetup", "tool_setup")
 
 CmdLine: TypeAlias = tuple[str, ...]
 ErrMap: TypeAlias = Sequence[type[Exception] | None]
