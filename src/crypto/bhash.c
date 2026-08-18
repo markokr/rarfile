@@ -15,13 +15,10 @@
 bool bhash_init(struct BufferedHash *buf, PyObject *ctx)
 {
 	PyObject *update = PyObject_GetAttrString(ctx, "update");
-	if (update == NULL) {
-		Py_DECREF(ctx);
+	if (update == NULL)
 		return false;
-	}
 
 	PyObject *digest = PyObject_GetAttrString(ctx, "digest");
-	Py_DECREF(ctx);
 	if (digest == NULL) {
 		Py_DECREF(update);
 		return false;

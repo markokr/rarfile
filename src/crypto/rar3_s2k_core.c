@@ -95,7 +95,7 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 
 	if (!PyBytes_Check(seed)) {
 		PyErr_SetString(PyExc_TypeError, "expect bytes");
-		return false;
+		return NULL;
 	}
 	PyObject *seed_buf = PyByteArray_FromObject(seed);
 	if (seed_buf == NULL)
@@ -106,7 +106,7 @@ PyObject *rar3_s2k_core(PyObject *self, PyObject *seed)
 	PyObject *ctx = PyObject_CallNoArgs(st->sha1);
 	if (ctx == NULL) {
 		Py_DECREF(seed_buf);
-		return false;
+		return NULL;
 	}
 	if (!bhash_init(&buf, ctx)) {
 		Py_DECREF(ctx);
