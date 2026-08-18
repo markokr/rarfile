@@ -5,21 +5,62 @@ from binascii import crc32, hexlify
 from collections.abc import Callable
 from hashlib import blake2s, pbkdf2_hmac, sha1
 from struct import Struct
-from typing import Protocol, TypeAlias
+from typing import ClassVar, Protocol, TypeAlias
 
 from .bits import RAR_MAX_PASSWORD
-from .errors import BadRarFile
+from .errors import BadRarFile, NoCrypto
 from .utils import FileLike
 
-__all__ = ("rar3_s2k", "rar5_s2k", "BadRarFile", "HashContext",
-           "NoHashContext", "CRC32Context", "Blake2SP", "HeaderDecrypt")
+__all__ = (
+    "rar3_s2k", "rar5_s2k", "HashContext", "NoHashContext", "CRC32Context",
+    "Blake2SP", "HeaderDecrypt", "AES_CBC_Decrypt"
+)
 
 
 Decryptor: TypeAlias = Callable[[bytes], bytes]
+Loader: TypeAlias = Callable[[bytes, bytes], Decryptor]
 
-# optional: only needed for encrypted headers
-try:
-    try:
+
+class AES_CBC_Decrypt:
+    """Decrypt API"""
+
+    _setup: ClassVar[Loader | None] = None
+    _loaded: ClassVar[bool] = False
+
+    def __init__(self, key: bytes, iv: bytes):
+        get_decrypt = self.load()
+        self.decrypt = get_decrypt(key, iv)  # pylint: disable=not-callable
+
+    @classmethod
+    def have_crypto(cls) -> bool:
+        try:
+            cls.load()
+            return True
+        except NoCrypto:
+            return False
+
+    @classmethod
+    def load(cls) -> Loader:
+        if not cls._loaded:
+            cls._setup = cls.do_import()
+            cls._loaded = True
+        setup = cls._setup
+        if setup is None:
+            raise NoCrypto("Cannot parse encrypted headers - no crypto")
+        return setup
+
+    @classmethod
+    def do_import(cls) -> Loader | None:
+        try:
+            return cls.load_cryptography()
+        except ImportError:
+            try:
+                return cls.load_cryptodome()
+            except ImportError:
+                return None
+
+    @staticmethod
+    def load_cryptography() -> Loader:
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives.ciphers import (
             Cipher, algorithms, modes,
@@ -28,22 +69,17 @@ try:
         def get_decrypt(key: bytes, iv: bytes) -> Decryptor:
             ciph = Cipher(algorithms.AES(key), modes.CBC(iv), default_backend())
             return ciph.decryptor().update
-        have_crypto = 1
-    except ImportError:
+
+        return get_decrypt
+
+    @staticmethod
+    def load_cryptodome() -> Loader:
         from Crypto.Cipher import AES
 
         def get_decrypt(key: bytes, iv: bytes) -> Decryptor:
             return AES.new(key, AES.MODE_CBC, iv).decrypt
-        have_crypto = 2
-except ImportError:
-    have_crypto = 0
 
-
-class AES_CBC_Decrypt:
-    """Decrypt API"""
-
-    def __init__(self, key: bytes, iv: bytes):
-        self.decrypt = get_decrypt(key, iv)
+        return get_decrypt
 
 
 class HeaderDecrypt:

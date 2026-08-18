@@ -9,8 +9,10 @@ import pytest
 
 import rarfile
 from rarfile.bits import RAR_M3, RAR_OS_UNIX
-from rarfile.crypto import have_crypto
+from rarfile.crypto import AES_CBC_Decrypt
 from rarfile.utils import DateTuple
+
+have_crypto = AES_CBC_Decrypt.have_crypto()
 
 
 def render_date(dt: datetime | DateTuple | None) -> str | None:

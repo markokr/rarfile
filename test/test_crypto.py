@@ -5,7 +5,9 @@ from binascii import unhexlify
 
 import pytest
 
-from rarfile.crypto import AES_CBC_Decrypt, have_crypto
+from rarfile.crypto import AES_CBC_Decrypt
+
+have_crypto = AES_CBC_Decrypt.have_crypto()
 
 try:
     from cryptography.hazmat.backends import default_backend

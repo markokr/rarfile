@@ -42,7 +42,6 @@ from .bits import *
 from .cli import *
 from .config import *
 from .crypto import *
-from .crypto import have_crypto as _have_crypto
 from .errors import *
 from .format import *
 from .info import *
