@@ -48,12 +48,11 @@ from .bits import (
     RAR_OS_UNIX, RAR_OS_WIN32, RAR_SKIP_IF_UNKNOWN,
 )
 from .crypto import (
-    Blake2SP, CRC32Context, HashContext, HeaderDecrypt, NoHashContext,
+    AES_CBC_Decrypt, Blake2SP, CRC32Context, HashContext,
+    HeaderDecrypt, NoHashContext, rar3_s2k, rar5_s2k,
 )
-from .crypto import have_crypto as _have_crypto
-from .crypto import rar3_s2k, rar5_s2k
 from .errors import (
-    BadRarFile, BadRarName, NeedFirstVolume, NoCrypto,
+    BadRarFile, BadRarName, NeedFirstVolume,
     NoRarEntry, NotRarFile, RarWrongPassword,
 )
 from .info import (
@@ -501,8 +500,8 @@ class RAR3Parser(CommonParser):
     _last_aes_key: tuple[bytes, bytes, bytes] | None = None   # (salt, key, iv)
 
     def _decrypt_header(self, fd: FileLike) -> FileLike:
-        if not _have_crypto:
-            raise NoCrypto("Cannot parse encrypted headers - no crypto")
+        AES_CBC_Decrypt.load()
+
         assert self._password is not None
         salt = fd.read(8)
         cached = self._last_aes_key
@@ -877,8 +876,8 @@ class RAR5Parser(CommonParser):
         return key
 
     def _decrypt_header(self, fd: FileLike) -> FileLike:
-        if not _have_crypto:
-            raise NoCrypto("Cannot parse encrypted headers - no crypto")
+        AES_CBC_Decrypt.load()
+
         h = self._hdrenc_main
         assert h is not None
         key = self._gen_key(h.encryption_kdf_count, h.encryption_salt)

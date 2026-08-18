@@ -7,7 +7,9 @@ from glob import glob
 import pytest
 
 import rarfile
-from rarfile.crypto import have_crypto
+from rarfile.crypto import AES_CBC_Decrypt
+
+have_crypto = AES_CBC_Decrypt.have_crypto()
 
 ARCHIVE_COMMENTS = {
     "rar15-comment-lock.rar": "RARcomment -----",
