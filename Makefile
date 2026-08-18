@@ -35,16 +35,20 @@ test-venv: remove-tag
 	uv venv --python $(PYTHON) --clear
 	RARFILE_REQUIRE_EXTENSION=$(RARFILE_REQUIRE_EXTENSION) \
 	uv sync --no-dev --group test $(CRYPTO_FLAG) --reinstall-package rarfile
-	uv run --no-sync pytest -n auto --cov=rarfile --cov-report=term --cov-report=html:cover/$(TESTTAG)
+	uv run --no-sync pytest -n auto --cov=rarfile --cov-append
 	uv run --no-sync bash test/run_dump.sh python "$(TESTTAG)"
 
 test-all: remove-tag
+	uv run coverage erase
+	set -e; \
 	for py in $(PYTHONS); do \
 		for crypto in "" pycryptodome cryptography; do \
 			$(MAKE) test-venv PYTHON=$$py CRYPTO=$$crypto; \
 		done; \
 	done
-	$(MAKE) remove-tag
+	uv run coverage html -d cover/test-all
+	uv run coverage report
+	rm -rf .venv
 
 lint-venv: remove-tag
 	uv venv --python $(PYTHON) --clear
@@ -54,9 +58,11 @@ lint-venv: remove-tag
 	$(MAKE) lint remove-tag
 
 lint-all: remove-tag
+	set -e; \
 	for py in $(MAIN_PYTHONS); do \
-		$(MAKE) lint-venv PYTHON=$$py ; \
+		$(MAKE) lint-venv PYTHON=$$py; \
 	done
+	rm -rf .venv
 
 remove-tag:
 	@rm -f $(BUILD_TAG)
