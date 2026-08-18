@@ -349,18 +349,26 @@ class RarFile:
 
         done: set[str] = set()
         dirs: list[tuple[str, RarInfo]] = []
+        symlinks: list[RarInfo] = []
         for m in members:
             inf = self.getinfo(m)
+            if inf.is_symlink():
+                symlinks.append(inf)
+                continue
             dst = self._extract_one(inf, path, pwd, not inf.is_dir())
+            if dst is None:
+                continue
             if inf.is_dir():
-                assert dst is not None
                 if dst not in done:
                     dirs.append((dst, inf))
                     done.add(dst)
-        if dirs:
-            dirs.sort(reverse=True)
-            for dst, inf in dirs:
-                self._set_attrs(inf, dst)
+
+        dirs.sort(reverse=True)
+        for dst, inf in dirs:
+            self._set_attrs(inf, dst)
+
+        for inf in symlinks:
+            self._extract_one(inf, path, pwd, not inf.is_dir())
 
     def testrar(self, pwd: str | None = None) -> None:
         """Read all files and test CRC.
