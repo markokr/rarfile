@@ -254,7 +254,13 @@ def test_symlink_chained_traversal_blocked(tmp_path: Path) -> None:
         with pytest.raises(rarfile.BadSymLinkError):
             rf.extractall(str(extract))
 
+    check = extract / "up"
+    assert check.is_dir()
+
     # test if pre-existing symlink is detected
+    extract = tmp_path / "extract2"
+    extract.mkdir()
+
     up = extract / "up"
     up.symlink_to('..')
     assert str(up.readlink()) == '..'

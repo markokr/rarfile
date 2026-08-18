@@ -35,6 +35,9 @@ Features:
 * Check if ``7z`` actually supports RAR.
   [`#134 <https://github.com/markokr/rarfile/pull/134>`_]
 
+* Delay symlink creation in :meth:`RarFile.extractall`
+  [`#148 <https://github.com/markokr/rarfile/pull/148>`_]
+
 Version 4.5 (2026-08-02)
 ------------------------
 
