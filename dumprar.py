@@ -185,6 +185,14 @@ dos_mode_bits = (
 )
 
 
+unix_file_types = [
+    'r', 'F', 'C', 'MC',    # reg, fifo, chr, MPX-CHR
+    'd', 'NM', 'B', 'MB',   # dir, NAM, blk, MPX-BLK
+    '-', 'NW', 'l', 'SH',   # file, NWK, link, SHADOW
+    'S', 'DR', 'PT', 'XX',  # sock, DOOR, PORT, ?
+]
+
+
 def xprint(m: str, *args: object) -> None:
     """Print string to stdout.
     """
@@ -285,19 +293,12 @@ def unix_mode(mode: int) -> str:
         perms[5] = perms[5] == "x" and "s" or "S"
     if mode & 0x0200:
         perms[8] = perms[8] == "x" and "t" or "-"
+
     rest = mode & 0xF000
-    if rest == 0x4000:
-        perms.insert(0, "d")
-    elif rest == 0xA000:
-        perms.insert(0, "l")
-    elif rest == 0x8000:
-        # common
-        perms.insert(0, "-")
-    elif rest == 0:
-        perms.insert(0, "-")
-    else:
-        perms.insert(0, "?")
-        perms.append("(0x%04x)" % rest)
+    perms.insert(0, unix_file_types[rest >> 12])
+
+    if mode >> 16:
+        perms.append("(0x%08x)" % mode)
     return "".join(perms)
 
 
