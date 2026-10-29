@@ -276,7 +276,7 @@ class PipeReader(RarExtFile):
 
     def readinto(self, buf: WritableBuffer) -> int:
         """Zero-copy read directly into buffer."""
-        vbuf = memoryview(buf)
+        vbuf = memoryview(buf).cast("B")
         cnt = len(vbuf)
         if cnt > self._remain:
             cnt = self._remain
@@ -415,7 +415,7 @@ class DirectReader(RarExtFile):
         """Zero-copy read directly into buffer."""
         assert self._fd is not None and self._cur_avail is not None and self._md_context is not None
         got = 0
-        vbuf = memoryview(buf)
+        vbuf = memoryview(buf).cast("B")
         while got < len(vbuf):
             # next vol needed?
             if self._cur_avail == 0:

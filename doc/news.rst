@@ -38,6 +38,11 @@ Features:
 * Delay symlink creation in :meth:`RarFile.extractall`
   [`#148 <https://github.com/markokr/rarfile/pull/148>`_]
 
+Fixes:
+
+* Handle typed and multidimensional buffers in :meth:`RarExtFile.readinto`
+  using byte counts for entry boundaries and short reads.
+
 Version 4.5 (2026-08-02)
 ------------------------
 
